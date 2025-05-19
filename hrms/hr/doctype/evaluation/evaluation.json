@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "EVL.#####",
+ "creation": "2025-05-04 13:52:24.897427",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "subtask",
+  "performance",
+  "final_target_time",
+  "contribution",
+  "pic_subtask",
+  "tasks",
+  "maintask",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "description": "the finished subtask that wants to reviewed",
+   "fieldname": "subtask",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Sub Task",
+   "options": "SubTask",
+   "reqd": 1
+  },
+  {
+   "description": "the grade of the selected subtask, the grade can't be over than 120",
+   "fieldname": "performance",
+   "fieldtype": "Int",
+   "label": "Performance",
+   "reqd": 1
+  },
+  {
+   "fieldname": "contribution",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Contribution",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tasks",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_standard_filter": 1,
+   "label": "Task",
+   "options": "Tasks",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pic_subtask",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "PIC Sub Task",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "maintask",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Main Task",
+   "options": "MainTask",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Evaluation",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "final_target_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Final Target Time",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-05-19 11:31:24.766286",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "Evaluation",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
