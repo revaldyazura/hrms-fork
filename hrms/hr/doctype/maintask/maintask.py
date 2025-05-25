@@ -12,8 +12,8 @@ class MainTask(Document):
         self.validate_date()
 
     def validate_date(self):
-        if self.assign_date and getdate(self.assign_date) < getdate(today()):
-            throw(_("Assign date cannot be later than today."))
+        # if self.assign_date and getdate(self.assign_date) < getdate(today()):
+        #     throw(_("Assign date cannot be later than today."))
 
         self.validate_from_to_dates("assign_date", "due_date")
 

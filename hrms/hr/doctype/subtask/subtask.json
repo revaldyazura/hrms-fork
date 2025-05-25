@@ -36,7 +36,7 @@
    "reqd": 1
   },
   {
-   "description": "expected time for finishing this subtask",
+   "description": "expected time (in minutes) for finishing this subtask",
    "fieldname": "target_time",
    "fieldtype": "Int",
    "label": "Target Time",
@@ -86,14 +86,13 @@
    "in_list_view": 1,
    "label": "MainTask",
    "options": "MainTask",
-   "read_only": 1,
    "show_on_timeline": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-19 14:30:27.785234",
+ "modified": "2025-05-22 17:14:33.911256",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

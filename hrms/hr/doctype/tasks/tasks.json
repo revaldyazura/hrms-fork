@@ -24,7 +24,7 @@
    "reqd": 1
   },
   {
-   "description": "ID TEAM-\"Short Description\",\nSample: DS-Riset Kebutuhan",
+   "description": "ID TEAM-\"Short Description\",\nSample: DS-Riset Kebutuhan \n(should same with team in maintask data)",
    "fieldname": "task_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -32,7 +32,7 @@
    "reqd": 1
   },
   {
-   "description": "expected time for finishing this task",
+   "description": "expected time (in minutes) for finishing this task",
    "fieldname": "target_time",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -63,7 +63,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-15 21:29:14.899174",
+ "modified": "2025-05-22 17:05:01.031432",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tasks",

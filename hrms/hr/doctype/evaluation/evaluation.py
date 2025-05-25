@@ -56,9 +56,6 @@ def on_update(doc, method):
     evaluations = frappe.get_all('Evaluation', filters={'maintask': tasks_doc.maintask}, fields=['name', 'subtask', 'performance'])
     evaluated_subtasks = len(evaluations)
 
-    print(f'{total_subtask} total subtask with same maintask')
-    print(f'{evaluated_subtasks} evaluated subtask with same maintask')
-
     if total_subtask == evaluated_subtasks and total_subtask > 0:
         total_tvr = 0
         subtask_map = {s['name']: s for s in all_subtasks}
@@ -77,7 +74,7 @@ def on_update(doc, method):
                 eval_doc = frappe.get_doc('Evaluation', eval.name)
                 eval_tvr = eval_tvr_map.get(eval['name'], 0)
                 # eval_doc.contribution = (eval_tvr / total_tvr) * 100, 2
-                eval_doc.contribution = round((eval_tvr / total_tvr) * 100, 2)
+                eval_doc.contribution = str(round((eval_tvr / total_tvr) * 100, 2)) + "%"
                 eval_doc.save(ignore_permissions=True)
 
     frappe.flags.in_update = False
