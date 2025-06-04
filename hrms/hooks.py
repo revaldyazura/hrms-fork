@@ -134,13 +134,18 @@ before_app_uninstall = "hrms.setup.before_app_uninstall"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
+permission_query_conditions = {
+	# "Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+    "SubTask": "hrms.hr.doctype.subtask.subtask.permission_query_conditions",
+    "Tasks": "hrms.hr.doctype.tasks.tasks.permission_query_conditions",
+    "MainTask": "hrms.hr.doctype.maintask.maintask.permission_query_conditions",
+    "Evaluation": "hrms.hr.doctype.evaluation.evaluation.permission_query_conditions",
+}
 #
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+has_permission = {
+    # "Event": "frappe.desk.doctype.event.event.has_permission",
+    # "SubTask": "hrms.hr.doctype.subtask.subtask.has_permission"
+}
 
 has_upload_permission = {"Employee": "erpnext.setup.doctype.employee.employee.has_upload_permission"}
 
@@ -210,14 +215,17 @@ doc_events = {
     "Project": {"validate": "hrms.controllers.employee_boarding_controller.update_employee_boarding_status"},
     "Task": {"on_update": "hrms.controllers.employee_boarding_controller.update_task"},
     "SubTask": {
-        "on_update": "hrms.hr.doctype.subtask.subtask.on_update"
+        "on_update": ["hrms.hr.doctype.subtask.subtask.update_fields"]
     },
     "Tasks": {
-        "on_update": "hrms.hr.doctype.tasks.tasks.on_update"
+        "on_update": ["hrms.hr.doctype.tasks.tasks.update_fields"]
     },
     "Evaluation": {
-        "on_update": "hrms.hr.doctype.evaluation.evaluation.on_update",
+        "on_update": ["hrms.hr.doctype.evaluation.evaluation.update_fields"],
         "after_delete": "hrms.hr.doctype.evaluation.evaluation.after_delete"
+    },
+    "MainTask": {
+        "on_update": "hrms.hr.doctype.maintask.maintask.update_fields"
     }
 }
 

@@ -6,6 +6,11 @@ frappe.ui.form.on("Evaluation", {
 		frm.set_query("subtask", function () {
 			return {filters: [["SubTask", "status", "=", "Open"]]};
 		});
+		frm.set_query("subtask", function () {
+			return {
+				query: "hrms.hr.doctype.evaluation.evaluation.get_subtask_as_owner"
+			};
+		});
 	},
 	refresh(frm) {
 

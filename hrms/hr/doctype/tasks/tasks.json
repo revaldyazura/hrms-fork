@@ -10,7 +10,9 @@
   "task_name",
   "target_time",
   "pic_task",
-  "status"
+  "status",
+  "maintask_name",
+  "pic_task_name"
  ],
  "fields": [
   {
@@ -32,7 +34,7 @@
    "reqd": 1
   },
   {
-   "description": "expected time (in minutes) for finishing this task",
+   "description": "expected time (in minutes) for finishing this task, can't be longer than due date of maintask",
    "fieldname": "target_time",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -43,6 +45,7 @@
    "description": "employee that assigned to do this task",
    "fieldname": "pic_task",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "PIC",
    "options": "Employee",
@@ -58,12 +61,26 @@
    "label": "Status",
    "options": "Open\nDone\nHold\nCancel",
    "read_only": 1
+  },
+  {
+   "fetch_from": "maintask.maintask_name",
+   "fieldname": "maintask_name",
+   "fieldtype": "Data",
+   "label": "Maintask Name",
+   "permlevel": 2
+  },
+  {
+   "fetch_from": "pic_task.employee_name",
+   "fieldname": "pic_task_name",
+   "fieldtype": "Data",
+   "label": "PIC Name",
+   "permlevel": 2
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-22 17:05:01.031432",
+ "modified": "2025-06-04 15:01:25.274943",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tasks",

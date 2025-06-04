@@ -14,7 +14,10 @@
   "pic_subtask",
   "attachment",
   "description",
-  "status"
+  "status",
+  "maintask_name",
+  "tasks_name",
+  "pic_subtask_name"
  ],
  "fields": [
   {
@@ -69,8 +72,11 @@
    "description": "the employee that responsible to finish this subtask",
    "fieldname": "pic_subtask",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
    "label": "PIC",
    "options": "Employee",
+   "permlevel": 1,
    "reqd": 1
   },
   {
@@ -87,12 +93,33 @@
    "label": "MainTask",
    "options": "MainTask",
    "show_on_timeline": 1
+  },
+  {
+   "fetch_from": "maintask.maintask_name",
+   "fieldname": "maintask_name",
+   "fieldtype": "Data",
+   "label": "MainTask Name",
+   "permlevel": 3
+  },
+  {
+   "fetch_from": "pic_subtask.employee_name",
+   "fieldname": "pic_subtask_name",
+   "fieldtype": "Data",
+   "label": "PIC SubTask Name",
+   "permlevel": 3
+  },
+  {
+   "fetch_from": "tasks.task_name",
+   "fieldname": "tasks_name",
+   "fieldtype": "Data",
+   "label": "Task Name",
+   "permlevel": 3
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-22 17:14:33.911256",
+ "modified": "2025-06-04 17:13:46.021125",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",
@@ -108,6 +135,30 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "if_owner": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Leader",
+   "select": 1,
    "share": 1,
    "write": 1
   },
@@ -119,7 +170,58 @@
    "print": 1,
    "read": 1,
    "report": 1,
+   "role": "HR Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
    "role": "Employee",
+   "share": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "if_owner": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Leader",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   },
@@ -132,6 +234,20 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 2,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   },
@@ -142,8 +258,31 @@
    "print": 1,
    "read": 1,
    "report": 1,
+   "role": "Leader",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 2,
+   "print": 1,
+   "read": 1,
+   "report": 1,
    "role": "Employee",
    "share": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 3,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
   }
  ],
  "row_format": "Dynamic",

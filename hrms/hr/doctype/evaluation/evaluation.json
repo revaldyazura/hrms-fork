@@ -13,7 +13,8 @@
   "pic_subtask",
   "tasks",
   "maintask",
-  "amended_from"
+  "subtask_name",
+  "pic_subtask_name"
  ],
  "fields": [
   {
@@ -37,59 +38,61 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Contribution",
-   "read_only": 1
+   "permlevel": 1
   },
   {
    "fieldname": "tasks",
    "fieldtype": "Link",
-   "hidden": 1,
    "in_standard_filter": 1,
    "label": "Task",
    "options": "Tasks",
-   "read_only": 1
+   "permlevel": 1
   },
   {
    "fieldname": "pic_subtask",
    "fieldtype": "Link",
-   "hidden": 1,
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "PIC Sub Task",
    "options": "Employee",
-   "read_only": 1
+   "permlevel": 1
   },
   {
    "fieldname": "maintask",
    "fieldtype": "Link",
-   "hidden": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Main Task",
    "options": "MainTask",
-   "read_only": 1
-  },
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Evaluation",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
+   "permlevel": 1
   },
   {
    "fieldname": "final_target_time",
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Final Target Time",
-   "read_only": 1
+   "permlevel": 1
+  },
+  {
+   "fetch_from": "subtask.subtask_name",
+   "fieldname": "subtask_name",
+   "fieldtype": "Data",
+   "label": "SubTask Name",
+   "permlevel": 1
+  },
+  {
+   "fetch_from": "pic_subtask.employee_name",
+   "fieldname": "pic_subtask_name",
+   "fieldtype": "Data",
+   "label": "PIC SubTask Name",
+   "permlevel": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-19 11:31:24.766286",
+ "modified": "2025-06-04 17:15:13.004932",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Evaluation",

@@ -17,9 +17,10 @@ class Evaluation(Document):
             throw(_("Performance grade cannot be greater than 120."))
 
 
-def on_update(doc, method):
+def update_fields(doc, method):
     # Prevent infinite loop
     if frappe.flags.in_update:
+        frappe.msgprint(f"in update (eval fields)")
         return
     frappe.flags.in_update = True
 
@@ -89,3 +90,44 @@ def after_delete(doc, method):
         subtask.status = 'Open'
         subtask.save(ignore_permissions=True)
         frappe.msgprint(f"SubTask '{subtask.subtask_name}' status updated to {subtask.status} after deleting evaluation.")
+
+@frappe.whitelist()
+def get_subtask_as_owner(doctype, txt, searchfield, start, page_len, filters):
+    user_id = frappe.session.user
+    # employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
+
+    subtasks = frappe.db.sql("""
+        SELECT st.name, st.subtask_name
+        FROM `tabSubTask` st
+        JOIN `tabMainTask` mt ON st.maintask = mt.name
+        WHERE st.owner = %(user_id)s OR mt.owner = %(user_id)s
+        GROUP BY st.name
+    """, {
+        "user_id": f"{user_id}"
+    })
+    return subtasks
+
+def permission_query_conditions(doc, ptype=None, user=None, debug=False):
+    user_id = user or frappe.session.user
+
+    print(f'{user_id} is the user')
+
+    roles = frappe.get_all("Has Role", filters={"parent": user_id}, pluck="role")
+    print(f'{roles} is user roles')
+    if "System Manager" in roles:
+        return ""
+
+    employee_id = frappe.get_value("Employee", {"user_id": user_id}, "name")
+    print((f'employee id: {employee_id}'))
+    if not employee_id:
+        return "1=0"
+
+    return  f"""
+        (`tabEvaluation`.`pic_subtask` = '{employee_id}'
+        OR `tabEvaluation`.`owner` = '{user_id}'
+        OR `tabEvaluation`.`maintask` IN (
+            SELECT `name` FROM `tabMainTask` WHERE `owner` = '{user_id}' OR `assigned_by` = '{employee_id}'
+        )OR `tabEvaluation`.`tasks` IN (
+            SELECT `name` FROM `tabTasks` WHERE `owner` = '{user_id}' OR `pic_task` = '{employee_id}'
+        ))
+    """

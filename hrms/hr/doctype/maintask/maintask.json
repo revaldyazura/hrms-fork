@@ -11,7 +11,9 @@
   "team",
   "assign_date",
   "due_date",
-  "status"
+  "status",
+  "total_time",
+  "assigned_by_name"
  ],
  "fields": [
   {
@@ -26,6 +28,7 @@
    "description": "employee who assign this task",
    "fieldname": "assigned_by",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Assigned By",
    "options": "Employee",
@@ -64,14 +67,28 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Open\nDone\nHold\nCancel",
-   "read_only": 1,
+   "permlevel": 1,
    "show_on_timeline": 1
+  },
+  {
+   "description": "calculated time from assign date to due date, per 8 hours of works (in minutes)",
+   "fieldname": "total_time",
+   "fieldtype": "Int",
+   "label": "Total Time (in minutes)",
+   "permlevel": 1
+  },
+  {
+   "fetch_from": "assigned_by.employee_name",
+   "fieldname": "assigned_by_name",
+   "fieldtype": "Data",
+   "label": "Assigned by Name",
+   "permlevel": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-19 11:07:43.800922",
+ "modified": "2025-06-04 15:07:02.981873",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",
