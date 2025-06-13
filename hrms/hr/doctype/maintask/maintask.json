@@ -37,10 +37,9 @@
   {
    "description": "the team that responsible for this task",
    "fieldname": "team",
-   "fieldtype": "Link",
-   "in_list_view": 1,
+   "fieldtype": "Table",
    "label": "Team",
-   "options": "Team",
+   "options": "MainTask Team",
    "reqd": 1
   },
   {
@@ -88,7 +87,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-04 15:07:02.981873",
+ "modified": "2025-06-13 10:50:15.013640",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",
