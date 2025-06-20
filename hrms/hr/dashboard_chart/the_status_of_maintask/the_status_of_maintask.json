@@ -1,0 +1,34 @@
+{
+ "chart_name": "The Status of MainTask",
+ "chart_type": "Report",
+ "creation": "2025-06-18 11:13:36.728038",
+ "currency": "",
+ "custom_options": "{\"type\": \"bar\", \"colors\": [\"#0000FF\",\"#008000\", \"#FFD580\", \"#FF0000\"], \"axisOptions\": { \"shortenYAxisNumbers\": 1}, \"barOptions\": { \"stacked\": 1 }}",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart",
+ "dynamic_filters_json": "{}",
+ "filters_json": "{\"status\":\"Open\"}",
+ "group_by_type": "Count",
+ "idx": 5,
+ "is_public": 1,
+ "is_standard": 1,
+ "modified": "2025-06-19 12:01:01.136420",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "The Status of MainTask",
+ "number_of_groups": 0,
+ "owner": "Administrator",
+ "report_name": "Task Management Summary",
+ "roles": [
+  {
+   "role": "Manager"
+  }
+ ],
+ "time_interval": "Yearly",
+ "timeseries": 0,
+ "timespan": "Last Year",
+ "type": "Bar",
+ "use_report_chart": 1,
+ "x_field": "",
+ "y_axis": []
+}

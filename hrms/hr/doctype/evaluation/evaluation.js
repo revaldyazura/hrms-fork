@@ -3,12 +3,12 @@
 
 frappe.ui.form.on("Evaluation", {
 	onload: function (frm) {
-		frm.set_query("subtask", function () {
-			return {filters: [["SubTask", "status", "=", "Open"]]};
-		});
+		// frm.set_query("subtask", function () {
+		// 	return {filters: [["SubTask", "status", "=", "Open"]]};
+		// });
 		frm.set_query("subtask", function () {
 			return {
-				query: "hrms.hr.doctype.evaluation.evaluation.get_subtask_as_owner"
+				query: "hrms.hr.doctype.evaluation.evaluation.get_open_subtask_as_owner"
 			};
 		});
 	},

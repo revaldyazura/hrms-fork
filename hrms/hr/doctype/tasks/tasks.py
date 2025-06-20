@@ -9,103 +9,155 @@ from frappe.model.document import Document
 class Tasks(Document):
     def validate(self):
         self.validate_task_name()
-        self.validate_target_time()
-
-    def validate_target_time(self):
-        maintask = frappe.get_doc("MainTask", self.maintask)
-        tasks_target_time = frappe.get_all("Tasks", filters={"maintask": maintask, "name": ["!=", self.name]}, fields=["target_time"])
-        calculated_target_time = 0
-        print(tasks_target_time)
-        for t in tasks_target_time:
-            print(f'loop t = {t}')
-            calculated_target_time += t.get("target_time") or 0
-        calculated_target_time += self.target_time
-        print(f'calculated tasks time {calculated_target_time}')
-        print(f'total time {maintask.total_time}')
-        if calculated_target_time > maintask.total_time:
-            throw(
-                _("Total all tasks target time exceeds the maintask timeframe (assign - due date), please adjust it again okay?"))
 
     def validate_task_name(self):
-        maintask = frappe.get_doc("MainTask", self.maintask)
-        team = maintask.team
+        pic_task_team = frappe.db.get_value("Employee", {"name": self.pic_task}, "team")
         prefix_task = self.task_name.split("-")[0].upper()
-        if prefix_task != team:
-            throw(_("Please put the task name properly, as shown in description."))
-    # def validate_task_name(self):
-    #         team = frappe.get_all("Team", fields=["id"])
-    #         team_ids = [t.id for t in team]
-    #         prefix_task = self.task_name.split("-")[0].upper()
-    #         if prefix_task not in team_ids:
-    #             throw(_("Please put the task name properly, as shown in description."))
 
+        if prefix_task != pic_task_team:
+            throw(_("Please put the task name properly, as shown in description."))
+        else:
+            task_name_splitted = self.task_name.split("-")
+            prefix = task_name_splitted[0].upper()
+            task_name = "-".join([prefix] + task_name_splitted[1:])
+            self.task_name = task_name
+            self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
+
+
+def before_save(doc, method):
+    if doc.get('__islocal'):
+        doc.flags._previous_status = None
+    else:
+        doc.flags._previous_status = frappe.db.get_value("Tasks", doc.name, "status")
+
+def after_delete(doc, method):
+    subtasks = frappe.get_all("SubTask", {"tasks": doc.name})
+    for subtask in subtasks:
+        if subtask.status != "Done":
+            frappe.delete_doc("SubTask", subtask.name, ignore_permissions=True)
 
 def update_fields(doc, method):
     if frappe.flags.in_update:
-        frappe.msgprint(f"in tasks update_field")
+        frappe.msgprint(f"In update Tasks")
         return
     frappe.flags.in_update = True
 
-    maintask = frappe.get_doc("MainTask", doc.maintask)
-    tasks = frappe.get_all("Tasks", filters={"maintask": doc.maintask}, fields=["status"])
-    statuses = [t.status for t in tasks]
-    task_name_splitted = doc.task_name.split("-")
-    prefix = task_name_splitted[0].upper()
-    task_name = "-".join([prefix] + task_name_splitted[1:])
-    doc.task_name = task_name
-    doc.save(ignore_permissions=True)
+    previous_status = doc.flags.get("_previous_status")
+    now_status = doc.status
+    if previous_status != now_status:
+        subtasks = frappe.get_all("SubTask", filters={"tasks": doc.name}, pluck="name")
+        for subtask_name in subtasks:
+            subtask = frappe.get_doc("SubTask", subtask_name)
+            if subtask.status != "Done":
+                subtask.status = doc.status
+                subtask.save(ignore_permissions=True)
 
-    original_status = maintask.status
-
-    if all(s == "Done" for s in statuses):
-        if maintask.status != "Done":
-            maintask.status = "Done"
-    elif all(s == "Hold" for s in statuses):
-        if maintask.status != "Hold":
-            maintask.status = "Hold"
-    elif all(s == "Cancel" for s in statuses):
-        if maintask.status != "Cancel":
-            maintask.status = "Cancel"
-    else:
-        maintask.status = "Open"
-
-    if maintask.status != original_status:
-        maintask.save(ignore_permissions=True)
-        frappe.msgprint(f"MainTask '{maintask.maintask_name}' status updated to {maintask.status} based on Tasks.")
+    frappe.flags.in_update = False
 
 
 def permission_query_conditions(doc, ptype=None, user=None, debug=False):
     user_id = user or frappe.session.user
 
-    print(f'{user_id} is the user')
-
     roles = frappe.get_all("Has Role", filters={"parent": user_id}, pluck="role")
-    print(f'{roles} is user roles')
     if "System Manager" in roles:
         return ""
 
     employee_id = frappe.get_value("Employee", {"user_id": user_id}, "name")
-    print((f'employee id: {employee_id}'))
+
+    parent_mteam = frappe.get_all(
+        "MainTask Team",
+        filters={"employee": employee_id},
+        pluck="parent"
+    )
+
+    if not parent_mteam:
+        return "1=0"
+
     if not employee_id:
         return "1=0"
 
-    return f"(tabTasks.pic_task = '{employee_id}' OR tabTasks.owner = '{user_id}' OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE owner = '{user_id}' OR assigned_by = '{employee_id}'))"
+    maintask_ids = "', '".join(parent_mteam)
+
+    return f"(tabTasks.pic_task = '{employee_id}' OR tabTasks.owner = '{user_id}' OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE owner = '{user_id}' OR assigned_by = '{employee_id}') OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE name IN ('{maintask_ids}')))"
 
 
 @frappe.whitelist()
-def get_employees_by_user_role(doctype, txt, searchfield, start, page_len, filters):
+def user_edit_tasks(task_name):
+    if frappe.session.user == "Administrator":
+        return "admin"
+
+    doc = frappe.get_doc("Tasks", task_name)
+    employee_id = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
+
+    if not employee_id:
+        return "none"
+
+    if doc.pic_task == employee_id:
+        return "pic_task"
+
+    if doc.maintask:
+        owner_maintask = frappe.get_value("MainTask", doc.maintask, "owner")
+        if owner_maintask == frappe.session.user:
+            return "pic_maintask"
+
+    return "none"
+
+
+def has_permission(doc, ptype, user):
+    if user == "Administrator":
+        return True
+
+    if ptype in ("read", None):
+        return True
+
+    employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
+    if not employee_id:
+        return False
+
+    employee = frappe.get_doc("Employee", employee_id)
+
+    if ptype == "delete":
+        if doc.pic_task == employee_id:
+            frappe.throw(f"{employee.employee_name} is not allowed to deleting {doc.task_name} task.",
+                         frappe.PermissionError)
+            return False
+        check_finished_subtask = frappe.get_all("SubTask", {"tasks": doc.name}, pluck="status")
+        if "Done" in check_finished_subtask:
+            frappe.throw(f"Sorry {employee.employee_name} one of the subtasks in this task is evaluated, you can't delete it.",
+                         frappe.PermissionError)
+            return False
+    else:
+        return True
+
+    if doc.maintask:
+        owner_maintask = frappe.get_value("MainTask", doc.maintask, "owner")
+        if owner_maintask == frappe.session.user:
+            return True
+
+    frappe.throw(f"{employee.employee_name} is not allowed to acessing {doc.task_name} task.", frappe.PermissionError)
+    return False
+
+
+@frappe.whitelist()
+def get_employees_by_role_and_team(doctype, txt, searchfield, start, page_len, filters):
+    maintask = filters.get("maintask")
+    if not maintask:
+        return []
     employees = frappe.db.sql("""
         SELECT e.name, e.employee_name
         FROM `tabEmployee` e
         JOIN `tabUser` u ON u.name = e.user_id
         JOIN `tabHas Role` hr ON hr.parent = u.name
-        WHERE hr.role IN ("Leader", "Manager", "HR Manager")
-        AND e.status = 'Active'
-        AND (e.name LIKE %(txt)s OR e.employee_name LIKE %(txt)s)
+        JOIN `tabMainTask Team` mteam ON mteam.employee = e.name
+        JOIN `tabMainTask` mt ON mt.name = mteam.parent
+        WHERE mt.name = %(maintask)s
+          AND e.status = 'Active'
+          AND (e.name LIKE %(txt)s OR e.employee_name LIKE %(txt)s)
         GROUP BY e.name
         ORDER BY e.employee_name
         LIMIT %(page_len)s OFFSET %(start)s
     """, {
+        "maintask": maintask,
         "txt": f"%{txt}%",
         "start": start,
         "page_len": page_len
@@ -114,16 +166,19 @@ def get_employees_by_user_role(doctype, txt, searchfield, start, page_len, filte
 
 
 @frappe.whitelist()
-def get_maintask_as_the_owner(doctype, txt, searchfield, start, page_len, filters):
-    user_id = frappe.session.user
-    # employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
+def get_open_maintask_as_the_owner(doctype, txt, searchfield, start, page_len, filters):
+    user = frappe.session.user
 
-    maintasks = frappe.db.sql("""
+    conditions = ""
+    if user != "Administrator":
+        conditions = "WHERE mt.owner = %(user)s AND mt.status = 'Open'"
+
+    maintasks = frappe.db.sql(f"""
         SELECT mt.name, mt.maintask_name
         FROM `tabMainTask` mt
-        WHERE mt.owner = %(user_id)s
+       {conditions}
         GROUP BY mt.name
     """, {
-        "user_id": f"{user_id}"
+        "user": f"{user}"
     })
     return maintasks

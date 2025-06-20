@@ -12,6 +12,7 @@ from frappe.utils import getdate, today
 class MainTask(Document):
     def validate(self):
         self.validate_date()
+        self.validate_maintask_data()
 
     def validate_date(self):
         # if self.assign_date and getdate(self.assign_date) < getdate(today()):
@@ -19,42 +20,120 @@ class MainTask(Document):
 
         self.validate_from_to_dates("assign_date", "due_date")
 
+    def validate_maintask_data(self):
+        self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
+
+
+def before_save(doc, method):
+    if doc.get('__islocal'):
+        doc.flags._previous_status = None
+    else:
+        doc.flags._previous_status = frappe.db.get_value("MainTask", doc.name, "status")
+
+def after_delete(doc, method):
+    subtasks = frappe.get_all("SubTask", {"maintask": doc.name})
+    for subtask in subtasks:
+        if subtask.status != "Done":
+            frappe.delete_doc("SubTask", subtask.name, ignore_permissions=True)
 
 def update_fields(doc, method):
     if frappe.flags.in_update:
-        frappe.msgprint('in update maintask update_fields')
+        frappe.msgprint('In update MainTask')
         return
     frappe.flags.in_update = True
-    assign_date = get_datetime(doc.assign_date).date()
-    due_date = get_datetime(doc.due_date).date()
 
-    number_of_working_days = 0
-    current_date = assign_date
+    previous_status = doc.flags.get("_previous_status")
+    now_status = doc.status
+    if previous_status != now_status:
+        tasks = frappe.get_all("Tasks", filters={"maintask": doc.name}, pluck="name")
+        for task_name in tasks:
+            task = frappe.get_doc("Tasks", task_name)
+            task.status = doc.status
+            task.save(ignore_permissions=True)
 
-    while current_date <= due_date:
-        if current_date.weekday() < 5:  # 0 = Monday, ..., 4 = Friday
-            number_of_working_days += 1
-        current_date += timedelta(days=1)
+            subtasks = frappe.get_all("SubTask", filters={"tasks": task.name}, pluck="name")
+            for subtask_name in subtasks:
+                subtask = frappe.get_doc("SubTask", subtask_name)
+                if subtask.status != "Done":
+                    subtask.status = doc.status
+                    subtask.save(ignore_permissions=True)
 
-    doc.total_time = number_of_working_days * 480
-    print(f'total time {doc.total_time}')
-    doc.save(ignore_permissions=True)
     frappe.flags.in_update = False
+
 
 def permission_query_conditions(doc, ptype=None, user=None, debug=False):
     user_id = user or frappe.session.user
 
-    print(f'{user_id} is the user')
-
     roles = frappe.get_all("Has Role", filters={"parent": user_id}, pluck="role")
-    print(f'{roles} is user roles')
     if "System Manager" in roles:
         return ""
 
     employee_id = frappe.get_value("Employee", {"user_id": user_id}, "name")
-    # pic_tasks = frappe.get_all("Tasks", filters={"maintask": doc.name}, pluck="pic_task")
-    print((f'employee id: {employee_id}'))
+
+    employee = frappe.get_doc("Employee", employee_id)
+
+    parent_mteam = frappe.get_all(
+        "MainTask Team",
+        filters={"employee": employee_id},
+        pluck="parent"
+    )
+
     if not employee_id:
         return "1=0"
 
-    return f"(tabMainTask.assigned_by = '{employee_id}' OR tabMainTask.owner = '{user_id}')"
+    if not parent_mteam:
+        return "1=0"
+
+    maintask_ids = "', '".join(parent_mteam)
+    query = f"(tabMainTask.assigned_by = '{employee_id}' OR tabMainTask.owner = '{user_id}' OR tabMainTask.name IN ('{maintask_ids}'))"
+
+    return query
+
+
+@frappe.whitelist()
+def user_edit_maintask(maintask_name):
+    if frappe.session.user == "Administrator":
+        return "admin"
+
+    doc = frappe.get_doc("MainTask", maintask_name)
+    employee_id = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
+
+    if not employee_id:
+        return "none"
+
+    if doc.owner == frappe.session.user:
+        return "owner_maintask"
+
+    return "none"
+
+
+def has_permission(doc, ptype, user):
+    if user == "Administrator":
+        return True
+
+    if ptype in ("read", None):
+        return True
+
+    employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
+    if not employee_id:
+        return False
+
+    employee = frappe.get_doc("Employee", employee_id)
+
+    if ptype == "delete":
+        if doc.owner != user:
+            frappe.throw(f"{employee.employee_name} is not allowed to deleting {doc.maintask_name} maintask.",
+                         frappe.PermissionError)
+            return False
+        elif doc.owner == user:
+            check_finished_subtask = frappe.get_all("SubTask", {"maintask": doc.name}, pluck="status")
+            if "Done" in check_finished_subtask:
+                frappe.throw(
+                    f"Sorry {employee.employee_name} one of the subtasks in this maintask is evaluated, you can't delete it.",
+                    frappe.PermissionError)
+                return False
+            return True
+
+    frappe.throw(f"{employee.employee_name} is not allowed to acessing {doc.maintask_name} maintask.",
+                 frappe.PermissionError)
+    return False

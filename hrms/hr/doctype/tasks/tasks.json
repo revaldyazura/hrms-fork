@@ -7,16 +7,17 @@
  "engine": "InnoDB",
  "field_order": [
   "maintask",
+  "maintask_name",
   "task_name",
   "target_time",
   "pic_task",
-  "status",
-  "maintask_name",
-  "pic_task_name"
+  "pic_task_name",
+  "created_by",
+  "status"
  ],
  "fields": [
   {
-   "description": "the parent of this task",
+   "description": "The parent of this task, filtered by status = 'open'",
    "fieldname": "maintask",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -26,15 +27,15 @@
    "reqd": 1
   },
   {
-   "description": "ID TEAM-\"Short Description\",\nSample: DS-Riset Kebutuhan \n(should same with team in maintask data)",
+   "description": "ID TEAM-\"Short Description\",\nSample: DS-Riset Kebutuhan \n(should same as team of the PIC task)",
    "fieldname": "task_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Name",
+   "label": "Title",
    "reqd": 1
   },
   {
-   "description": "expected time (in minutes) for finishing this task, can't be longer than due date of maintask",
+   "description": "Expected time (in minutes) for finishing this task",
    "fieldname": "target_time",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -42,7 +43,7 @@
    "reqd": 1
   },
   {
-   "description": "employee that assigned to do this task",
+   "description": "Employee that assigned to do this task",
    "fieldname": "pic_task",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
@@ -52,15 +53,14 @@
    "reqd": 1
   },
   {
-   "description": "the status of task",
+   "description": "The status of this task",
    "fieldname": "status",
    "fieldtype": "Select",
-   "hidden": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Open\nDone\nHold\nCancel",
-   "read_only": 1
+   "permlevel": 1
   },
   {
    "fetch_from": "maintask.maintask_name",
@@ -75,12 +75,19 @@
    "fieldtype": "Data",
    "label": "PIC Name",
    "permlevel": 2
+  },
+  {
+   "description": "The owner of this task",
+   "fieldname": "created_by",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Created By"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-04 15:01:25.274943",
+ "modified": "2025-06-17 16:17:08.261287",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tasks",

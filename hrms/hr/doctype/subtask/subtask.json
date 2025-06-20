@@ -7,84 +7,20 @@
  "engine": "InnoDB",
  "field_order": [
   "maintask",
+  "maintask_name",
   "tasks",
+  "tasks_name",
   "subtask_name",
   "target_time",
   "value",
   "pic_subtask",
+  "pic_subtask_name",
   "attachment",
   "description",
-  "status",
-  "maintask_name",
-  "tasks_name",
-  "pic_subtask_name"
+  "created_by",
+  "status"
  ],
  "fields": [
-  {
-   "description": "the parent of this subtask",
-   "fieldname": "tasks",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Task",
-   "options": "Tasks",
-   "reqd": 1
-  },
-  {
-   "description": "ID TEAM-\"Short Description\",\nSample: \"DS-Riset Kebutuhan\"",
-   "fieldname": "subtask_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Name",
-   "reqd": 1
-  },
-  {
-   "description": "expected time (in minutes) for finishing this subtask",
-   "fieldname": "target_time",
-   "fieldtype": "Int",
-   "label": "Target Time",
-   "reqd": 1
-  },
-  {
-   "description": "The value of this subtask, each number is equals to:\n1 = Basic\n2 = Intermediate\n3 = Advance",
-   "fieldname": "value",
-   "fieldtype": "Select",
-   "label": "Value",
-   "options": "1\n2\n3",
-   "reqd": 1
-  },
-  {
-   "description": "status of this subtask",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Open\nDone\nHold\nCancel",
-   "permlevel": 2
-  },
-  {
-   "fieldname": "attachment",
-   "fieldtype": "Attach",
-   "label": "Attachment"
-  },
-  {
-   "description": "the employee that responsible to finish this subtask",
-   "fieldname": "pic_subtask",
-   "fieldtype": "Link",
-   "ignore_user_permissions": 1,
-   "in_list_view": 1,
-   "label": "PIC",
-   "options": "Employee",
-   "permlevel": 1,
-   "reqd": 1
-  },
-  {
-   "description": "description of this task",
-   "fieldname": "description",
-   "fieldtype": "Text",
-   "label": "Description"
-  },
   {
    "description": "the parent of the task",
    "fieldname": "maintask",
@@ -102,11 +38,14 @@
    "permlevel": 3
   },
   {
-   "fetch_from": "pic_subtask.employee_name",
-   "fieldname": "pic_subtask_name",
-   "fieldtype": "Data",
-   "label": "PIC SubTask Name",
-   "permlevel": 3
+   "description": "the parent of this subtask",
+   "fieldname": "tasks",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Task",
+   "options": "Tasks",
+   "reqd": 1
   },
   {
    "fetch_from": "tasks.task_name",
@@ -114,12 +53,80 @@
    "fieldtype": "Data",
    "label": "Task Name",
    "permlevel": 3
+  },
+  {
+   "description": "ID TEAM-\"Short Description\",\nSample: \"DS-Riset Kebutuhan\"",
+   "fieldname": "subtask_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "description": "The expected time (in minutes) for finishing this subtask",
+   "fieldname": "target_time",
+   "fieldtype": "Int",
+   "label": "Target Time",
+   "reqd": 1
+  },
+  {
+   "description": "The value of this subtask, each number is equals to:\n1 = Basic\n2 = Intermediate\n3 = Advance",
+   "fieldname": "value",
+   "fieldtype": "Select",
+   "label": "Value",
+   "options": "1\n2\n3",
+   "reqd": 1
+  },
+  {
+   "description": "The employee that responsible to finish this subtask",
+   "fieldname": "pic_subtask",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "PIC",
+   "options": "Employee",
+   "permlevel": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "pic_subtask.employee_name",
+   "fieldname": "pic_subtask_name",
+   "fieldtype": "Data",
+   "label": "PIC SubTask Name",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  },
+  {
+   "description": "Description of this subtask",
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
+  },
+  {
+   "description": "The owner of this subtask",
+   "fieldname": "created_by",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Created By"
+  },
+  {
+   "description": "Status of this subtask",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nDone\nHold\nCancel"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-04 17:13:46.021125",
+ "modified": "2025-06-20 10:46:21.751462",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",
@@ -131,151 +138,6 @@
    "delete": 1,
    "email": 1,
    "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "select": 1,
-   "share": 1,
-   "write": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Employee",
-   "share": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "if_owner": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Leader",
-   "select": 1,
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "HR Manager",
-   "select": 1,
-   "share": 1,
-   "write": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "permlevel": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Employee",
-   "share": 1
-  },
-  {
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "if_owner": 1,
-   "permlevel": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Leader",
-   "select": 1,
-   "share": 1,
-   "write": 1
-  },
-  {
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "permlevel": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "select": 1,
-   "share": 1,
-   "write": 1
-  },
-  {
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "permlevel": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "HR Manager",
-   "select": 1,
-   "share": 1,
-   "write": 1
-  },
-  {
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "permlevel": 2,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "select": 1,
-   "share": 1,
-   "write": 1
-  },
-  {
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "permlevel": 2,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "HR Manager",
-   "select": 1,
-   "share": 1,
-   "write": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "permlevel": 2,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Leader",
-   "share": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "permlevel": 2,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Employee",
-   "share": 1
-  },
-  {
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "permlevel": 3,
    "print": 1,
    "read": 1,
    "report": 1,

@@ -144,7 +144,9 @@ permission_query_conditions = {
 #
 has_permission = {
     # "Event": "frappe.desk.doctype.event.event.has_permission",
-    # "SubTask": "hrms.hr.doctype.subtask.subtask.has_permission"
+    "SubTask": "hrms.hr.doctype.subtask.subtask.has_permission",
+    "Tasks": "hrms.hr.doctype.tasks.tasks.has_permission",
+    "MainTask": "hrms.hr.doctype.maintask.maintask.has_permission"
 }
 
 has_upload_permission = {"Employee": "erpnext.setup.doctype.employee.employee.has_upload_permission"}
@@ -218,14 +220,18 @@ doc_events = {
         "on_update": ["hrms.hr.doctype.subtask.subtask.update_fields"]
     },
     "Tasks": {
-        "on_update": ["hrms.hr.doctype.tasks.tasks.update_fields"]
+        "on_update": ["hrms.hr.doctype.tasks.tasks.update_fields"],
+        "before_save": "hrms.hr.doctype.tasks.tasks.before_save",
+        "after_delete": "hrms.hr.doctype.tasks.tasks.after_delete"
     },
     "Evaluation": {
         "on_update": ["hrms.hr.doctype.evaluation.evaluation.update_fields"],
         "after_delete": "hrms.hr.doctype.evaluation.evaluation.after_delete"
     },
     "MainTask": {
-        "on_update": "hrms.hr.doctype.maintask.maintask.update_fields"
+        "on_update": "hrms.hr.doctype.maintask.maintask.update_fields",
+        "before_save": "hrms.hr.doctype.maintask.maintask.before_save",
+        "after_delete": "hrms.hr.doctype.maintask.maintask.after_delete"
     }
 }
 

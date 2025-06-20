@@ -8,24 +8,25 @@
  "field_order": [
   "maintask_name",
   "assigned_by",
+  "assigned_by_name",
   "team",
   "assign_date",
   "due_date",
+  "created_by",
   "status",
-  "total_time",
-  "assigned_by_name"
+  "total_time"
  ],
  "fields": [
   {
-   "description": "the title of task",
+   "description": "The title of maintask",
    "fieldname": "maintask_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Name",
+   "label": "Title",
    "reqd": 1
   },
   {
-   "description": "employee who assign this task",
+   "description": "The employee who assign this task, or the project manager",
    "fieldname": "assigned_by",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
@@ -35,7 +36,7 @@
    "reqd": 1
   },
   {
-   "description": "the team that responsible for this task",
+   "description": "The team that responsible for this maintask",
    "fieldname": "team",
    "fieldtype": "Table",
    "label": "Team",
@@ -43,7 +44,7 @@
    "reqd": 1
   },
   {
-   "description": "first date of this task",
+   "description": "Start date of this maintask",
    "fieldname": "assign_date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -51,7 +52,7 @@
    "reqd": 1
   },
   {
-   "description": "deadline",
+   "description": "Deadline",
    "fieldname": "due_date",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -66,13 +67,13 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Open\nDone\nHold\nCancel",
-   "permlevel": 1,
    "show_on_timeline": 1
   },
   {
-   "description": "calculated time from assign date to due date, per 8 hours of works (in minutes)",
+   "description": "Calculated time from assign date to due date, per 8 hours of works (in minutes)",
    "fieldname": "total_time",
    "fieldtype": "Int",
+   "hidden": 1,
    "label": "Total Time (in minutes)",
    "permlevel": 1
   },
@@ -82,12 +83,19 @@
    "fieldtype": "Data",
    "label": "Assigned by Name",
    "permlevel": 1
+  },
+  {
+   "description": "The owner of this maintask",
+   "fieldname": "created_by",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Created By"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-13 10:50:15.013640",
+ "modified": "2025-06-17 18:19:45.603694",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",
@@ -103,6 +111,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manager",
    "share": 1,
    "write": 1
   }
