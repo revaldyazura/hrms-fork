@@ -1,24 +1,6 @@
 import frappe
 from frappe.query_builder.functions import Count
 
-#
-# @frappe.whitelist()
-# def get_main_task_data():
-#     data = frappe.db.sql("""
-#         SELECT
-#             mt.name AS main_task,
-#             t.name AS task,
-#             st.name AS subtask,
-#             mt.maintask_name,
-#             t.task_name,
-#             st.subtask_name,
-#             st.status
-#         FROM `tabMainTask` mt
-#         LEFT JOIN `tabTasks` t ON t.maintask = mt.name
-#         LEFT JOIN `tabSubTask` st ON st.tasks = t.name
-#         ORDER BY mt.name, t.name, st.name
-#     """, as_dict=True)
-#     return data
 
 @frappe.whitelist()
 def get_main_task_data():
@@ -67,6 +49,6 @@ def get_main_task_data():
     },
                          as_dict=True)
 
-    print(f"table data \n{data}")
+    # print(f"table data \n{data}")
 
     return data

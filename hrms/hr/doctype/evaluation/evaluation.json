@@ -99,7 +99,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-16 17:42:33.810402",
+ "modified": "2025-06-25 11:57:41.111713",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Evaluation",
@@ -122,5 +122,6 @@
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "subtask_name"
 }

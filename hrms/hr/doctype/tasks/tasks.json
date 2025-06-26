@@ -27,7 +27,7 @@
    "reqd": 1
   },
   {
-   "description": "ID TEAM-\"Short Description\",\nSample: DS-Riset Kebutuhan \n(should same as team of the PIC task)",
+   "description": "Short Description,\nSample: Riset Kebutuhan",
    "fieldname": "task_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -73,8 +73,7 @@
    "fetch_from": "pic_task.employee_name",
    "fieldname": "pic_task_name",
    "fieldtype": "Data",
-   "label": "PIC Name",
-   "permlevel": 2
+   "label": "PIC Task Name"
   },
   {
    "description": "The owner of this task",
@@ -87,7 +86,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-17 16:17:08.261287",
+ "modified": "2025-06-26 13:13:08.497190",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tasks",
@@ -103,6 +102,7 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   }

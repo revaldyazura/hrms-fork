@@ -150,6 +150,22 @@ frappe.pages['evaluation-summary'].on_page_load = function(wrapper) {
 		}
 	});
 
+	function convert_date(dateString, to_format) {
+		const dateObject = new Date(dateString);
+		const day = dateObject.getDate();
+		const month = dateObject.getMonth() + 1;
+		const fullYear = dateObject.getFullYear();
+		const formattedDay = day < 10 ? '0' + day : day;
+		const formattedMonth = month < 10 ? '0' + month : month;
+		let formattedDate = ""
+		if (to_format === "dd-mm-yyyy") {
+			formattedDate = `${formattedDay}-${formattedMonth}-${fullYear}`;
+		} else if (to_format === "yyyy-mm-dd") {
+			formattedDate = `${fullYear}-${formattedMonth}-${formattedDay}`;
+		}
+		return formattedDate
+	}
+
 	function render_table(data) {
 		const container = document.getElementById("evaluation-table");
 		container.innerHTML = "";

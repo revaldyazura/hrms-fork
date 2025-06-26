@@ -7,28 +7,29 @@ from frappe.model.document import Document
 
 
 class SubTask(Document):
-    def validate(self):
-        self.validate_subtask_name()
-        self.validate_evaluated_subtask()
+    pass
+    # def validate(self):
+        # self.validate_subtask_name()
+        # self.validate_evaluated_subtask()
 
-    def validate_subtask_name(self):
-        pic_subtask_team = frappe.db.get_value("Employee", {"name": self.pic_subtask}, "team")
-        prefix_subtask = self.subtask_name.split("-")[0].upper()
+    # def validate_subtask_name(self):
+    #     pic_subtask_team = frappe.db.get_value("Employee", {"name": self.pic_subtask}, "team")
+    #     prefix_subtask = self.subtask_name.split("-")[0].upper()
 
-        if prefix_subtask != pic_subtask_team:
-            throw(_("Please put the subtask name properly, as shown in description."))
-        else:
-            subtask_name_splitted = self.subtask_name.split("-")
-            prefix = subtask_name_splitted[0].upper()
-            subtask_name = "-".join([prefix] + subtask_name_splitted[1:])
-            self.subtask_name = subtask_name
-            self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
+    #     if prefix_subtask != pic_subtask_team:
+    #         throw(_("Please put the subtask name properly, as shown in description."))
+    #     else:
+    #         subtask_name_splitted = self.subtask_name.split("-")
+    #         prefix = subtask_name_splitted[0].upper()
+    #         subtask_name = "-".join([prefix] + subtask_name_splitted[1:])
+    #         self.subtask_name = subtask_name
+    #         self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
 
-    def validate_evaluated_subtask(self):
-        evaluation = frappe.get_value("Evaluation", {"subtask": self.name}, "subtask")
-        if evaluation:
-            employee_name = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "employee_name")
-            throw(_(f"Sorry {employee_name} this subtask is evaluated, you can't edit it."))
+    # def validate_evaluated_subtask(self):
+    #     evaluation = frappe.db.get_value("Evaluation", {"subtask": self.name}, "subtask")
+    #     if evaluation:
+    #         employee_name = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "employee_name")
+    #         throw(_(f"Sorry {employee_name} this subtask is evaluated, you can't edit it."))
 
 
 def update_fields(doc, method):

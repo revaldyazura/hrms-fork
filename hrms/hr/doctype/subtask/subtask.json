@@ -55,7 +55,7 @@
    "permlevel": 3
   },
   {
-   "description": "ID TEAM-\"Short Description\",\nSample: \"DS-Riset Kebutuhan\"",
+   "description": "Short Description,\nSample: \"Riset Kebutuhan\"",
    "fieldname": "subtask_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -92,8 +92,7 @@
    "fetch_from": "pic_subtask.employee_name",
    "fieldname": "pic_subtask_name",
    "fieldtype": "Data",
-   "label": "PIC SubTask Name",
-   "permlevel": 3
+   "label": "PIC SubTask Name"
   },
   {
    "fieldname": "attachment",
@@ -126,7 +125,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-20 10:46:21.751462",
+ "modified": "2025-06-26 11:41:11.127596",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

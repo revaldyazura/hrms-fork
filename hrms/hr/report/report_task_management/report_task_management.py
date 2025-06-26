@@ -104,11 +104,10 @@ def execute(filters=None):
                 )
             }
         )
-    #
-    # print(f"table data \n{data}")
-    # print(f"summ data \n{summ_data}")
+    print(f'data {data}\n summ data {summ_data}')
+
     chart = get_chart_data(summ_data)
-    report_summary = get_report_summary(summ_data)
+    report_summary = get_report_summary(summ_data, data)
 
     return columns, data, None, chart, report_summary
 
@@ -167,20 +166,20 @@ def get_chart_data(data):
     }
 
 
-def get_report_summary(data):
+def get_report_summary(summ_data, data):
     if not data:
         return None
 
-    avg_completion = sum(tsm["completed_subtask"] for tsm in data) / len(data)
-    total = sum([tsm["total_maintask"] for tsm in data])
+    avg_completion = sum(1 for item in data if item.get("sub_task_status") == "Done" ) / len(data) * 100
+    total = sum([tsm["total_maintask"] for tsm in summ_data])
     # total = len(set(tsm.mt_name for tsm in data))
-    completed_maintask = sum([tsm["completed_maintask"] for tsm in data])
+    completed_maintask = sum([tsm["completed_maintask"] for tsm in summ_data])
 
     return [
         {
             "value": avg_completion,
             "indicator": "Green" if avg_completion > 50 else "Red",
-            "label": _("Average Completion"),
+            "label": _("Average SubTask Completion"),
             "datatype": "Percent",
         },
         {

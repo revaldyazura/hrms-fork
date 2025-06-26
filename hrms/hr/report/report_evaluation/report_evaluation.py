@@ -3,6 +3,7 @@
 
 import frappe
 from frappe import _
+from collections import defaultdict
 
 
 def execute(filters=None):
@@ -10,50 +11,83 @@ def execute(filters=None):
     data = []
 
     user = frappe.session.user
+    employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
 
     conditions = ""
     if user != "Administrator":
-        conditions = "WHERE mt.owner = %(user)s OR mt.assigned_by = %(employee_id)s"
+        conditions = "WHERE (mt.owner = %(user)s OR mt.assigned_by = %(employee_id)s OR mt.name IN (SELECT mt2.name FROM `tabMainTask` mt2 LEFT JOIN `tabMainTask Team` mteam2 ON mt2.name = mteam2.parent WHERE mt2.owner = %(user)s OR %(employee_id)s   OR mteam2.employee = %(employee_id)s)) AND st.status = 'Done'"
+        if filters.get("maintask"):
+            conditions += " AND mt.name = %(maintask)s"
 
-    data = frappe.db.sql(f"""
-            SELECT
-                mt.maintask_name AS main_task,
-                mt.assign_date,
-                mt.due_date,
-                t.task_name AS task,
-                t.pic_task_name,
-                st.name AS st_name,
-                st.subtask_name AS sub_task,
-                st.pic_subtask_name,
-                st.target_time AS subtask_target_time,
-                st.value AS value_subtask,
-                ev.performance AS performance,
-                ev.final_target_time AS final_target_time,
-                ev.contribution AS contribution
-             FROM `tabEvaluation` ev
-            LEFT JOIN `tabSubTask` st ON st.name = ev.subtask
-            LEFT JOIN `tabTasks` t ON t.name = ev.tasks
-            LEFT JOIN `tabMainTask` mt ON ev.maintask = mt.name
-            {conditions}
-            GROUP BY  st.name
-            ORDER BY  st.name
-        """, {"user": user}, as_dict=True)
+    query = f"""
+                SELECT
+                mt.name AS mt_name,
+                    mt.maintask_name AS maintask_name,
+                    mt.assigned_by_name AS assigned_by,
+                    mt.assign_date,
+                    mt.due_date,
+                    mt.status AS mt_status,
+                    t.name AS t_name,
+                    t.task_name AS task,
+                    t.pic_task_name,
+                    st.subtask_name AS sub_task,
+                    st.pic_subtask_name,
+                    st.target_time AS subtask_target_time,
+                    st.value AS value_subtask,
+                    ev.performance AS performance,
+                    ev.final_target_time AS final_target_time,
+                    ev.contribution AS contribution
+                FROM `tabMainTask` mt
+                LEFT JOIN `tabMainTask Team` mteam ON mt.name = mteam.parent
+                LEFT JOIN `tabTasks` t ON t.maintask = mt.name
+                LEFT JOIN `tabSubTask` st ON st.tasks = t.name
+                LEFT JOIN `tabEvaluation` ev ON ev.subtask = st.name
+                {conditions}
+                GROUP BY mt.name, t.name, st.name
+                ORDER BY mt.name, t.name, st.name
+            """
+    data = frappe.db.sql(query, {"user": user, "employee_id": employee_id,
+        "maintask": filters.get("maintask")}, as_dict=True)
 
-    for tsm in data:
-        tsm["total_subtask"] = frappe.db.count("SubTask", filters={"name": tsm["st_name"]}) if tsm.get("st_name") else 0
-        tsm["evaluated_subtask"] = frappe.db.count("Evaluation", filters={"subtask": tsm["st_name"]}) if tsm.get(
-            "st_name") else 0
-
-    print(f"table data \n{data}")
+    # processed_mt = set()
+    # summ_data = []
+    # for eval in data:
+    #     if eval.mt_name in processed_mt:
+    #         continue
+    #
+    #     processed_mt.add(eval.mt_name)
+    #     summ_data.append(
+    #         {
+    #             "maintask_name": eval.maintask_name,
+    #             "pic_subtask_name": eval.pic_subtask_name,
+    #             "performance": eval.performance,
+    #             "final_target_time": eval.final_target_time,
+    #             "contribution": eval.contribution
+    #         }
+    #     )
+    #
+    # chart = get_chart_data(summ_data)
+    # report_summary = get_report_summary(summ_data)
+    #
     chart = get_chart_data(data)
     report_summary = get_report_summary(data)
 
     return columns, data, None, chart, report_summary
 
+def get_filters():
+    return [
+        {
+            "fieldname": "mt_name",
+            "label": "Main Task",
+            "fieldtype": "Link",
+            "options": "MainTask",
+            "reqd": 0
+        }
+    ]
 
 def get_columns():
     return [
-        {"label": _("Main Task"), "fieldname": "main_task", "fieldtype": "Data", "width": 200},
+        {"label": _("Main Task"), "fieldname": "maintask_name", "fieldtype": "Data", "width": 200},
         {"label": _("Assign Date"), "fieldname": "assign_date", "fieldtype": "Date", "width": 120},
         {"label": _("Due Date"), "fieldname": "due_date", "fieldtype": "Date", "width": 120},
         {"label": _("Task"), "fieldname": "task", "fieldtype": "Data", "width": 200},
@@ -69,27 +103,56 @@ def get_columns():
 
 
 def get_chart_data(data):
-    labels = []
-    performance = []
-    final_target_time = []
-    contribution = []
+    contribution_map = defaultdict(dict)
+    labels_set = set()
 
-    for eval in data:
-        labels.append(eval["main_task"])
-        performance.append(eval.get("performance", 0))
-        final_target_time.append(eval.get("final_target_time", 0))
+    for row in data:
+        maintask = row.get("maintask_name")
+        pic = row.get("pic_subtask_name")
+        contribution = row.get("contribution")
+
+        if not maintask or not pic:
+            continue
+
+        labels_set.add(maintask)
+
+        # Handle jika kontribusi disimpan dalam format string "12.5%"
+        try:
+            if isinstance(contribution, str) and "%" in contribution:
+                contribution = float(contribution.replace("%", ""))
+            else:
+                contribution = float(contribution or 0)
+        except:
+            contribution = 0
+
+        # Tambahkan kontribusi PIC untuk maintask ini
+        if pic in contribution_map:
+            contribution_map[pic][maintask] = contribution
+        else:
+            contribution_map[pic] = {maintask: contribution}
+
+    labels = sorted(list(labels_set))[:30]  # Limit maksimum 30 MainTask
+    datasets = []
+
+    for pic, contribs in contribution_map.items():
+        dataset_values = [contribs.get(label, 0) for label in labels]
+
+        datasets.append({
+            "name": pic,
+            "values": dataset_values
+        })
 
     return {
         "data": {
-            "labels": labels[:30],
-            "datasets": [
-                {"name": _("Performance"), "values": performance[:30]},
-                {"name": _("Final Target Time"), "values": final_target_time[:30]},
-            ],
+            "labels": labels,
+            "datasets": datasets
         },
         "type": "bar",
-        "colors": ["#4caf50", "#2196f3", "#ffc107"],
-        "barOptions": {"stacked": False},
+        "colors": ["#5e64ff", "#ff5858", "#00ca00", "#ffa00a", "#743ee2", "#3f8efc", "#fa8231", "#f7b731"][
+                  :len(datasets)],
+        "barOptions": {
+            "stacked": False
+        }
     }
 
 
@@ -97,27 +160,30 @@ def get_report_summary(data):
     if not data:
         return None
 
-    avg_performance = sum(e.get("performance", 0) for e in data) / len(data)
-    avg_target_time = sum(e.get("final_target_time", 0) for e in data) / len(data)
+    for row in data:
+        contribution = row.get("contribution")
+        try:
+            if isinstance(contribution, str) and "%" in contribution:
+                contribution = float(contribution.replace("%", ""))
+                row["contribution"] = contribution
+            else:
+                contribution = float(contribution or 0)
+                row["contribution"] = contribution
+        except:
+            contribution = 0
+            row["contribution"] = contribution
+
+    avg_performance = sum(e.get("performance", 0) for e in data if e.get("performance")) / len(data)
+    avg_target_time = sum(e.get("final_target_time", 0) for e in data if e.get("final_target_time")) / len(data)
+    avg_contribution = sum(e.get("contribution", 0) for e in data if e.get("contribution")) / len(data)
+
 
     return [
-        {
-            "value": sum(e.get("total_subtask", 0) for e in data),
-            "indicator": "Red",
-            "label": _("Total Subtask"),
-            "datatype": "Int",
-        },
-        {
-            "value": sum(e.get("evaluated_subtask", 0) for e in data),
-            "indicator": "Black" if avg_performance >= 70 else "Red",
-            "label": _("Evaluated SubTask"),
-            "datatype": "Int",
-        },
         {
             "value": round(avg_performance, 2),
             "indicator": "Green" if avg_performance >= 70 else "Red",
             "label": _("Avg Performance"),
-            "datatype": "Percent",
+            "datatype": "Float",
         },
         {
             "value": round(avg_target_time, 2),

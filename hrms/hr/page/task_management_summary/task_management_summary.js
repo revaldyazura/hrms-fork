@@ -154,6 +154,22 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 		}
 	});
 
+	function convert_date(dateString, to_format) {
+		const dateObject = new Date(dateString);
+		const day = dateObject.getDate();
+		const month = dateObject.getMonth() + 1;
+		const fullYear = dateObject.getFullYear();
+		const formattedDay = day < 10 ? '0' + day : day;
+		const formattedMonth = month < 10 ? '0' + month : month;
+		let formattedDate = ""
+		if (to_format === "dd-mm-yyyy") {
+			formattedDate = `${formattedDay}-${formattedMonth}-${fullYear}`;
+		} else if (to_format === "yyyy-mm-dd") {
+			formattedDate = `${fullYear}-${formattedMonth}-${formattedDay}`;
+		}
+		return formattedDate
+	}
+
 	function render_table(data) {
 		const container = document.getElementById("main-task-table");
 		container.innerHTML = "";
@@ -217,7 +233,7 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				td.rowSpan = mainTaskRowspan[row.mt_name];
 				td.className = "bullet-list";
 
-				// Pisahkan string menjadi array dan buat bullet list
+
 				let members = row.team_members ? row.team_members.split(',').map(s => s.trim()) : [];
 				if (members.length > 0) {
 					const ul = document.createElement("ul");
@@ -236,13 +252,13 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				// Assign Date
 				td = document.createElement("td");
 				td.rowSpan = mainTaskRowspan[row.mt_name];
-				td.textContent = row.assign_date || "-";
+				td.textContent = convert_date(row.assign_date, "dd-mm-yyyy") || "-";
 				tr.appendChild(td);
 
 				// Due Date
 				td = document.createElement("td");
 				td.rowSpan = mainTaskRowspan[row.mt_name];
-				td.textContent = row.due_date || "-";
+				td.textContent = convert_date(row.due_date, "dd-mm-yyyy") || "-";
 				tr.appendChild(td);
 
 				renderedMainTask[row.mt_name] = true;
