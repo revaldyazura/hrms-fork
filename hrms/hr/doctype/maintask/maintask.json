@@ -79,6 +79,7 @@
   },
   {
    "fetch_from": "assigned_by.employee_name",
+   "fetch_if_empty": 1,
    "fieldname": "assigned_by_name",
    "fieldtype": "Data",
    "label": "Assigned by Name",
@@ -95,7 +96,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-17 18:19:45.603694",
+ "modified": "2025-06-30 14:42:20.441762",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",

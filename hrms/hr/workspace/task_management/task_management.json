@@ -1,0 +1,60 @@
+{
+ "app": "hrms",
+ "charts": [],
+ "content": "[{\"id\":\"p7FUDyRFw8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Management Task</span>\",\"col\":12}},{\"id\":\"BDZPTByqkd\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"MainTask\",\"col\":6}},{\"id\":\"2AMd7L3CHh\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Task\",\"col\":6}},{\"id\":\"VWWEvWWlXA\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Sub Task\",\"col\":6}},{\"id\":\"myj2mWizSr\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Evaluation\",\"col\":6}}]",
+ "creation": "2025-06-19 12:38:53.286306",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "workflow",
+ "idx": 1,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Task Management",
+ "link_type": "DocType",
+ "links": [],
+ "modified": "2025-06-30 16:10:45.631704",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "Task Management",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [
+  {
+   "document_type": "MainTask",
+   "label": "MainTask",
+   "quick_list_filter": "[[\"MainTask\",\"assign_date\",\"Timespan\",\"this month\",false]]"
+  },
+  {
+   "document_type": "Tasks",
+   "label": "Task",
+   "quick_list_filter": "[[\"Tasks\",\"creation\",\"Timespan\",\"this month\",false]]"
+  },
+  {
+   "document_type": "SubTask",
+   "label": "Sub Task",
+   "quick_list_filter": "[[\"SubTask\",\"creation\",\"Timespan\",\"this month\",false]]"
+  },
+  {
+   "document_type": "Evaluation",
+   "label": "Evaluation",
+   "quick_list_filter": "[[\"Evaluation\",\"creation\",\"Timespan\",\"this month\",false]]"
+  }
+ ],
+ "roles": [
+  {
+   "role": "Employee"
+  },
+  {
+   "role": "Leader"
+  }
+ ],
+ "sequence_id": 11.0,
+ "shortcuts": [],
+ "title": "Task Management",
+ "type": "Workspace"
+}

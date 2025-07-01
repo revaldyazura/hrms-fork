@@ -1,4 +1,4 @@
-frappe.pages['evaluation-summary'].on_page_load = function(wrapper) {
+frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 	var page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: 'Evaluation Summary',
@@ -14,8 +14,8 @@ frappe.pages['evaluation-summary'].on_page_load = function(wrapper) {
 <!--			<input type="text" id="filter-pic-subtask" placeholder="Filter PIC SubTask" class="form-control">-->
 		</div>
 		<div class="filter-row">
-			<input type="date" id="filter-start-date" class="form-control" placeholder="Start Date">
-			<input type="date" id="filter-end-date" class="form-control" placeholder="End Date">
+			<input type="text" id="filter-start-date" class="form-control" placeholder="Assign Date" onfocus="(this.type='date')"  onblur="(this.type='text')">
+			<input type="text" id="filter-end-date" class="form-control" placeholder="Due Date" onfocus="(this.type='date')" onblur="(this.type='text')">
 		</div>
 		<div class="filter-actions" style="text-align: right;">
 			<button id="reset-filters" class="btn btn-secondary">Reset Filters</button>
@@ -98,7 +98,7 @@ frappe.pages['evaluation-summary'].on_page_load = function(wrapper) {
 
 					const startDate = $('#filter-start-date').val();
 					const endDate = $('#filter-end-date').val();
-					if (startDate && endDate && startDate > endDate) {
+					if ((startDate && endDate) && (startDate > endDate)) {
 						frappe.msgprint("You can't put start date over the due date, please change it okay.");
 						return;
 					}
@@ -251,13 +251,13 @@ frappe.pages['evaluation-summary'].on_page_load = function(wrapper) {
 				// Assign Date
 				td = document.createElement("td");
 				td.rowSpan = mainTaskRowspan[row.mt_name];
-				td.textContent = row.assign_date || "-";
+				td.textContent = convert_date(row.assign_date, "dd-mm-yyyy") || "-";
 				tr.appendChild(td);
 
 				// Due Date
 				td = document.createElement("td");
 				td.rowSpan = mainTaskRowspan[row.mt_name];
-				td.textContent = row.due_date || "-";
+				td.textContent = convert_date(row.due_date, "dd-mm-yyyy") || "-";
 				tr.appendChild(td);
 
 				renderedMainTask[row.mt_name] = true;

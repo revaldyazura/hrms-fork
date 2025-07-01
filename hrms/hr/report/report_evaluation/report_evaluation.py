@@ -127,7 +127,7 @@ def get_chart_data(data):
 
         # Tambahkan kontribusi PIC untuk maintask ini
         if pic in contribution_map:
-            contribution_map[pic][maintask] = contribution
+            contribution_map[pic][maintask] = contribution_map[pic].get(maintask, 0) + contribution
         else:
             contribution_map[pic] = {maintask: contribution}
 
@@ -142,6 +142,8 @@ def get_chart_data(data):
             "values": dataset_values
         })
 
+    print('contribution maps:\n', contribution_map)
+    print('datasets:\n', datasets)
     return {
         "data": {
             "labels": labels,

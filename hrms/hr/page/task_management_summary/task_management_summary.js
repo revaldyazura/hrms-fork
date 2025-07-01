@@ -15,8 +15,8 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 			<input type="text" id="filter-pic-subtask" placeholder="Filter PIC SubTask" class="form-control">
 		</div>
 		<div class="filter-row">
-			<input type="date" id="filter-start-date" class="form-control" placeholder="Start Date">
-			<input type="date" id="filter-end-date" class="form-control" placeholder="End Date">
+			<input type="text" id="filter-start-date" class="form-control" placeholder="Assign Date" onfocus="(this.type='date')"  onblur="(this.type='text')">
+			<input type="text" id="filter-end-date" class="form-control" placeholder="Due Date" onfocus="(this.type='date')" onblur="(this.type='text')">
 			<select id="filter-subtask-status" class="form-control">
 				<option value="">Sub Task Status</option>
 				<option value="Open" style="color: blue">Open</option>
