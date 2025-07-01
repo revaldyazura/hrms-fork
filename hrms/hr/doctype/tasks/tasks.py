@@ -7,22 +7,14 @@ from frappe.model.document import Document
 
 
 class Tasks(Document):
-    pass
-    # def validate(self):
-    #     self.validate_task_name()
+    
+    def validate(self):
+        self.validate_task_name()
 
-    # def validate_task_name(self):
-    #     pic_task_team = frappe.db.get_value("Employee", {"name": self.pic_task}, "team")
-    #     prefix_task = self.task_name.split("-")[0].upper()
-
-    #     if prefix_task != pic_task_team:
-    #         throw(_("Please put the task name properly, as shown in description."))
-    #     else:
-    #         task_name_splitted = self.task_name.split("-")
-    #         prefix = task_name_splitted[0].upper()
-    #         task_name = "-".join([prefix] + task_name_splitted[1:])
-    #         self.task_name = task_name
-    #         self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
+    def validate_task_name(self):
+        maintask_name = frappe.db.get_value("MainTask", {"name": self.maintask}, "maintask_name")
+        self.maintask_name = maintask_name if maintask_name else ""
+        self.pic_task_name = frappe.db.get_value("Employee", {"name": self.pic_task}, "employee_name")
 
 
 def before_save(doc, method):

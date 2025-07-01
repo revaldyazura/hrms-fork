@@ -78,8 +78,6 @@
    "permlevel": 1
   },
   {
-   "fetch_from": "assigned_by.employee_name",
-   "fetch_if_empty": 1,
    "fieldname": "assigned_by_name",
    "fieldtype": "Data",
    "label": "Assigned by Name",
@@ -96,7 +94,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-30 14:42:20.441762",
+ "modified": "2025-07-01 13:02:53.043222",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",

@@ -7,23 +7,17 @@ from frappe.model.document import Document
 
 
 class SubTask(Document):
-    pass
-    # def validate(self):
-        # self.validate_subtask_name()
+    def validate(self):
+         self.validate_subtask_name()
+
+    def validate_subtask_name(self):
+        self.maintask_name = frappe.db.get_value("MainTask", {"name":self.maintask}, "maintask_name")
+        self.tasks_name = frappe.db.get_value("Tasks", {"name":self.tasks},"task_name")
+        self.pic_subtask_name = frappe.db.get_value("Employee", {"name": self.pic_subtask}, "employee_name")
+    # def validate_pic_subtask_name(self)
+    #     self.
+
         # self.validate_evaluated_subtask()
-
-    # def validate_subtask_name(self):
-    #     pic_subtask_team = frappe.db.get_value("Employee", {"name": self.pic_subtask}, "team")
-    #     prefix_subtask = self.subtask_name.split("-")[0].upper()
-
-    #     if prefix_subtask != pic_subtask_team:
-    #         throw(_("Please put the subtask name properly, as shown in description."))
-    #     else:
-    #         subtask_name_splitted = self.subtask_name.split("-")
-    #         prefix = subtask_name_splitted[0].upper()
-    #         subtask_name = "-".join([prefix] + subtask_name_splitted[1:])
-    #         self.subtask_name = subtask_name
-    #         self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
 
     # def validate_evaluated_subtask(self):
     #     evaluation = frappe.db.get_value("Evaluation", {"subtask": self.name}, "subtask")

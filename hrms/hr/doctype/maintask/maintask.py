@@ -22,6 +22,8 @@ class MainTask(Document):
 
     def validate_maintask_data(self):
         self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
+        full_name = frappe.db.get_value("Employee", {"name": self.assigned_by}, "employee_name")
+        self.assigned_by_name = full_name if full_name else ""
 
 
 def before_save(doc, method):

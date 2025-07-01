@@ -63,14 +63,12 @@
    "permlevel": 1
   },
   {
-   "fetch_from": "maintask.maintask_name",
    "fieldname": "maintask_name",
    "fieldtype": "Data",
    "label": "Maintask Name",
    "permlevel": 2
   },
   {
-   "fetch_from": "pic_task.employee_name",
    "fieldname": "pic_task_name",
    "fieldtype": "Data",
    "label": "PIC Task Name"
@@ -86,7 +84,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-26 13:13:08.497190",
+ "modified": "2025-07-01 13:56:48.671750",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tasks",
