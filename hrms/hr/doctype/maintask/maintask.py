@@ -11,6 +11,7 @@ from frappe.utils import getdate, today
 
 class MainTask(Document):
     def validate(self):
+        print("validate maintask called")
         self.validate_date()
         self.validate_maintask_data()
 
@@ -27,12 +28,14 @@ class MainTask(Document):
 
 
 def before_save(doc, method):
+    print("before save maintask called")
     if doc.get('__islocal'):
         doc.flags._previous_status = None
     else:
         doc.flags._previous_status = frappe.db.get_value("MainTask", doc.name, "status")
 
 def after_delete(doc, method):
+    print("after delete maintask called")
     subtasks = frappe.get_all("SubTask", {"maintask": doc.name})
     for subtask in subtasks:
         if subtask.status != "Done":
@@ -43,6 +46,7 @@ def update_fields(doc, method):
         frappe.msgprint('In update MainTask')
         return
     frappe.flags.in_update = True
+    print("update maintask called")
 
     previous_status = doc.flags.get("_previous_status")
     now_status = doc.status
@@ -125,6 +129,7 @@ def user_edit_maintask(maintask_name):
 
 
 def has_permission(doc, ptype, user):
+    print("permission maintask called")
     if user == "Administrator":
         return True
 

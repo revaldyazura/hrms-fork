@@ -173,11 +173,14 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 		// Hitung rowspan
 		const mainTaskRowspan = {};
 		const taskRowspan = {};
+		const picTaskRowspan = {};
 
 		data.forEach(row => {
 			mainTaskRowspan[row.mt_name] = (mainTaskRowspan[row.mt_name] || 0) + 1;
 			const key = `${row.mt_name}|||${row.t_name}`;
 			taskRowspan[key] = (taskRowspan[key] || 0) + 1;
+			const picKey = `${row.t_name}|||${row.pic_task_user_id}`;
+			picTaskRowspan[picKey] = (picTaskRowspan[picKey] || 0) + 1;
 		});
 
 		const table = document.createElement("table");
@@ -187,12 +190,9 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 		<thead>
 			<tr>
 				<th>Main Task</th>
-<!--				<th>Assigned By</th>-->
-<!--				<th>Team</th>-->
 				<th>Assign Date</th>
 				<th>Due Date</th>
 				<th>Task</th>
-<!--				<th>Task Target Time</th>-->
 				<th>PIC Task</th>
 				<th>Sub Task</th>
 				<th>Sub Task Target Time</th>
@@ -201,7 +201,6 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 				<th>Performance</th>
 				<th>Final Target Time</th>
 				<th>Contribution</th>
-<!--				<th>Sub Task Status</th>-->
 			</tr>
 		</thead>
 		<tbody></tbody>
@@ -210,8 +209,12 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 		const tbody = table.querySelector("tbody");
 		const renderedMainTask = {};
 		const renderedTask = {};
+		const renderedTaskPic = {};
+		const renderedSubTask = {};
 
 		data.forEach(row => {
+			const isOwnerSubtask = row.pic_task_user_id === row.sub_task_owner
+
 			const tr = document.createElement("tr");
 
 			// Main Task Cell
@@ -220,33 +223,6 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 				td.rowSpan = mainTaskRowspan[row.mt_name];
 				td.textContent = row.maintask_name || "-";
 				tr.appendChild(td);
-
-				// Assigned By
-				// td = document.createElement("td");
-				// td.rowSpan = mainTaskRowspan[row.mt_name];
-				// td.textContent = row.assigned_by || "-";
-				// tr.appendChild(td);
-
-				// Team
-				// td = document.createElement("td");
-				// td.rowSpan = mainTaskRowspan[row.mt_name];
-				// td.className = "bullet-list";
-
-				// Pisahkan string menjadi array dan buat bullet list
-				// let members = row.team_members ? row.team_members.split(',').map(s => s.trim()) : [];
-				// if (members.length > 0) {
-				// 	const ul = document.createElement("ul");
-				// 	members.forEach(member => {
-				// 		const li = document.createElement("li");
-				// 		li.textContent = member;
-				// 		ul.appendChild(li);
-				// 	});
-				// 	td.appendChild(ul);
-				// } else {
-				// 	td.textContent = "-";
-				// }
-				//
-				// tr.appendChild(td);
 
 				// Assign Date
 				td = document.createElement("td");
@@ -273,70 +249,56 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 				td.textContent = row.task || "-";
 				tr.appendChild(td);
 
-				// Task Target Time
-				// td = document.createElement("td");
-				// td.rowSpan = taskRowspan[taskKey];
-				// td.textContent = row.target_time || "-";
-				// tr.appendChild(td);
+				renderedTask[taskKey] = true;
+			} 
 
+			const picKey = `${row.t_name}|||${row.pic_task_user_id}`;
+			if (!renderedTaskPic[picKey]) {
 				// PIC Task
-				td = document.createElement("td");
-				td.rowSpan = taskRowspan[taskKey];
-				td.textContent = row.pic_task_name || "-";
+				let td = document.createElement("td");
+				td.rowSpan = picTaskRowspan[picKey];
+				td.textContent = row.task_pic_name || "-";
+				tr.appendChild(td);
+				renderedTaskPic[picKey] = true;
+			}
+			
+			if (isOwnerSubtask) {
+				// Sub Task
+				let td = document.createElement("td");
+				td.textContent = row.sub_task || "-";
 				tr.appendChild(td);
 
-				renderedTask[taskKey] = true;
+				// Sub Task Target Time
+				td = document.createElement("td");
+				td.textContent = row.subtask_target_time || "-";
+				tr.appendChild(td);
+
+				// PIC Sub Task
+				td = document.createElement("td");
+				td.textContent = row.pic_subtask_name || "-";
+				tr.appendChild(td);
+
+				// Value
+				td = document.createElement("td");
+				td.textContent = row.value_subtask || "-";
+				tr.appendChild(td);
+
+				// Performance
+				td = document.createElement("td");
+				td.textContent = row.performance || "-";
+				tr.appendChild(td);
+
+				// Final Target Time
+				td = document.createElement("td");
+				td.textContent = row.final_target_time || "-";
+				tr.appendChild(td);
+
+				// Contribution
+				td = document.createElement("td");
+				td.textContent = row.contribution || "-";
+				tr.appendChild(td);
 			}
-
-			// Sub Task
-			let td = document.createElement("td");
-			td.textContent = row.sub_task || "-";
-			tr.appendChild(td);
-
-			// Sub Task Target Time
-			td = document.createElement("td");
-			td.textContent = row.subtask_target_time || "-";
-			tr.appendChild(td);
-
-			// PIC Sub Task
-			td = document.createElement("td");
-			td.textContent = row.pic_subtask_name || "-";
-			tr.appendChild(td);
-
-			// Value
-			td = document.createElement("td");
-			td.textContent = row.value_subtask || "-";
-			tr.appendChild(td);
-
-			// Sub Task Status
-			// td = document.createElement("td");
-			// if (row.sub_task_status == "Open") {
-			// 	td.style.color = "blue"
-			// } else if (row.sub_task_status == "Done") {
-			// 	td.style.color = "green"
-			// } else if (row.sub_task_status == "Hold") {
-			// 	td.style.color = "orange"
-			// } else if (row.sub_task_status == "Cancel") {
-			// 	td.style.color = "red"
-			// }
-			// td.textContent = row.sub_task_status || "-";
-			// tr.appendChild(td);
-
-			// Performance
-			td = document.createElement("td");
-			td.textContent = row.performance || "-";
-			tr.appendChild(td);
-
-			// Final Target Time
-			td = document.createElement("td");
-			td.textContent = row.final_target_time || "-";
-			tr.appendChild(td);
-
-			// Contribution
-			td = document.createElement("td");
-			td.textContent = row.contribution || "-";
-			tr.appendChild(td);
-
+			console.log('column subtask', row.sub_task);
 			tbody.appendChild(tr);
 		});
 

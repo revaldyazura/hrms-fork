@@ -11,11 +11,16 @@
   "final_target_time",
   "contribution",
   "pic_subtask",
-  "tasks",
   "maintask",
+  "maintask_name",
+  "tasks",
+  "task_name",
   "subtask_name",
+  "value_subtask",
   "pic_subtask_name",
-  "created_by"
+  "created_by",
+  "subtask_open_date",
+  "subtask_done_date"
  ],
  "fields": [
   {
@@ -94,12 +99,47 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Created By"
+  },
+  {
+   "fetch_from": "subtask.value",
+   "fetch_if_empty": 1,
+   "fieldname": "value_subtask",
+   "fieldtype": "Data",
+   "label": "Value SubTask",
+   "permlevel": 1
+  },
+  {
+   "fetch_from": "maintask.maintask_name",
+   "fieldname": "maintask_name",
+   "fieldtype": "Data",
+   "label": "Main Task Name",
+   "permlevel": 1
+  },
+  {
+   "fetch_from": "tasks.task_name",
+   "fieldname": "task_name",
+   "fieldtype": "Data",
+   "label": "Task Name",
+   "permlevel": 1
+  },
+  {
+   "fetch_from": "subtask.subtask_open_date",
+   "fieldname": "subtask_open_date",
+   "fieldtype": "Date",
+   "label": "Sub Task Open Date",
+   "permlevel": 1
+  },
+  {
+   "fetch_from": "subtask.subtask_done_date",
+   "fieldname": "subtask_done_date",
+   "fieldtype": "Date",
+   "label": "Sub Task Done Date"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-25 11:57:41.111713",
+ "modified": "2025-07-04 13:27:12.595606",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Evaluation",

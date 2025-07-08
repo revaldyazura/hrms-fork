@@ -15,7 +15,7 @@
  "label": "Task Management",
  "link_type": "DocType",
  "links": [],
- "modified": "2025-06-30 16:10:45.631704",
+ "modified": "2025-07-02 21:08:40.142525",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Task Management",
@@ -27,7 +27,7 @@
   {
    "document_type": "MainTask",
    "label": "MainTask",
-   "quick_list_filter": "[[\"MainTask\",\"assign_date\",\"Timespan\",\"this month\",false]]"
+   "quick_list_filter": "[[\"MainTask\",\"creation\",\"Timespan\",\"this month\",false]]"
   },
   {
    "document_type": "Tasks",

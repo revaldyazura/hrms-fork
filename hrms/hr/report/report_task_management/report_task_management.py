@@ -68,7 +68,7 @@ def execute(filters=None):
             GROUP BY mt.name, t.name, st.name
             ORDER BY mt.name, t.name, st.name
         """
-    print(f'query summary task is {query}')
+    # print(f'query summary task is {query}')
     data = frappe.db.sql(query, {
         "user": user,
         "employee_id": employee_id,
@@ -104,7 +104,7 @@ def execute(filters=None):
                 )
             }
         )
-    print(f'data {data}\n summ data {summ_data}')
+    # print(f'data {data}\n summ data {summ_data}')
 
     chart = get_chart_data(summ_data)
     report_summary = get_report_summary(summ_data, data)

@@ -8,12 +8,20 @@
  "field_order": [
   "maintask",
   "maintask_name",
-  "task_name",
-  "target_time",
   "pic_task",
+  "column_break_cjye",
+  "task_name",
+  "status",
   "pic_task_name",
-  "created_by",
-  "status"
+  "section_break_esmb",
+  "task_pic",
+  "section_break_sezh",
+  "target_time",
+  "target_time_minutes",
+  "column_break_adts",
+  "unit_target_time",
+  "section_break_lgyb",
+  "created_by"
  ],
  "fields": [
   {
@@ -35,7 +43,7 @@
    "reqd": 1
   },
   {
-   "description": "Expected time (in minutes) for finishing this task",
+   "description": "Expected time for finishing this task, in hours or minutes",
    "fieldname": "target_time",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -46,11 +54,11 @@
    "description": "Employee that assigned to do this task",
    "fieldname": "pic_task",
    "fieldtype": "Link",
+   "hidden": 1,
    "ignore_user_permissions": 1,
-   "in_list_view": 1,
    "label": "PIC",
    "options": "Employee",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "description": "The status of this task",
@@ -71,7 +79,9 @@
   {
    "fieldname": "pic_task_name",
    "fieldtype": "Data",
-   "label": "PIC Task Name"
+   "hidden": 1,
+   "label": "PIC Task Name",
+   "read_only": 1
   },
   {
    "description": "The owner of this task",
@@ -79,12 +89,52 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Created By"
+  },
+  {
+   "fieldname": "column_break_cjye",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "unit_target_time",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Unit of Target Time",
+   "options": "Hours\nMinutes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_lgyb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "target_time_minutes",
+   "fieldtype": "Int",
+   "label": "Target Time Minutes"
+  },
+  {
+   "fieldname": "section_break_sezh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_adts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_esmb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "task_pic",
+   "fieldtype": "Table",
+   "label": "Task PICs",
+   "options": "Task PIC",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-01 13:56:48.671750",
+ "modified": "2025-07-07 13:33:42.979039",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tasks",

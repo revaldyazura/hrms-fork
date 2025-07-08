@@ -24,6 +24,18 @@ frappe.ui.form.on("Tasks", {
 				}
 			};
 		});
+		frm.fields_dict["task_pic"].grid.get_field("employee").get_query = function (doc, cdt, cdn) {
+			if (!frm.doc.maintask) {
+				frappe.msgprint("Choose the main task field first.");
+				return {};
+			}
+			return {
+				query: "hrms.hr.doctype.tasks.tasks.get_employees_by_role_and_team",
+				filters: {
+					maintask: frm.doc.maintask
+				}
+			};
+		};
 		if (!frm.is_new()) {
 			frappe.call({
 				method: "hrms.hr.doctype.tasks.tasks.user_edit_tasks",
@@ -32,7 +44,7 @@ frappe.ui.form.on("Tasks", {
 				},
 				callback: function (r) {
 					const readonly_fields = ['target_time', 'maintask', "pic_task"];
-					if (r.message === "pic_task") {
+					if (r.message === "pic_task" || r.message === "task_pics") {
 						readonly_fields.forEach(field => {
 							frm.set_df_property(field, "read_only", 1);
 						});

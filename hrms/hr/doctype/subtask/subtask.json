@@ -7,18 +7,29 @@
  "engine": "InnoDB",
  "field_order": [
   "maintask",
-  "maintask_name",
   "tasks",
+  "column_break_vzkj",
+  "maintask_name",
   "tasks_name",
+  "section_break_fkhk",
   "subtask_name",
-  "target_time",
-  "value",
   "pic_subtask",
   "pic_subtask_name",
-  "attachment",
-  "description",
+  "column_break_fdww",
+  "value",
+  "status",
+  "section_break_ddaa",
+  "target_time",
+  "target_time_minutes",
+  "column_break_wgoc",
+  "unit_target_time",
+  "section_break_tkdb",
   "created_by",
-  "status"
+  "subtask_open_date",
+  "subtask_done_date",
+  "submission_tab",
+  "attachment",
+  "description"
  ],
  "fields": [
   {
@@ -33,8 +44,7 @@
   {
    "fieldname": "maintask_name",
    "fieldtype": "Data",
-   "label": "MainTask Name",
-   "permlevel": 3
+   "label": "MainTask Name"
   },
   {
    "description": "the parent of this subtask",
@@ -99,7 +109,7 @@
   {
    "description": "Description of this subtask",
    "fieldname": "description",
-   "fieldtype": "Text",
+   "fieldtype": "Text Editor",
    "label": "Description"
   },
   {
@@ -117,12 +127,63 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Open\nDone\nHold\nCancel"
+  },
+  {
+   "fieldname": "subtask_open_date",
+   "fieldtype": "Date",
+   "label": "Sub Task Open Date"
+  },
+  {
+   "fieldname": "subtask_done_date",
+   "fieldtype": "Date",
+   "label": "Sub Task Done Date"
+  },
+  {
+   "fieldname": "column_break_vzkj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ddaa",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_tkdb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "submission_tab",
+   "fieldtype": "Tab Break",
+   "label": "Submission"
+  },
+  {
+   "fieldname": "target_time_minutes",
+   "fieldtype": "Int",
+   "label": "Target Time Minutes"
+  },
+  {
+   "fieldname": "column_break_wgoc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "unit_target_time",
+   "fieldtype": "Select",
+   "label": "Unit of Target Time",
+   "options": "Hours\nMinutes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_fkhk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_fdww",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-01 14:03:07.550807",
+ "modified": "2025-07-07 15:27:49.729286",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

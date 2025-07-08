@@ -49,26 +49,6 @@ def execute(filters=None):
     data = frappe.db.sql(query, {"user": user, "employee_id": employee_id,
         "maintask": filters.get("maintask")}, as_dict=True)
 
-    # processed_mt = set()
-    # summ_data = []
-    # for eval in data:
-    #     if eval.mt_name in processed_mt:
-    #         continue
-    #
-    #     processed_mt.add(eval.mt_name)
-    #     summ_data.append(
-    #         {
-    #             "maintask_name": eval.maintask_name,
-    #             "pic_subtask_name": eval.pic_subtask_name,
-    #             "performance": eval.performance,
-    #             "final_target_time": eval.final_target_time,
-    #             "contribution": eval.contribution
-    #         }
-    #     )
-    #
-    # chart = get_chart_data(summ_data)
-    # report_summary = get_report_summary(summ_data)
-    #
     chart = get_chart_data(data)
     report_summary = get_report_summary(data)
 
@@ -142,8 +122,6 @@ def get_chart_data(data):
             "values": dataset_values
         })
 
-    print('contribution maps:\n', contribution_map)
-    print('datasets:\n', datasets)
     return {
         "data": {
             "labels": labels,
@@ -192,11 +170,5 @@ def get_report_summary(data):
             "indicator": "Blue",
             "label": _("Avg Final Target Time"),
             "datatype": "Float",
-        },
-        # {
-        #     "value": round(avg_contribution, 2),
-        #     "indicator": "Orange" if avg_contribution < 50 else "Green",
-        #     "label": _("Avg Contribution"),
-        #     "datatype": "Percent",
-        # },
+        }
     ]

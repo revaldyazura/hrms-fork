@@ -9,11 +9,13 @@
   "maintask_name",
   "assigned_by",
   "assigned_by_name",
-  "team",
+  "column_break_iomx",
   "assign_date",
   "due_date",
-  "created_by",
   "status",
+  "section_break_wtby",
+  "team",
+  "created_by",
   "total_time"
  ],
  "fields": [
@@ -89,12 +91,20 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Created By"
+  },
+  {
+   "fieldname": "column_break_iomx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_wtby",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-01 13:02:53.043222",
+ "modified": "2025-07-07 10:47:09.369780",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",

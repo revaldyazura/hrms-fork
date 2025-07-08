@@ -11,7 +11,6 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 		<div class="filter-row">
 			<input type="text" id="filter-maintask" placeholder="Filter Main Task" class="form-control">
 			<input type="text" id="filter-assigned-by" placeholder="Filter Assigned By" class="form-control">
-			<input type="text" id="filter-pic-task" placeholder="Filter PIC Task" class="form-control">
 			<input type="text" id="filter-pic-subtask" placeholder="Filter PIC SubTask" class="form-control">
 		</div>
 		<div class="filter-row">
@@ -93,7 +92,8 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 	`);
 
 	frappe.call({
-		method: "hrms.hr.page.task_management_summary.task_management_summary.get_main_task_data",
+		method: "hrms.hr.page.task_management_summary.task_management_summary.get_task_report_data",
+		// method: "hrms.hr.page.task_management_summary.task_management_summary.get_main_task_data",
 		callback: function (r) {
 			if (r.message) {
 				console.log('data result: ', r.message)
@@ -111,7 +111,7 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 						frappe.msgprint("You can't put start date over the due date, please change it okay.");
 						return;
 					}
-					const picTask = $('#filter-pic-task').val().toLowerCase();
+					// const picTask = $('#filter-pic-task').val().toLowerCase();
 					const picSubtask = $('#filter-pic-subtask').val().toLowerCase();
 					const status = $('#filter-subtask-status').val().toLowerCase();
 
@@ -128,7 +128,7 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 							(!maintask || (row.maintask_name || "").toLowerCase().includes(maintask)) &&
 							(!assignedBy || (row.assigned_by || "").toLowerCase().includes(assignedBy)) &&
 							isInDateRange &&
-							(!picTask || (row.pic_task_name || "").toLowerCase().includes(picTask)) &&
+							// (!picTask || (row.pic_task_name || "").toLowerCase().includes(picTask)) &&
 							(!picSubtask || (row.pic_subtask_name || "").toLowerCase().includes(picSubtask)) &&
 							(!status || (row.sub_task_status || "").toLowerCase() === status)
 						);
@@ -138,12 +138,12 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				}
 
 				// Trigger on input change
-				$('#filter-maintask, #filter-assigned-by, #filter-start-date, #filter-end-date, #filter-pic-task, #filter-pic-subtask, #filter-subtask-status')
+				$('#filter-maintask, #filter-assigned-by, #filter-start-date, #filter-end-date,  #filter-pic-subtask, #filter-subtask-status')
 					.on('input change', applyFilters);
 				$('#reset-filters').on('click', function () {
 					$('#filter-maintask').val('');
 					$('#filter-assigned-by').val('');
-					$('#filter-pic-task').val('');
+					// $('#filter-pic-task').val('');
 					$('#filter-pic-subtask').val('');
 					$('#filter-start-date').val('');
 					$('#filter-end-date').val('');
@@ -177,11 +177,14 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 		// Hitung rowspan
 		const mainTaskRowspan = {};
 		const taskRowspan = {};
+		const picTaskRowspan = {};
 
 		data.forEach(row => {
 			mainTaskRowspan[row.mt_name] = (mainTaskRowspan[row.mt_name] || 0) + 1;
 			const key = `${row.mt_name}|||${row.t_name}`;
 			taskRowspan[key] = (taskRowspan[key] || 0) + 1;
+			const picKey = `${row.t_name}|||${row.pic_task_user_id}`;
+			picTaskRowspan[picKey] = (picTaskRowspan[picKey] || 0) + 1;
 		});
 
 		const table = document.createElement("table");
@@ -211,8 +214,12 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 		const tbody = table.querySelector("tbody");
 		const renderedMainTask = {};
 		const renderedTask = {};
+		const renderedTaskPic = {};
+
 
 		data.forEach(row => {
+			const isOwnerSubtask = row.pic_task_user_id === row.sub_task_owner
+
 			const tr = document.createElement("tr");
 
 			// Main Task Cell
@@ -280,52 +287,204 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				td.textContent = row.target_time || "-";
 				tr.appendChild(td);
 
-				// PIC Task
-				td = document.createElement("td");
-				td.rowSpan = taskRowspan[taskKey];
-				td.textContent = row.pic_task_name || "-";
-				tr.appendChild(td);
-
 				renderedTask[taskKey] = true;
 			}
 
-			// Sub Task
-			let td = document.createElement("td");
-			td.textContent = row.sub_task || "-";
-			tr.appendChild(td);
-
-			// Sub Task Target Time
-			td = document.createElement("td");
-			td.textContent = row.subtask_target_time || "-";
-			tr.appendChild(td);
-
-			// PIC Sub Task
-			td = document.createElement("td");
-			td.textContent = row.pic_subtask_name || "-";
-			tr.appendChild(td);
-
-			// Value
-			td = document.createElement("td");
-			td.textContent = row.value_subtask || "-";
-			tr.appendChild(td);
-
-			// Sub Task Status
-			td = document.createElement("td");
-			if (row.sub_task_status == "Open") {
-				td.style.color = "blue"
-			} else if (row.sub_task_status == "Done") {
-				td.style.color = "green"
-			} else if (row.sub_task_status == "Hold") {
-				td.style.color = "orange"
-			} else if (row.sub_task_status == "Cancel") {
-				td.style.color = "red"
+			const picKey = `${row.t_name}|||${row.pic_task_user_id}`;
+			if (!renderedTaskPic[picKey]) {
+				// PIC Task
+				let td = document.createElement("td");
+				td.rowSpan = picTaskRowspan[picKey];
+				td.textContent = row.task_pic_name || "-";
+				tr.appendChild(td);
+				renderedTaskPic[picKey] = true;
 			}
-			td.textContent = row.sub_task_status || "-";
-			tr.appendChild(td);
+			
+			if (isOwnerSubtask) {// Sub Task
+				let td = document.createElement("td");
+				td.textContent = row.sub_task || "-";
+				tr.appendChild(td);
 
+				td = document.createElement("td");
+				td.textContent = row.subtask_target_time || "-";
+				tr.appendChild(td);
+
+				td = document.createElement("td");
+				td.textContent = row.pic_subtask_name || "-";
+				tr.appendChild(td);
+
+				td = document.createElement("td");
+				td.textContent = row.value_subtask || "-";
+				tr.appendChild(td);
+
+				td = document.createElement("td");
+				td.textContent = row.sub_task_status || "-";
+				if (row.sub_task_status === "Open") td.style.color = "blue";
+				else if (row.sub_task_status === "Done") td.style.color = "green";
+				else if (row.sub_task_status === "Hold") td.style.color = "orange";
+				else if (row.sub_task_status === "Cancel") td.style.color = "red";
+				tr.appendChild(td);
+
+			} 
 			tbody.appendChild(tr);
+
 		});
 
 		container.appendChild(table);
 	}
+
+	// function render_table(data) {
+	// 	const container = document.getElementById("main-task-table");
+	// 	container.innerHTML = "";
+
+	// 	// Buat struktur data: mt → task → pic_task → [subtask]
+	// 	const grouped = {};
+	// 	data.forEach(row => {
+	// 		// hanya tampilkan subtask milik pic
+	// 		if (row.pic_task_user_id !== row.sub_task_owner) return;
+
+	// 		if (!grouped[row.mt_name]) grouped[row.mt_name] = { row, tasks: {} };
+	// 		if (!grouped[row.mt_name].tasks[row.t_name]) {
+	// 			grouped[row.mt_name].tasks[row.t_name] = {};
+	// 		}
+	// 		if (!grouped[row.mt_name].tasks[row.t_name][row.pic_task_user_id]) {
+	// 			grouped[row.mt_name].tasks[row.t_name][row.pic_task_user_id] = {
+	// 				pic_task_name: row.task_pic_name,
+	// 				subtasks: []
+	// 			};
+	// 		}
+
+	// 		grouped[row.mt_name].tasks[row.t_name][row.pic_task_user_id].subtasks.push(row);
+	// 	});
+
+	// 	// Bangun tabel
+	// 	const table = document.createElement("table");
+	// 	table.className = "table table-bordered";
+	// 	table.style.width = "100%";
+	// 	table.innerHTML = `
+	// 	<thead>
+	// 		<tr>
+	// 			<th>Main Task</th>
+	// 			<th>Assigned By</th>
+	// 			<th>Team</th>
+	// 			<th>Assign Date</th>
+	// 			<th>Due Date</th>
+	// 			<th>Task</th>
+	// 			<th>Task Target Time</th>
+	// 			<th>PIC Task</th>
+	// 			<th>Sub Task</th>
+	// 			<th>Sub Task Target Time</th>
+	// 			<th>PIC Sub Task</th>
+	// 			<th>Value</th>
+	// 			<th>Sub Task Status</th>
+	// 		</tr>
+	// 	</thead>
+	// 	<tbody></tbody>
+	// `;
+
+	// 	const tbody = table.querySelector("tbody");
+
+	// 	for (const [mt_name, mt_group] of Object.entries(grouped)) {
+	// 		let mtRendered = false;
+	// 		const mt_rowspan = Object.values(mt_group.tasks)
+	// 			.flatMap(t => Object.values(t).map(pic => pic.subtasks.length))
+	// 			.reduce((a, b) => a + b, 0);
+
+	// 		for (const [t_name, task_group] of Object.entries(mt_group.tasks)) {
+	// 			for (const [pic_user_id, pic_data] of Object.entries(task_group)) {
+	// 				const subtasks = pic_data.subtasks;
+	// 				const task_rowspan = subtasks.length;
+
+	// 				subtasks.forEach((row, index) => {
+	// 					const tr = document.createElement("tr");
+
+	// 					// Main Task info
+	// 					if (!mtRendered) {
+	// 						let td = document.createElement("td");
+	// 						td.rowSpan = mt_rowspan;
+	// 						td.textContent = row.maintask_name || "-";
+	// 						tr.appendChild(td);
+
+	// 						td = document.createElement("td");
+	// 						td.rowSpan = mt_rowspan;
+	// 						td.textContent = row.assigned_by || "-";
+	// 						tr.appendChild(td);
+
+	// 						td = document.createElement("td");
+	// 						td.rowSpan = mt_rowspan;
+	// 						td.className = "bullet-list";
+	// 						const ul = document.createElement("ul");
+	// 						row.team_members.split(',').map(s => s.trim()).forEach(member => {
+	// 							const li = document.createElement("li");
+	// 							li.textContent = member;
+	// 							ul.appendChild(li);
+	// 						});
+	// 						td.appendChild(ul);
+	// 						tr.appendChild(td);
+
+	// 						td = document.createElement("td");
+	// 						td.rowSpan = mt_rowspan;
+	// 						td.textContent = convert_date(row.assign_date, "dd-mm-yyyy") || "-";
+	// 						tr.appendChild(td);
+
+	// 						td = document.createElement("td");
+	// 						td.rowSpan = mt_rowspan;
+	// 						td.textContent = convert_date(row.due_date, "dd-mm-yyyy") || "-";
+	// 						tr.appendChild(td);
+
+	// 						mtRendered = true;
+	// 					}
+
+	// 					// Task info
+	// 					if (index === 0) {
+	// 						let td = document.createElement("td");
+	// 						td.rowSpan = task_rowspan;
+	// 						td.textContent = row.task || "-";
+	// 						tr.appendChild(td);
+
+	// 						td = document.createElement("td");
+	// 						td.rowSpan = task_rowspan;
+	// 						td.textContent = row.target_time || "-";
+	// 						tr.appendChild(td);
+
+	// 						td = document.createElement("td");
+	// 						td.rowSpan = task_rowspan;
+	// 						td.textContent = pic_data.pic_task_name || "-";
+	// 						tr.appendChild(td);
+	// 					}
+
+	// 					// SubTask info
+	// 					let td = document.createElement("td");
+	// 					td.textContent = row.sub_task || "-";
+	// 					tr.appendChild(td);
+
+	// 					td = document.createElement("td");
+	// 					td.textContent = row.subtask_target_time || "-";
+	// 					tr.appendChild(td);
+
+	// 					td = document.createElement("td");
+	// 					td.textContent = row.pic_subtask_name || "-";
+	// 					tr.appendChild(td);
+
+	// 					td = document.createElement("td");
+	// 					td.textContent = row.value_subtask || "-";
+	// 					tr.appendChild(td);
+
+	// 					td = document.createElement("td");
+	// 					td.textContent = row.sub_task_status || "-";
+	// 					td.style.color = row.sub_task_status === "Open" ? "blue" :
+	// 						row.sub_task_status === "Done" ? "green" :
+	// 							row.sub_task_status === "Hold" ? "orange" :
+	// 								row.sub_task_status === "Cancel" ? "red" : "";
+	// 					tr.appendChild(td);
+
+	// 					tbody.appendChild(tr);
+	// 				});
+	// 			}
+	// 		}
+	// 	}
+
+	// 	container.appendChild(table);
+	// }
+
 }
