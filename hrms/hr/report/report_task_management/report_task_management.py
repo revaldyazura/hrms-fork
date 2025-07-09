@@ -1,6 +1,17 @@
 import frappe
 from frappe import _
 
+def get_team_members_map():
+    team_data = frappe.db.sql("""
+        SELECT
+            mteam.parent AS main_task,
+            GROUP_CONCAT(emp.employee_name SEPARATOR ', ') AS members
+        FROM `tabMainTask Team` mteam
+        LEFT JOIN `tabEmployee` emp ON mteam.employee = emp.name
+        GROUP BY mteam.parent
+    """, as_dict=True)
+
+    return {row["main_task"]: row["members"] for row in team_data}
 
 def execute(filters=None):
     columns = get_columns()
@@ -46,13 +57,14 @@ def execute(filters=None):
             mt.name AS mt_name,
                 mt.maintask_name AS maintask_name,
                 mt.assigned_by_name AS assigned_by,
-                GROUP_CONCAT(emp.employee_name SEPARATOR ', ') AS team_members,
                 mt.assign_date,
                 mt.due_date,
                 mt.status AS mt_status,
                 t.task_name AS task,
                 t.target_time,
-                t.pic_task_name,
+                emp.user_id AS pic_task_user_id,
+                emp.employee_name AS pic_task_name,
+                st.owner AS sub_task_owner,
                 st.name AS st_name,
                 st.subtask_name AS sub_task,
                 st.pic_subtask_name,
@@ -60,13 +72,13 @@ def execute(filters=None):
                 st.value AS value_subtask,
                 st.status AS sub_task_status
             FROM `tabMainTask` mt
-            LEFT JOIN `tabMainTask Team` mteam ON mt.name = mteam.parent
-            LEFT JOIN `tabEmployee` emp ON mteam.employee = emp.name
+--             LEFT JOIN `tabMainTask Team` mteam ON mt.name = mteam.parent
             LEFT JOIN `tabTasks` t ON t.maintask = mt.name
+            LEFT JOIN `tabTask PIC` tp ON tp.parent = t.name
+            LEFT JOIN `tabEmployee` emp ON tp.employee = emp.name
             LEFT JOIN `tabSubTask` st ON st.tasks = t.name
             {conditions}
-            GROUP BY mt.name, t.name, st.name
-            ORDER BY mt.name, t.name, st.name
+            ORDER BY mt.name, t.name, tp.employee, st.name
         """
     # print(f'query summary task is {query}')
     data = frappe.db.sql(query, {
@@ -75,6 +87,11 @@ def execute(filters=None):
         "status": filters.get("status")
     },
                          as_dict=True)
+
+    team_map = get_team_members_map()
+
+    for row in data:
+        row["team_members"] = team_map.get(row["mt_name"], "")
 
     processed_mt = set()
     summ_data = []

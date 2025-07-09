@@ -15,7 +15,6 @@ def get_team_members_map():
 
 @frappe.whitelist()
 def get_evaluation_data():
-    data = []
 
     user = frappe.session.user
     employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
@@ -43,7 +42,6 @@ def get_evaluation_data():
                     mt.status AS mt_status,
                     t.name AS t_name,
                     t.task_name AS task,
---                     t.target_time,
                     emp_tp.user_id AS pic_task_user_id,
                     emp_tp.employee_name AS task_pic_name,
                     st.owner AS sub_task_owner,
@@ -70,9 +68,9 @@ def get_evaluation_data():
         # "status": filters.get("status")
     },
                          as_dict=True)
-    team_map = get_team_members_map()
-    for row in data:
-        row["team_members"] = team_map.get(row["mt_name"], "")
+    # team_map = get_team_members_map()
+    # for row in data:
+    #     row["team_members"] = team_map.get(row["mt_name"], "")
 
 
     return data

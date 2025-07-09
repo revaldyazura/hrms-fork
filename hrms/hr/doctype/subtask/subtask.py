@@ -45,7 +45,7 @@ def update_fields(doc, method):
     print("update fields subtask called")
     task = frappe.get_doc("Tasks", doc.tasks)
     maintask = frappe.get_doc("MainTask", task.maintask)
-    doc.maintask = maintask
+    doc.maintask = maintask.name
     if doc.status == 'Done':
         doc.subtask_done_date = datetime.strptime(doc.modified, "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
             doc.modified, str) else doc.modified.date()

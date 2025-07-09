@@ -8,7 +8,6 @@ from collections import defaultdict
 
 def execute(filters=None):
     columns = get_columns()
-    data = []
 
     user = frappe.session.user
     employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
@@ -29,7 +28,9 @@ def execute(filters=None):
                     mt.status AS mt_status,
                     t.name AS t_name,
                     t.task_name AS task,
-                    t.pic_task_name,
+                    emp_tp.user_id AS pic_task_user_id,
+                    emp_tp.employee_name AS pic_task_name,
+                    st.owner AS sub_task_owner,
                     st.subtask_name AS sub_task,
                     st.pic_subtask_name,
                     st.target_time AS subtask_target_time,
@@ -40,11 +41,12 @@ def execute(filters=None):
                 FROM `tabMainTask` mt
                 LEFT JOIN `tabMainTask Team` mteam ON mt.name = mteam.parent
                 LEFT JOIN `tabTasks` t ON t.maintask = mt.name
+                LEFT JOIN `tabTask PIC` tp ON tp.parent = t.name
+                LEFT JOIN `tabEmployee` emp_tp ON tp.employee = emp_tp.name
                 LEFT JOIN `tabSubTask` st ON st.tasks = t.name
                 LEFT JOIN `tabEvaluation` ev ON ev.subtask = st.name
                 {conditions}
-                GROUP BY mt.name, t.name, st.name
-                ORDER BY mt.name, t.name, st.name
+                ORDER BY mt.name, t.name, tp.employee, st.name
             """
     data = frappe.db.sql(query, {"user": user, "employee_id": employee_id,
         "maintask": filters.get("maintask")}, as_dict=True)
