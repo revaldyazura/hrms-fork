@@ -1,0 +1,225 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "CANDIDATE-.#####",
+ "creation": "2025-07-04 09:49:46.825330",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_section",
+  "tanggal_diproses",
+  "applicant_name",
+  "source",
+  "column_break_fxop",
+  "designation",
+  "status",
+  "recruiter_tab",
+  "pemilihan_recruiter_section",
+  "team",
+  "team_name",
+  "interviewer",
+  "interview_summary",
+  "summary_attachment",
+  "conclusion_tab",
+  "final_recruitment_decision_section",
+  "applicant_rating",
+  "recommendation",
+  "recruitment_summary",
+  "final_attachment",
+  "invitationrejectionletter_tab",
+  "letter_tab",
+  "letter_attach",
+  "invitationrejection_letter"
+ ],
+ "fields": [
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Applicant Details"
+  },
+  {
+   "fieldname": "tanggal_diproses",
+   "fieldtype": "Date",
+   "label": "Date Processed",
+   "reqd": 1
+  },
+  {
+   "bold": 1,
+   "fieldname": "applicant_name",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "label": "Applicant Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "label": "Source",
+   "options": "Job Applicant Source",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_fxop",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Recruitment Status",
+   "options": "Open\nNeed Decision\nReached Out\nNo Response After Reach Out\nPhone Interview\nCall Not Answered\nPsychological Test\nHR Interview\nTechnical Test\nUser Interview\nOffering Declined\nOffer Accepted (Hired)\nHold\nNot Available\nApplicant Withdrawal\nRejected\nBlacklist\nTalent Pool",
+   "reqd": 1
+  },
+  {
+   "fieldname": "applicant_rating",
+   "fieldtype": "Rating",
+   "label": "Applicant Rating"
+  },
+  {
+   "fieldname": "pemilihan_recruiter_section",
+   "fieldtype": "Section Break",
+   "label": "Recruiter Details"
+  },
+  {
+   "fieldname": "interviewer",
+   "fieldtype": "Select",
+   "label": "Interviewer"
+  },
+  {
+   "fieldname": "interview_summary",
+   "fieldtype": "Text",
+   "label": "Interview Summary"
+  },
+  {
+   "fieldname": "summary_attachment",
+   "fieldtype": "Attach",
+   "label": "Interview Summary Attachment"
+  },
+  {
+   "fieldname": "final_recruitment_decision_section",
+   "fieldtype": "Section Break",
+   "label": "Final Recruitment Decision"
+  },
+  {
+   "fieldname": "recommendation",
+   "fieldtype": "Select",
+   "label": "Recommendation",
+   "options": "Not yet\nRecommended\nNot Recommended"
+  },
+  {
+   "default": "0",
+   "fieldname": "invitationrejection_letter",
+   "fieldtype": "Check",
+   "label": "Letter Sent"
+  },
+  {
+   "fieldname": "recruitment_summary",
+   "fieldtype": "Long Text",
+   "label": "Recruitment Summary"
+  },
+  {
+   "fieldname": "final_attachment",
+   "fieldtype": "Attach",
+   "label": "Final Decision Attachment"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "team.employee_name",
+   "fieldname": "team_name",
+   "fieldtype": "Data",
+   "label": "Team Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "recruiter_tab",
+   "fieldtype": "Tab Break",
+   "label": "Recruiter"
+  },
+  {
+   "fieldname": "conclusion_tab",
+   "fieldtype": "Tab Break",
+   "label": "Conclusion"
+  },
+  {
+   "fieldname": "invitationrejectionletter_tab",
+   "fieldtype": "Tab Break",
+   "label": "Letter"
+  },
+  {
+   "fieldname": "letter_tab",
+   "fieldtype": "Section Break",
+   "label": "Invitation or Rejection Letter"
+  },
+  {
+   "fieldname": "letter_attach",
+   "fieldtype": "Attach",
+   "label": "Letter Attachment"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-07-04 17:56:00.861245",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "Pipeline Recruitment",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "applicant_name"
+}
