@@ -395,7 +395,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-06-17 17:39:00.197471",
+ "modified": "2025-07-09 21:16:56.047851",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Overview",
@@ -405,8 +405,15 @@
  "public": 1,
  "quick_lists": [],
  "restrict_to_domain": "",
- "roles": [],
- "sequence_id": 1.0,
+ "roles": [
+  {
+   "role": "HR User"
+  },
+  {
+   "role": "HR Manager"
+  }
+ ],
+ "sequence_id": 2.0,
  "shortcuts": [
   {
    "color": "Grey",

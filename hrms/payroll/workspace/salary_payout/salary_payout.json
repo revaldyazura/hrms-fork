@@ -376,7 +376,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-01-15 17:26:05.803755",
+ "modified": "2025-07-09 19:32:13.599945",
  "modified_by": "Administrator",
  "module": "Payroll",
  "name": "Salary Payout",
@@ -385,7 +385,11 @@
  "parent_page": "",
  "public": 1,
  "quick_lists": [],
- "roles": [],
+ "roles": [
+  {
+   "role": "HR User"
+  }
+ ],
  "sequence_id": 9.0,
  "shortcuts": [
   {
@@ -402,6 +406,7 @@
    "doc_view": "List",
    "label": "Salary Register",
    "link_to": "Salary Register",
+   "report_ref_doctype": "Salary Slip",
    "type": "Report"
   },
   {

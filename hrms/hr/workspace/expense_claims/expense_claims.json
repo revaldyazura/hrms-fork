@@ -257,7 +257,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-01-15 16:41:35.604928",
+ "modified": "2025-07-09 19:28:49.413750",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Expense Claims",
@@ -266,7 +266,11 @@
  "parent_page": "",
  "public": 1,
  "quick_lists": [],
- "roles": [],
+ "roles": [
+  {
+   "role": "HR User"
+  }
+ ],
  "sequence_id": 6.0,
  "shortcuts": [
   {

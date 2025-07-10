@@ -184,7 +184,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-01-15 16:43:55.517031",
+ "modified": "2025-07-09 19:30:20.578448",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Recruitment",
@@ -199,7 +199,11 @@
    "quick_list_filter": "{\"scheduled_on\":[\"Timespan\",\"this week\"],\"docstatus\":[\"!=\",\"2\"]}"
   }
  ],
- "roles": [],
+ "roles": [
+  {
+   "role": "HR User"
+  }
+ ],
  "sequence_id": 3.0,
  "shortcuts": [
   {

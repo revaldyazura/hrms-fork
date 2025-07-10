@@ -242,7 +242,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-04-11 16:43:18.393364",
+ "modified": "2025-07-09 19:29:47.773413",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Shift & Attendance",
@@ -251,7 +251,11 @@
  "parent_page": "",
  "public": 1,
  "quick_lists": [],
- "roles": [],
+ "roles": [
+  {
+   "role": "HR User"
+  }
+ ],
  "sequence_id": 4.0,
  "shortcuts": [
   {

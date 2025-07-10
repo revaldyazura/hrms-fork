@@ -136,7 +136,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-01-15 17:16:28.335505",
+ "modified": "2025-07-09 19:32:33.279619",
  "modified_by": "Administrator",
  "module": "Payroll",
  "name": "Tax & Benefits",
@@ -145,7 +145,11 @@
  "parent_page": "",
  "public": 1,
  "quick_lists": [],
- "roles": [],
+ "roles": [
+  {
+   "role": "HR User"
+  }
+ ],
  "sequence_id": 10.0,
  "shortcuts": [
   {
@@ -169,6 +173,7 @@
    "doc_view": "List",
    "label": "Income Tax Computation",
    "link_to": "Income Tax Computation",
+   "report_ref_doctype": "Salary Slip",
    "type": "Report"
   }
  ],

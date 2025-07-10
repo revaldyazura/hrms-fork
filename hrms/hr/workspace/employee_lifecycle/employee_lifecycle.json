@@ -290,7 +290,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-01-15 17:24:06.430487",
+ "modified": "2025-07-09 19:30:12.007119",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Employee Lifecycle",
@@ -315,7 +315,11 @@
    "quick_list_filter": "{\"relieving_date\":[\"Timespan\",\"this month\"]}"
   }
  ],
- "roles": [],
+ "roles": [
+  {
+   "role": "HR User"
+  }
+ ],
  "sequence_id": 2.0,
  "shortcuts": [
   {
