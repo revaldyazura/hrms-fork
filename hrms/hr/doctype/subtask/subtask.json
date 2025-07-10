@@ -6,6 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "parent1_section",
   "maintask",
   "tasks",
   "column_break_vzkj",
@@ -17,6 +18,7 @@
   "pic_subtask_name",
   "column_break_fdww",
   "value",
+  "subtask_type",
   "status",
   "section_break_ddaa",
   "target_time",
@@ -28,6 +30,7 @@
   "subtask_open_date",
   "subtask_done_date",
   "submission_tab",
+  "submission_section",
   "attachment",
   "description"
  ],
@@ -144,11 +147,13 @@
   },
   {
    "fieldname": "section_break_ddaa",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Time"
   },
   {
    "fieldname": "section_break_tkdb",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Additional"
   },
   {
    "fieldname": "submission_tab",
@@ -173,17 +178,36 @@
   },
   {
    "fieldname": "section_break_fkhk",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Data"
   },
   {
    "fieldname": "column_break_fdww",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "subtask_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "Data Analyst\nDB Programming\nData Viz\nAI/ML\nPrompt Eng\nBig Data Viz\nAI Agents\nLLM & Fine Tuning\nProgramming\nTesting\nObserver\nSystem Design\nCode Versioning + Deployment\nGraphic Design\nUser Interface\nUX Design\nData Scrapper\nHardware\nOS\nNetworking\nCloud Computing\nInfrastruktur Kontainer\nMS Office\nMedia Sosial\nDokumentasi\nDomain Knowledge Expert\nBusiness Process Expert",
+   "reqd": 1
+  },
+  {
+   "fieldname": "parent1_section",
+   "fieldtype": "Section Break",
+   "label": "Parent"
+  },
+  {
+   "fieldname": "submission_section",
+   "fieldtype": "Section Break",
+   "label": "Submission"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-07 15:27:49.729286",
+ "modified": "2025-07-10 15:06:23.005285",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

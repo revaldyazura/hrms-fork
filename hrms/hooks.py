@@ -8,6 +8,7 @@ required_apps = ["frappe/erpnext"]
 source_link = "http://github.com/frappe/hrms"
 app_logo_url = "/assets/hrms/images/frappe-hr-logo.svg"
 app_home = "/app/homepage"
+app_home_original = "/app/overview"
 
 add_to_apps_screen = [
 	{

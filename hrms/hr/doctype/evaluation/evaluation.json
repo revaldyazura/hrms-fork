@@ -6,25 +6,31 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "data_section",
   "subtask",
   "performance",
-  "final_target_time",
-  "contribution",
   "pic_subtask",
-  "maintask",
-  "maintask_name",
-  "tasks",
-  "task_name",
+  "pic_subtask_name",
+  "subtask_open_date",
+  "column_break_wqas",
   "subtask_name",
   "value_subtask",
-  "pic_subtask_name",
-  "created_by",
-  "subtask_open_date",
-  "subtask_done_date"
+  "final_target_time",
+  "contribution",
+  "subtask_type",
+  "subtask_done_date",
+  "parents_section",
+  "maintask",
+  "maintask_name",
+  "column_break_uffw",
+  "tasks",
+  "task_name",
+  "additional_section",
+  "created_by"
  ],
  "fields": [
   {
-   "description": "the finished subtask that wants to reviewed",
+   "description": "The finished subtask that wants to reviewed",
    "fieldname": "subtask",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -33,13 +39,14 @@
    "reqd": 1
   },
   {
-   "description": "the grade of the selected subtask, the grade can't be over than 120",
+   "description": "The grade of the selected subtask, it can't be over than 120",
    "fieldname": "performance",
    "fieldtype": "Int",
    "label": "Performance",
    "reqd": 1
   },
   {
+   "description": "Will available after all subtask in the same maintask is evaluated",
    "fieldname": "contribution",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -74,6 +81,7 @@
    "permlevel": 1
   },
   {
+   "description": "(Target Time*Performance)/100",
    "fieldname": "final_target_time",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -134,12 +142,42 @@
    "fieldname": "subtask_done_date",
    "fieldtype": "Date",
    "label": "Sub Task Done Date"
+  },
+  {
+   "fieldname": "data_section",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "column_break_wqas",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "parents_section",
+   "fieldtype": "Section Break",
+   "label": "Parents"
+  },
+  {
+   "fieldname": "column_break_uffw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "additional_section",
+   "fieldtype": "Section Break",
+   "label": "Additional"
+  },
+  {
+   "fetch_from": "subtask.subtask_type",
+   "fieldname": "subtask_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Type"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-04 13:27:12.595606",
+ "modified": "2025-07-10 15:06:13.099206",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Evaluation",

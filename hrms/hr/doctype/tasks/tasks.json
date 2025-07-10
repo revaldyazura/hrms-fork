@@ -6,6 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "data_section",
   "maintask",
   "maintask_name",
   "pic_task",
@@ -104,7 +105,8 @@
   },
   {
    "fieldname": "section_break_lgyb",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Additional"
   },
   {
    "fieldname": "target_time_minutes",
@@ -113,28 +115,37 @@
   },
   {
    "fieldname": "section_break_sezh",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Time"
   },
   {
    "fieldname": "column_break_adts",
    "fieldtype": "Column Break"
   },
   {
+   "description": "The team members that responsible for this task",
    "fieldname": "section_break_esmb",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "PIC"
   },
   {
+   "description": "You're able to choose multiple employee as the PIC",
    "fieldname": "task_pic",
    "fieldtype": "Table",
    "label": "Task PICs",
    "options": "Task PIC",
    "reqd": 1
+  },
+  {
+   "fieldname": "data_section",
+   "fieldtype": "Section Break",
+   "label": "Data"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-07 13:33:42.979039",
+ "modified": "2025-07-10 14:46:31.434147",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tasks",

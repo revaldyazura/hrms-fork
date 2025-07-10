@@ -6,6 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "data_section",
   "maintask_name",
   "assigned_by",
   "assigned_by_name",
@@ -15,6 +16,7 @@
   "status",
   "section_break_wtby",
   "team",
+  "additional_section",
   "created_by",
   "total_time"
  ],
@@ -38,7 +40,7 @@
    "reqd": 1
   },
   {
-   "description": "The team that responsible for this maintask",
+   "description": "Add multiple employee as the team members of this maintask, the choosen employee can assigned as PIC in task & subtask (you have to include yourself too)",
    "fieldname": "team",
    "fieldtype": "Table",
    "label": "Team",
@@ -97,14 +99,26 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "The team that responsible for this maintask",
    "fieldname": "section_break_wtby",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Team"
+  },
+  {
+   "fieldname": "data_section",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "additional_section",
+   "fieldtype": "Section Break",
+   "label": "Additional"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-07 10:47:09.369780",
+ "modified": "2025-07-10 14:44:35.857316",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",
