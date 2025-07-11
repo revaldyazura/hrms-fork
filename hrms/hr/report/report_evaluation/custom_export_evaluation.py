@@ -73,7 +73,6 @@ def export_individual_evaluation(filters=None):
 
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
-    # print(f'query {query}\nConditions eval report pic {conditions}')
     data = frappe.db.sql(query, values, as_dict=True)
     employee_filename = data[0].get('pic_subtask_name')
 
@@ -104,7 +103,7 @@ def export_individual_evaluation(filters=None):
     format_cache = {}
     sheet.set_column("A:I", 20)
 
-    headers = ["Employee", "MainTask", "Task", "SubTask", "SubTask Type", "Value SubTask", "Performance",
+    headers = ["Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "Performance",
                "Final Target Time",
                "Final Contribution"]
     for col, h in enumerate(headers):
@@ -113,12 +112,12 @@ def export_individual_evaluation(filters=None):
     start_row = 1
     row = start_row
 
-    data.sort(key=lambda x: (x["pic_subtask_name"], x["maintask_name"], x["task_name"]))
+    data.sort(key=lambda x: (x["pic_subtask_name"], x["maintask"], x["tasks"]))
 
     for emp_key, emp_rows in groupby(data, key=lambda x: x["pic_subtask_name"]):
         emp_rows = list(emp_rows)
         emp_row_start = row
-        for mt_key, mt_rows in groupby(emp_rows, key=lambda x: x["maintask_name"]):
+        for mt_key, mt_rows in groupby(emp_rows, key=lambda x: x["maintask"]):
             mt_rows = list(mt_rows)
             mt_row_start = row
             if mt_key not in main_task_color_map:
@@ -134,7 +133,7 @@ def export_individual_evaluation(filters=None):
                 })
             colored_format = format_cache[bg_color]
 
-            for t_key, t_rows in groupby(mt_rows, key=lambda x: x["task_name"]):
+            for t_key, t_rows in groupby(mt_rows, key=lambda x: x["tasks"]):
                 t_rows = list(t_rows)
                 t_row_start = row
                 for tr in t_rows:
@@ -156,14 +155,14 @@ def export_individual_evaluation(filters=None):
 
                 # Merge Task
                 if row - t_row_start > 1:
-                    sheet.merge_range(t_row_start, 2, row - 1, 2, t_key, colored_format)
+                    sheet.merge_range(t_row_start, 3, row - 1, 3, t_rows[0].get("task_name", t_key), colored_format)
                 else:
-                    sheet.write(t_row_start, 2, t_key, colored_format)
+                    sheet.write(t_row_start, 3, t_rows[0].get("task_name", t_key), colored_format)
             # Merge Main Task
             if row - mt_row_start > 1:
-                sheet.merge_range(mt_row_start, 1, row - 1, 1, mt_key, colored_format)
+                sheet.merge_range(mt_row_start, 2, row - 1, 2, mt_rows[0].get("maintask_name", mt_key), colored_format)
             else:
-                sheet.write(mt_row_start, 1, mt_key, colored_format)
+                sheet.write(mt_row_start, 2, mt_rows[0].get("maintask_name", mt_key), colored_format)
         # Merge Employee
         if row - emp_row_start > 1:
             sheet.merge_range(emp_row_start, 0, row - 1, 0, emp_key, center_format)
@@ -215,8 +214,11 @@ def export_team_evaluation(filters=None):
     filters = frappe.parse_json(filters or '{}')
 
     query = """SELECT ev.pic_subtask_name,
+                      ev.maintask,
                       ev.maintask_name,
+                      ev.tasks,
                       ev.task_name,
+                      ev.subtask,
                       ev.subtask_name,
                       ev.subtask_type,
                       ev.value_subtask,
@@ -246,7 +248,6 @@ def export_team_evaluation(filters=None):
 
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
-    # print(f'query {query}\nConditions eval report pic {conditions}')
     data = frappe.db.sql(query, values, as_dict=True)
     team_filename = data[0].get('team')
 
@@ -277,7 +278,7 @@ def export_team_evaluation(filters=None):
     format_cache = {}
     sheet.set_column("A:J", 20)
 
-    headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "Value SubTask", "Performance",
+    headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "Performance",
                "Final Target Time",
                "Final Contribution"]
     for col, h in enumerate(headers):
@@ -286,7 +287,7 @@ def export_team_evaluation(filters=None):
     start_row = 1
     row = start_row
 
-    data.sort(key=lambda x: (x["team"], x["pic_subtask_name"], x["maintask_name"], x["task_name"]))
+    data.sort(key=lambda x: (x["team"], x["pic_subtask_name"], x["maintask"], x["tasks"]))
 
     for team_key, team_rows in groupby(data, key=lambda x: x["team"]):
         team_rows = list(team_rows)
@@ -294,7 +295,7 @@ def export_team_evaluation(filters=None):
         for emp_key, emp_rows in groupby(team_rows, key=lambda x: x["pic_subtask_name"]):
             emp_rows = list(emp_rows)
             emp_row_start = row
-            for mt_key, mt_rows in groupby(emp_rows, key=lambda x: x["maintask_name"]):
+            for mt_key, mt_rows in groupby(emp_rows, key=lambda x: x["maintask"]):
                 mt_rows = list(mt_rows)
                 mt_row_start = row
                 if mt_key not in main_task_color_map:
@@ -310,7 +311,7 @@ def export_team_evaluation(filters=None):
                     })
                 colored_format = format_cache[bg_color]
 
-                for t_key, t_rows in groupby(mt_rows, key=lambda x: x["task_name"]):
+                for t_key, t_rows in groupby(mt_rows, key=lambda x: x["tasks"]):
                     t_rows = list(t_rows)
                     t_row_start = row
                     for tr in t_rows:
@@ -332,14 +333,15 @@ def export_team_evaluation(filters=None):
 
                     # Merge Task
                     if row - t_row_start > 1:
-                        sheet.merge_range(t_row_start, 3, row - 1, 3, t_key, colored_format)
+                        sheet.merge_range(t_row_start, 3, row - 1, 3, t_rows[0].get("task_name", t_key), colored_format)
                     else:
-                        sheet.write(t_row_start, 3, t_key, colored_format)
+                        sheet.write(t_row_start, 3, t_rows[0].get("task_name", t_key), colored_format)
                 # Merge Main Task
                 if row - mt_row_start > 1:
-                    sheet.merge_range(mt_row_start, 2, row - 1, 2, mt_key, colored_format)
+                    sheet.merge_range(mt_row_start, 2, row - 1, 2, mt_rows[0].get("maintask_name", mt_key),
+                                      colored_format)
                 else:
-                    sheet.write(mt_row_start, 2, mt_key, colored_format)
+                    sheet.write(mt_row_start, 2, mt_rows[0].get("maintask_name", mt_key), colored_format)
             # Merge Employee
             if row - emp_row_start > 1:
                 sheet.merge_range(emp_row_start, 1, row - 1, 1, emp_key, center_format)
@@ -351,37 +353,94 @@ def export_team_evaluation(filters=None):
         else:
             sheet.write(team_row_start, 0, team_key, center_format)
 
-    data_row = row
-    sheet.merge_range(row, 0, row, 5, "Average", header_format)
-    sheet.write_formula(row, 6, f'=AVERAGE(G2:G{data_row})', additional_data_format)
-    sheet.write_formula(row, 7, f'=AVERAGE(H2:H{data_row})', additional_data_format)
-    sheet.write_formula(row, 8, f'=AVERAGE(I2:I{data_row})', additional_data_format)
-    sheet.write_formula(row, 9, f'=AVERAGE(J2:J{data_row})', additional_data_format)
-    row += 2
-
+    row += 1
     sheet.write(row, 0, "From date", header_format)
     sheet.write(row, 1, "To date", header_format)
-    sheet.write(row, 2, "Total Working Hours", header_format)
-    sheet.write(row, 3, "Working Hours\n(In minutes)", header_format)
-    sheet.write(row, 4, "Total Target Time", header_format)
-    sheet.write(row, 5, "Load", header_format)
-    sheet.write(row, 6, "Final Load", header_format)
+    sheet.write(row, 2, "Total Holiday", header_format)
+    sheet.write(row, 3, "Total Working Hours", header_format)
+    sheet.write(row, 4, "Working Hours\n(In minutes)", header_format)
 
     row += 1
+    additional_data_row = row
     from_date = date_change_format(from_date)
     to_date = date_change_format(to_date)
-    sheet.write(row, 0, from_date, additional_data_format)
-    sheet.write(row, 1, to_date, additional_data_format)
-    sheet.write_number(row, 2, total_working_hours, additional_data_format)
-    excel_row = row + 1
-    sheet.write_formula(row, 3, f'=C{excel_row}*60', additional_data_format)
-    sheet.write_formula(row, 4, f'=SUM(H2:H{data_row})', additional_data_format)
-    sheet.write_formula(row, 5, f'=E{excel_row}/D{excel_row}', additional_data_format)
-    sheet.write_formula(row, 6, f'=G{data_row + 1}*F{excel_row}', additional_data_format)
+    sheet.write(additional_data_row, 0, from_date, additional_data_format)
+    sheet.write(additional_data_row, 1, to_date, additional_data_format)
+    sheet.write(additional_data_row, 2, total_holiday, additional_data_format)
+    sheet.write_number(additional_data_row, 3, total_working_hours, additional_data_format)
+    # excel_row = row + 1
+    sheet.write_formula(additional_data_row, 4, f'=D{additional_data_row+1}*60', additional_data_format)
 
+    row += 2
+    sheet.write(row, 0, "MainTask", header_format)
+    sheet.write(row, 1, "Task", header_format)
+    sheet.write(row, 2, "SubTask", header_format)
+    sheet.write(row, 3, "SubTask Type", header_format)
+    sheet.write(row, 4, "SubTask Value", header_format)
+    sheet.write(row, 5, "Final Target Time", header_format)
+    sheet.write(row, 6, "Average SubTask Value", header_format)
+    sheet.write(row, 7, "Total Target Time", header_format)
+    sheet.write(row, 8, "Load", header_format)
+    sheet.write(row, 9, "Final Load", header_format)
     row += 1
-    sheet.write(row, 0, "Total Holiday", header_format)
-    sheet.write(row, 1, total_holiday, additional_data_format)
+    # Buat set untuk menyaring kombinasi unik
+    unique_subtasks = set()
+
+    # Simpan kombinasi unik ke list baru
+    unique_rows = []
+
+    for row_data in data:
+        key = (row_data["maintask"], row_data["tasks"], row_data["subtask"])
+        if key not in unique_subtasks:
+            unique_subtasks.add(key)
+            unique_rows.append(row_data)
+
+    unique_rows.sort(key=lambda x: (x["maintask"], x["tasks"]))
+
+    for mt_key, mt_rows in groupby(unique_rows, key=lambda x: x["maintask"]):
+        mt_rows = list(mt_rows)
+        mt_row_start = row
+
+        if mt_key not in main_task_color_map:
+            hash_val = int(hashlib.md5(mt_key.encode()).hexdigest(), 16)
+            color = base_colors[hash_val % len(base_colors)]
+            main_task_color_map[mt_key] = color
+
+        bg_color = main_task_color_map[mt_key]
+        if bg_color not in format_cache:
+            format_cache[bg_color] = workbook.add_format({
+                'align': 'center', 'valign': 'vcenter', 'text_wrap': True,
+                'border': 1, 'bg_color': bg_color
+            })
+        colored_format = format_cache[bg_color]
+
+        for t_key, t_rows in groupby(mt_rows, key=lambda x: x["tasks"]):
+            t_rows = list(t_rows)
+            t_row_start = row
+            for tr in t_rows:
+                sheet.write(row, 2, tr["subtask_name"], colored_format)
+                sheet.write(row, 3, tr["subtask_type"], colored_format)
+                sheet.write_number(row, 4, int(tr["value_subtask"]), colored_format)
+                sheet.write_number(row, 5, tr["final_target_time"], colored_format)
+                row += 1
+
+            if row - t_row_start > 1:
+                sheet.merge_range(t_row_start, 1, row - 1, 1, t_rows[0].get("task_name", t_key), colored_format)
+            else:
+                sheet.write(t_row_start, 1, t_rows[0].get("task_name", t_key), colored_format)
+
+        if row - mt_row_start > 1:
+            sheet.merge_range(mt_row_start, 0, row - 1, 0, mt_rows[0].get("maintask_name", mt_key), colored_format)
+            sheet.merge_range(mt_row_start, 6, row - 1, 6, f'=AVERAGE(E{mt_row_start+1}:E{row})', colored_format)
+            sheet.merge_range(mt_row_start, 7, row - 1, 7, f'=SUM(F{mt_row_start+1}:F{row})', colored_format)
+            sheet.merge_range(mt_row_start, 8, row - 1, 8, f'=H{mt_row_start+1}/E{additional_data_row+1}', colored_format)
+            sheet.merge_range(mt_row_start, 9, row - 1, 9, f'=G{mt_row_start+1}*I{mt_row_start+1}', colored_format)
+        else:
+            sheet.write(mt_row_start, 0, mt_rows[0].get("maintask_name", mt_key), colored_format)
+            sheet.write(mt_row_start, 6, f'=AVERAGE(E{row}:E{row})', colored_format)
+            sheet.write(mt_row_start, 7, f'=SUM(F{row}:F{row})', colored_format)
+            sheet.write_formula(row, 8, f'=H{row}/E{additional_data_row+1}', colored_format)
+            sheet.write_formula(row, 9, f'=G{row}*I{row}', colored_format)
 
     workbook.close()
     output.seek(0)

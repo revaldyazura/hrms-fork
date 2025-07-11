@@ -13,7 +13,7 @@ app_home_original = "/app/overview"
 add_to_apps_screen = [
 	{
 		"name": "hrms",
-		"logo": "/assets/hrms/images/frappe-hr-logo.svg",
+		"logo": "/assets/hrms/images/i2-logo.png",
 		"title": "HRIS",
 		"route": "/app/homepage",
 		"has_permission": "hrms.hr.utils.check_app_permission",
