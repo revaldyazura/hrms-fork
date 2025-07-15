@@ -39,7 +39,7 @@ def after_delete(doc, method):
 
 def update_fields(doc, method):
     if frappe.flags.in_update:
-        frappe.msgprint(f"In update Tasks")
+        # frappe.msgprint(f"In update Tasks")
         return
     frappe.flags.in_update = True
 
@@ -52,8 +52,7 @@ def update_fields(doc, method):
         for subtask_name in subtasks:
             subtask = frappe.get_doc("SubTask", subtask_name)
             if subtask.status != "Done":
-                subtask.status = doc.status
-                subtask.save(ignore_permissions=True)
+                frappe.db.set_value("SubTask", subtask_name, "status", doc.status)
 
     frappe.flags.in_update = False
 
@@ -141,9 +140,12 @@ def has_permission(doc, ptype, user):
     maintask = frappe.get_doc("MainTask", doc.maintask)
 
     if ptype == "delete":
+        if doc.owner == user:
+            return True
         if doc.pic_task == employee_id and maintask.assigned_by != employee_id and maintask.owner != user:
-            frappe.throw(f"{employee.employee_name} is not allowed to deleting {doc.task_name} task.",
-                         frappe.PermissionError)
+            frappe.throw(
+                f"{employee.employee_name} is the pic task only and not allowed to deleting {doc.task_name} task.",
+                frappe.PermissionError)
             return False
 
         parent_task_pic = frappe.get_all(
@@ -196,11 +198,11 @@ def get_employees_by_role_and_team(doctype, txt, searchfield, start, page_len, f
                                   LIMIT %(page_len)s
                               OFFSET %(start)s
                               """, {
-                                  "maintask": maintask,
-                                  "txt": f"%{txt}%",
-                                  "start": start,
-                                  "page_len": page_len
-                              })
+        "maintask": maintask,
+        "txt": f"%{txt}%",
+        "start": start,
+        "page_len": page_len
+    })
 
     return [(emp[0], emp[1]) for emp in employees]
 

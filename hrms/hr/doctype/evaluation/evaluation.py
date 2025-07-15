@@ -18,12 +18,16 @@ class Evaluation(Document):
     def before_insert(self):
         subtask = frappe.get_doc("SubTask", self.subtask)
         if subtask.status == 'Open':
-            subtask.status = 'Done'
-            subtask.subtask_done_date = datetime.strptime(self.modified, "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
-                self.modified, str) else self.modified.date()
-            subtask.save(ignore_permissions=True)
-            frappe.msgprint(
-                f"SubTask '{subtask.subtask_name}' status updated to {subtask.status} after the performance is evaluated.")
+            frappe.msgprint(f"SubTask '{subtask.subtask_name}' status updated to Done after the performance is evaluated.")
+
+            frappe.db.set_value(
+                "SubTask",
+                self.subtask,
+                {
+                    "status": "Done",
+                    "subtask_done_date": frappe.utils.getdate(self.modified)
+                }
+            )
 
     def validate_performance(self):
         if self.performance > 120:
@@ -36,14 +40,9 @@ class Evaluation(Document):
 def update_fields(doc, method):
 
     if frappe.flags.in_update:
-        frappe.msgprint(f"In update Evaluation")
+        # frappe.msgprint(f"In update Evaluation")
         return
     frappe.flags.in_update = True
-
-
-    if not doc.performance or not doc.subtask:
-        frappe.flags.in_update = False
-        return
 
     print("update fields evaluation called")
 
@@ -53,19 +52,8 @@ def update_fields(doc, method):
     doc.pic_subtask = subtask.pic_subtask
     doc.tasks = subtask.tasks
     doc.maintask = tasks_doc.maintask
-
     doc.final_target_time = round((subtask.target_time_minutes * doc.performance) / 100, 2)
     doc.save(ignore_permissions=True)
-
-
-    # if subtask.status == 'Open':
-    #     subtask.status = 'Done'
-    #     subtask.subtask_done_date = datetime.strptime(doc.modified, "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
-    #         doc.modified, str) else doc.modified.date()
-    #     subtask.save(ignore_permissions=True)
-    #     frappe.msgprint(
-    #         f"SubTask '{subtask.subtask_name}' status updated to {subtask.status} after the performance is evaluated.")
-
 
     all_subtasks = frappe.get_all('SubTask', filters={'maintask': subtask.maintask},
                                   fields=['name', 'target_time_minutes', 'value'])
@@ -90,13 +78,9 @@ def update_fields(doc, method):
 
         if total_tvr > 0:
             for eval in evaluations:
-                # eval_doc = frappe.get_doc('Evaluation', eval.name)
                 eval_tvr = eval_tvr_map.get(eval['name'], 0)
-                # eval_doc.contribution = (eval_tvr / total_tvr) * 100, 2
-                # eval_doc.contribution = str(round((eval_tvr / total_tvr) * 100, 2)) + "%"
                 contribution = str(round((eval_tvr / total_tvr) * 100, 2)) + "%"
                 frappe.db.set_value("Evaluation", eval.name, "contribution", contribution)
-                # eval_doc.save(ignore_permissions=True)
 
     frappe.flags.in_update = False
 
@@ -182,11 +166,19 @@ def has_permission(doc, ptype, user):
 def after_delete(doc, method):
     subtask = frappe.get_doc("SubTask", doc.subtask)
     if subtask.status == 'Done':
-        subtask.status = 'Open'
-        subtask.subtask_done_date = None
-        subtask.save(ignore_permissions=True)
+        # subtask.status = 'Open'
+        # subtask.subtask_done_date = None
+        frappe.db.set_value(
+            "SubTask",
+            doc.subtask,
+            {
+                "status": "Open",
+                "subtask_done_date": None
+            }
+        )
+        # subtask.save(ignore_permissions=True)
         frappe.msgprint(
-            f"SubTask '{subtask.subtask_name}' status updated to {subtask.status} after deleting evaluation.")
+            f"SubTask '{subtask.subtask_name}' status updated to Open after deleting evaluation.")
 
 
 @frappe.whitelist()

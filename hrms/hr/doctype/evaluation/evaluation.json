@@ -34,7 +34,7 @@
    "fieldname": "subtask",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Sub Task",
+   "label": "SubTask",
    "options": "SubTask",
    "reqd": 1
   },
@@ -76,7 +76,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Main Task",
+   "label": "MainTask",
    "options": "MainTask",
    "permlevel": 1
   },
@@ -92,7 +92,7 @@
    "fetch_from": "subtask.subtask_name",
    "fieldname": "subtask_name",
    "fieldtype": "Data",
-   "label": "SubTask Name",
+   "label": "SubTask Title",
    "permlevel": 1
   },
   {
@@ -120,14 +120,14 @@
    "fetch_from": "maintask.maintask_name",
    "fieldname": "maintask_name",
    "fieldtype": "Data",
-   "label": "Main Task Name",
+   "label": "MainTask Title",
    "permlevel": 1
   },
   {
    "fetch_from": "tasks.task_name",
    "fieldname": "task_name",
    "fieldtype": "Data",
-   "label": "Task Name",
+   "label": "Task Title",
    "permlevel": 1
   },
   {
@@ -141,7 +141,8 @@
    "fetch_from": "subtask.subtask_done_date",
    "fieldname": "subtask_done_date",
    "fieldtype": "Date",
-   "label": "Sub Task Done Date"
+   "label": "Sub Task Done Date",
+   "permlevel": 1
   },
   {
    "fieldname": "data_section",
@@ -177,8 +178,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-10 15:06:13.099206",
- "modified_by": "Administrator",
+ "modified": "2025-07-15 15:57:40.746269",
+ "modified_by": "julianto@indonesiaindicator.com",
  "module": "HR",
  "name": "Evaluation",
  "naming_rule": "Expression (old style)",

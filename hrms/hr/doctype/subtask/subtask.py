@@ -25,60 +25,75 @@ class SubTask(Document):
         else:
             self.target_time_minutes = self.target_time
 
-        if frappe.flags.in_auto_repeat or self.auto_repeat or self.flags.updater_reference.get("doctype") == "Auto Repeat":
-            # print('self auto repeat triggered in validate')
+        if self.flags.updater_reference:
+            print('self.flags.updater_reference triggered in validate')
+            if self.flags.updater_reference.get("doctype") == "Auto Repeat":
+                print('doctype auto repeat triggered in validate')
+                reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+                ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+                self.created_by = ref_doc.owner
+                self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+                if self.status != "Open":
+                    self.status = "Open"
+        elif self.auto_repeat:
+            print('self.auto_repeat triggered in validate')
             reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
             ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
             self.created_by = ref_doc.owner
             self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
             if self.status != "Open":
                 self.status = "Open"
-        # if hasattr(self, "flags") or self.flags.updater_reference:
-        #     print('updater reference triggered in validate')
-        #     if self.flags.updater_reference.get("doctype") == "Auto Repeat":
-        #         print('get doctype auto repeat triggered in validate')
-        #         reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
-        #         ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
-        #         self.created_by = ref_doc.owner
-        #         self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
-        #         if self.status != "Open":
-        #             self.status = "Open"
+        elif frappe.flags.in_auto_repeat:
+            print('frappe.flags.in_auto_repeat triggered in validate')
+            reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+            ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+            self.created_by = ref_doc.owner
+            self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+            if self.status != "Open":
+                self.status = "Open"
 
     def before_insert(self):
-        if frappe.flags.in_auto_repeat or self.auto_repeat or self.flags.updater_reference.get("doctype") == "Auto Repeat":
-            # print('self auto repeat triggered in before_insert')
+        if self.flags.updater_reference:
+            print('self.flags.updater_reference triggered in before_insert')
+            if self.flags.updater_reference.get("doctype") == "Auto Repeat":
+                print('doctype auto repeat triggered in before_insert')
+                reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+                ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+                self.created_by = ref_doc.owner
+                self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+                if self.status != "Open":
+                    self.status = "Open"
+        elif self.auto_repeat:
+            print('self.auto_repeat triggered in before_insert')
             reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
             ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
             self.created_by = ref_doc.owner
             self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
             if self.status != "Open":
                 self.status = "Open"
-        # if hasattr(self, "flags") or self.flags.updater_reference:
-        #     print('updater reference triggered in before_insert')
-        #     if self.flags.updater_reference.get("doctype") == "Auto Repeat":
-        #         print('get doctype auto repeat triggered in before_insert')
-        #         reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
-        #         ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
-        #         self.created_by = ref_doc.owner
-        #         self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
-        #         if self.status != "Open":
-        #             self.status = "Open"
+        elif frappe.flags.in_auto_repeat:
+            print('frappe.flags.in_auto_repeat triggered in before_insert')
+            reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+            ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+            self.created_by = ref_doc.owner
+            self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+            if self.status != "Open":
+                self.status = "Open"
 
 
 def update_fields(doc, method):
     if frappe.flags.in_update:
-        frappe.msgprint(f"In update SubTask")
+        # frappe.msgprint(f"In update SubTask")
         return
     frappe.flags.in_update = True
     print("update fields subtask called")
     task = frappe.get_doc("Tasks", doc.tasks)
     maintask = frappe.get_doc("MainTask", task.maintask)
     doc.maintask = maintask.name
-    if doc.status == 'Done':
-        doc.subtask_done_date = datetime.strptime(doc.modified, "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
-            doc.modified, str) else doc.modified.date()
-    elif doc.status == 'Open':
-        doc.subtask_done_date = None
+    if doc.status == 'Open':
+        # doc.subtask_done_date = None
+        frappe.db.set_value("SubTask", doc.name, "subtask_done_date", None)
+    # frappe.db.set_value("SubTask", doc.name, "maintask", maintask.name)
     doc.save(ignore_permissions=True)
 
     frappe.flags.in_update = False
@@ -220,11 +235,11 @@ def get_employees_by_team(doctype, txt, searchfield, start, page_len, filters):
                                   LIMIT %(page_len)s
                               OFFSET %(start)s
                               """, {
-                                  "maintask": maintask,
-                                  "txt": f"%{txt}%",
-                                  "start": start,
-                                  "page_len": page_len
-                              })
+        "maintask": maintask,
+        "txt": f"%{txt}%",
+        "start": start,
+        "page_len": page_len
+    })
     return employees
 
 

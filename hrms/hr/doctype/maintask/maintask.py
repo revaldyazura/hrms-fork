@@ -43,7 +43,7 @@ def after_delete(doc, method):
 
 def update_fields(doc, method):
     if frappe.flags.in_update:
-        frappe.msgprint('In update MainTask')
+        # frappe.msgprint('In update MainTask')
         return
     frappe.flags.in_update = True
     print("update maintask called")
@@ -53,16 +53,15 @@ def update_fields(doc, method):
     if previous_status != now_status:
         tasks = frappe.get_all("Tasks", filters={"maintask": doc.name}, pluck="name")
         for task_name in tasks:
-            task = frappe.get_doc("Tasks", task_name)
-            task.status = doc.status
-            task.save(ignore_permissions=True)
+            frappe.db.set_value("Tasks", task_name, "status", now_status)
+            # task.save(ignore_permissions=True)
 
-            subtasks = frappe.get_all("SubTask", filters={"tasks": task.name}, pluck="name")
+            subtasks = frappe.get_all("SubTask", filters={"tasks": task_name}, pluck="name")
             for subtask_name in subtasks:
-                subtask = frappe.get_doc("SubTask", subtask_name)
-                if subtask.status != "Done":
-                    subtask.status = doc.status
-                    subtask.save(ignore_permissions=True)
+                subtask_status = frappe.db.get_value("SubTask", subtask_name, "status")
+                if subtask_status != "Done":
+                    frappe.db.set_value("SubTask", subtask_name, "status", now_status)
+                    # subtask.save(ignore_permissions=True)
 
     frappe.flags.in_update = False
 

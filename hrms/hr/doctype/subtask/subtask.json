@@ -45,9 +45,10 @@
    "show_on_timeline": 1
   },
   {
+   "fetch_from": "maintask.maintask_name",
    "fieldname": "maintask_name",
    "fieldtype": "Data",
-   "label": "MainTask Name"
+   "label": "MainTask Title"
   },
   {
    "description": "the parent of this subtask",
@@ -60,9 +61,10 @@
    "reqd": 1
   },
   {
+   "fetch_from": "tasks.task_name",
    "fieldname": "tasks_name",
    "fieldtype": "Data",
-   "label": "Task Name",
+   "label": "Task Title",
    "permlevel": 3
   },
   {
@@ -100,6 +102,7 @@
    "reqd": 1
   },
   {
+   "fetch_from": "pic_subtask.employee_name",
    "fieldname": "pic_subtask_name",
    "fieldtype": "Data",
    "label": "PIC SubTask Name"
@@ -207,7 +210,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-15 10:27:58.060396",
+ "modified": "2025-07-15 14:02:51.598463",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",
