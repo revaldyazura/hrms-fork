@@ -74,7 +74,7 @@
    "reqd": 1
   },
   {
-   "description": "The expected time (in minutes) for finishing this subtask",
+   "description": "The expected time for finishing this subtask",
    "fieldname": "target_time",
    "fieldtype": "Int",
    "label": "Target Time",
@@ -207,7 +207,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-10 15:06:23.005285",
+ "modified": "2025-07-15 10:27:58.060396",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

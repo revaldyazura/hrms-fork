@@ -1,5 +1,7 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
+from datetime import datetime
+
 from marshmallow.utils import pluck
 
 import frappe
@@ -12,6 +14,16 @@ class Evaluation(Document):
         print("validate eval called")
         self.validate_performance()
         self.validate_evaluation_data()
+
+    def before_insert(self):
+        subtask = frappe.get_doc("SubTask", self.subtask)
+        if subtask.status == 'Open':
+            subtask.status = 'Done'
+            subtask.subtask_done_date = datetime.strptime(self.modified, "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
+                self.modified, str) else self.modified.date()
+            subtask.save(ignore_permissions=True)
+            frappe.msgprint(
+                f"SubTask '{subtask.subtask_name}' status updated to {subtask.status} after the performance is evaluated.")
 
     def validate_performance(self):
         if self.performance > 120:
@@ -46,11 +58,13 @@ def update_fields(doc, method):
     doc.save(ignore_permissions=True)
 
 
-    if subtask.status == 'Open':
-        subtask.status = 'Done'
-        subtask.save(ignore_permissions=True)
-        frappe.msgprint(
-            f"SubTask '{subtask.subtask_name}' status updated to {subtask.status} after the performance is evaluated.")
+    # if subtask.status == 'Open':
+    #     subtask.status = 'Done'
+    #     subtask.subtask_done_date = datetime.strptime(doc.modified, "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
+    #         doc.modified, str) else doc.modified.date()
+    #     subtask.save(ignore_permissions=True)
+    #     frappe.msgprint(
+    #         f"SubTask '{subtask.subtask_name}' status updated to {subtask.status} after the performance is evaluated.")
 
 
     all_subtasks = frappe.get_all('SubTask', filters={'maintask': subtask.maintask},
@@ -169,6 +183,7 @@ def after_delete(doc, method):
     subtask = frappe.get_doc("SubTask", doc.subtask)
     if subtask.status == 'Done':
         subtask.status = 'Open'
+        subtask.subtask_done_date = None
         subtask.save(ignore_permissions=True)
         frappe.msgprint(
             f"SubTask '{subtask.subtask_name}' status updated to {subtask.status} after deleting evaluation.")
