@@ -13,6 +13,7 @@ class SubTask(Document):
         self.validate_subtask_name()
 
     def validate_subtask_name(self):
+        self.maintask = frappe.db.get_value("Tasks",{"name": self.tasks}, "maintask" )
         self.maintask_name = frappe.db.get_value("MainTask", {"name": self.maintask}, "maintask_name")
         self.tasks_name = frappe.db.get_value("Tasks", {"name": self.tasks}, "task_name")
         self.pic_subtask_name = frappe.db.get_value("Employee", {"name": self.pic_subtask}, "employee_name")
@@ -93,8 +94,6 @@ def update_fields(doc, method):
     if doc.status == 'Open':
         # doc.subtask_done_date = None
         frappe.db.set_value("SubTask", doc.name, "subtask_done_date", None)
-    # frappe.db.set_value("SubTask", doc.name, "maintask", maintask.name)
-    doc.save(ignore_permissions=True)
 
     frappe.flags.in_update = False
 
