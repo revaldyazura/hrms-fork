@@ -16,7 +16,6 @@ class Tasks(Document):
         maintask_name = frappe.db.get_value("MainTask", {"name": self.maintask}, "maintask_name")
         self.maintask_name = maintask_name if maintask_name else ""
         self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
-        self.pic_task_name = frappe.db.get_value("Employee", {"name": self.pic_task}, "employee_name")
         if self.unit_target_time == "Hours":
             self.target_time_minutes = self.target_time * 60
         else:
@@ -112,9 +111,6 @@ def user_edit_tasks(task_name):
 
     if not employee_id:
         return "none"
-
-    if doc.pic_task == employee_id:
-        return "pic_task"
 
     parent_task_pic = frappe.get_all(
         "Task PIC",

@@ -147,7 +147,6 @@ def user_edit_subtask(subtask_name):
 
     if doc.tasks:
         tasks = frappe.get_doc("Tasks", doc.tasks)
-        pic_task = tasks.pic_task
         owner_task = tasks.owner
 
         parent_task_pic = frappe.get_all(
@@ -160,10 +159,8 @@ def user_edit_subtask(subtask_name):
         if tasks.name in parent_task_pic:
             return "task_pics"
 
-        if doc.pic_subtask == employee_id and pic_task != employee_id:
+        if doc.pic_subtask == employee_id:
             return "pic_subtask"
-        if pic_task == employee_id:
-            return "pic_task"
         if owner_task == frappe.session.user:
             return "owner_task"
 
@@ -185,7 +182,6 @@ def has_permission(doc, ptype, user):
 
     employee = frappe.get_doc("Employee", employee_id)
     tasks = frappe.get_doc("Tasks", doc.tasks)
-    # pic_task = tasks.pic_task
 
     parent_task_pic = frappe.get_all(
         "Task PIC",

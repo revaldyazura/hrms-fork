@@ -246,6 +246,6 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
         OR `tabEvaluation`.`maintask` IN (
             SELECT `name` FROM `tabMainTask` WHERE `owner` = '{user_id}' OR `assigned_by` = '{employee_id}' OR `name` IN ('{maintask_ids}')
         ) OR `tabEvaluation`.`tasks` IN (
-            SELECT `name` FROM `tabTasks` WHERE `owner` = '{user_id}' OR `pic_task` = '{employee_id}'
+            SELECT `name` FROM `tabTasks` WHERE `owner` = '{user_id}'
         )OR `tabEvaluation`.`maintask` IN (SELECT `name` FROM `tabMainTask` WHERE name IN ('{assign_by_maintask_ids}')))
     """
