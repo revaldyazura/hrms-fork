@@ -92,15 +92,14 @@ def execute(filters=None):
                 st.value AS value_subtask,
                 st.status AS sub_task_status
             FROM `tabMainTask` mt
---             LEFT JOIN `tabMainTask Team` mteam ON mt.name = mteam.parent
             LEFT JOIN `tabTasks` t ON t.maintask = mt.name
             LEFT JOIN `tabTask PIC` tp ON tp.parent = t.name
             LEFT JOIN `tabEmployee` emp ON tp.employee = emp.name
-            LEFT JOIN `tabSubTask` st ON st.tasks = t.name
+            LEFT JOIN `tabSubTask` st ON st.tasks = t.name AND st.owner = emp.user_id
             {conditions}
             ORDER BY mt.name, t.name, tp.employee, st.name
         """
-    # print(f'query summary task is {query}')
+
     data = frappe.db.sql(query, {
         "user": user,
         "employee_id": employee_id,
@@ -216,22 +215,22 @@ def get_report_summary(summ_data, data):
     completed_maintask = sum([tsm["completed_maintask"] for tsm in summ_data])
 
     return [
-        {
-            "value": avg_completion,
-            "indicator": "Green" if avg_completion > 50 else "Red",
-            "label": _("Average SubTask Completion"),
-            "datatype": "Percent",
-        },
+        # {
+        #     "value": avg_completion,
+        #     "indicator": "Green" if avg_completion > 50 else "Red",
+        #     "label": _("Average SubTask Completion"),
+        #     "datatype": "Percent",
+        # },
         {
             "value": total,
             "indicator": "Blue",
             "label": _("Total MainTask"),
             "datatype": "Int",
         },
-        {
-            "value": completed_maintask,
-            "indicator": "Green",
-            "label": _("Completed MainTask"),
-            "datatype": "Int",
-        },
+        # {
+        #     "value": completed_maintask,
+        #     "indicator": "Green",
+        #     "label": _("Completed MainTask"),
+        #     "datatype": "Int",
+        # },
     ]

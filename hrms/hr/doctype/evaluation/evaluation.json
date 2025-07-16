@@ -54,6 +54,7 @@
    "permlevel": 1
   },
   {
+   "fetch_from": "subtask.tasks",
    "fieldname": "tasks",
    "fieldtype": "Link",
    "in_standard_filter": 1,
@@ -62,6 +63,7 @@
    "permlevel": 1
   },
   {
+   "fetch_from": "subtask.pic_subtask",
    "fieldname": "pic_subtask",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
@@ -72,6 +74,7 @@
    "permlevel": 1
   },
   {
+   "fetch_from": "tasks.maintask",
    "fieldname": "maintask",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -178,7 +181,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-15 15:57:40.746269",
+ "modified": "2025-07-16 16:29:45.763321",
  "modified_by": "julianto@indonesiaindicator.com",
  "module": "HR",
  "name": "Evaluation",

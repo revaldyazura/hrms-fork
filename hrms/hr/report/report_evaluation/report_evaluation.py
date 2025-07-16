@@ -26,49 +26,67 @@ def execute(filters=None):
 
     conditions = ""
     if user != "Administrator":
-        conditions = """WHERE (mt.owner = %(user)s OR
-        mt.name IN (SELECT mt2.name FROM `tabMainTask` mt2 LEFT JOIN `tabMainTask Team` mteam2 ON mt2.name = mteam2.parent WHERE mt2.owner = %(user)s OR %(employee_id)s OR
-        mteam2.employee = %(employee_id)s)) OR
-        mt.name IN ( SELECT mt2.name FROM `tabMainTask` mt2 LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent  WHERE m_assign_by2.employee = %(employee_id)s ) AND st.status = 'Done'"""
         if filters.get("maintask"):
-            conditions += " AND mt.name = %(maintask)s"
+            conditions = "WHERE ev.maintask = %(maintask)s AND st.status = 'Done'"
+        else:
+            conditions = """
+            WHERE (
+                ev.maintask IN (
+                    SELECT mt2.name
+                    FROM `tabMainTask` mt2
+                    LEFT JOIN `tabMainTask Team` mteam2 ON mt2.name = mteam2.parent
+                    WHERE mt2.owner = %(user)s OR mteam2.employee = %(employee_id)s
+                )
+                OR ev.maintask IN (
+                    SELECT mt2.name
+                    FROM `tabMainTask` mt2
+                    LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent
+                    WHERE m_assign_by2.employee = %(employee_id)s
+                )
+            )
+            AND st.status = 'Done'
+            """
 
     query = f"""
-                SELECT
-                mt.name AS mt_name,
-                    mt.maintask_name AS maintask_name,
-                    mt.assign_date,
-                    mt.due_date,
-                    mt.status AS mt_status,
-                    t.name AS t_name,
-                    t.task_name AS task,
-                    emp_tp.user_id AS pic_task_user_id,
-                    emp_tp.employee_name AS pic_task_name,
-                    st.owner AS sub_task_owner,
-                    st.subtask_name AS sub_task,
-                    st.pic_subtask_name,
-                    st.target_time AS subtask_target_time,
-                    st.value AS value_subtask,
-                    ev.performance AS performance,
-                    ev.final_target_time AS final_target_time,
-                    ev.contribution AS contribution
-                FROM `tabMainTask` mt
-                LEFT JOIN `tabMainTask Team` mteam ON mt.name = mteam.parent
-                LEFT JOIN `tabTasks` t ON t.maintask = mt.name
-                LEFT JOIN `tabTask PIC` tp ON tp.parent = t.name
-                LEFT JOIN `tabEmployee` emp_tp ON tp.employee = emp_tp.name
-                LEFT JOIN `tabSubTask` st ON st.tasks = t.name
-                LEFT JOIN `tabEvaluation` ev ON ev.subtask = st.name
-                {conditions}
-                ORDER BY mt.name, t.name, tp.employee, st.name
-            """
+                    SELECT
+                      ev.maintask,
+                      ev.maintask_name,
+                      ev.tasks,
+                      ev.task_name,
+                      ev.subtask,
+                      ev.subtask_name,
+                      st.target_time AS subtask_target_time,
+                    ev.pic_subtask_name,
+                      ev.subtask_type,
+                        ev.value_subtask AS value_subtask,
+                        ev.performance AS performance,
+                        ev.final_target_time AS final_target_time,
+                        ev.contribution AS contribution
+                    FROM `tabEvaluation` ev
+                    LEFT JOIN tabSubTask st ON st.name = ev.subtask
+                    {conditions}
+                    ORDER BY ev.maintask, ev.tasks, ev.subtask
+                """
+    print(f'data conditions eval {conditions}')
+
     data = frappe.db.sql(query, {"user": user, "employee_id": employee_id,
                                  "maintask": filters.get("maintask")}, as_dict=True)
-
+    print(f'data report eval {data}')
     # assign_by_map = get_assign_by_map()
     #
     # for row in data:
     #     row["assign_by_members"] = assign_by_map.get(row["mt_name"], "")
+
+    # unique_rows = {}
+    # for row in data:
+    #     subtask_key = row.get("st_name")  # atau 'st.name' tergantung alias
+    #     if not subtask_key:
+    #         continue
+    #     # Simpan hanya satu baris per subtask
+    #     if subtask_key not in unique_rows:
+    #         unique_rows[subtask_key] = row
+    #
+    # deduplicated_data = list(unique_rows.values())
 
     chart = get_chart_data(data)
     report_summary = get_report_summary(data)
@@ -91,14 +109,11 @@ def get_filters():
 def get_columns():
     return [
         {"label": _("Main Task"), "fieldname": "maintask_name", "fieldtype": "Data", "width": 200},
-        {"label": _("Assign Date"), "fieldname": "assign_date", "fieldtype": "Date", "width": 120},
-        {"label": _("Due Date"), "fieldname": "due_date", "fieldtype": "Date", "width": 120},
-        {"label": _("Task"), "fieldname": "task", "fieldtype": "Data", "width": 200},
-        {"label": _("PIC Task"), "fieldname": "pic_task_name", "fieldtype": "Data", "width": 150},
-        {"label": _("Sub Task"), "fieldname": "sub_task", "fieldtype": "Data", "width": 200},
-        {"label": _("PIC Sub Task"), "fieldname": "pic_subtask_name", "fieldtype": "Data", "width": 150},
-        {"label": _("Target Time (SubTask)"), "fieldname": "subtask_target_time", "fieldtype": "Int", "width": 100},
-        {"label": _("Value Sub Task"), "fieldname": "value_subtask", "fieldtype": "Int", "width": 50},
+        {"label": _("Task"), "fieldname": "task_name", "fieldtype": "Data", "width": 200},
+        {"label": _("Sub Task"), "fieldname": "subtask_name", "fieldtype": "Data", "width": 200},
+        {"label": _("PIC Sub Task"), "fieldname": "pic_subtask_name", "fieldtype": "Data", "width": 160},
+        {"label": _("Target Time (SubTask)"), "fieldname": "subtask_target_time", "fieldtype": "Int", "width": 95},
+        {"label": _("Value Sub Task"), "fieldname": "value_subtask", "fieldtype": "Int", "width": 80},
         {"label": _("Performance"), "fieldname": "performance", "fieldtype": "Int", "width": 100},
         {"label": _("Final Target Time"), "fieldname": "final_target_time", "fieldtype": "Float", "width": 100},
         {"label": _("Contribution"), "fieldname": "contribution", "fieldtype": "Data", "width": 100}
@@ -117,7 +132,7 @@ def get_chart_data(data):
         if not maintask or not pic:
             continue
 
-        labels_set.add(maintask)
+        labels_set.add(f'{maintask} (Contribution)')
 
         # Handle jika kontribusi disimpan dalam format string "12.5%"
         try:
@@ -138,7 +153,7 @@ def get_chart_data(data):
     datasets = []
 
     for pic, contribs in contribution_map.items():
-        dataset_values = [contribs.get(label, 0) for label in labels]
+        dataset_values = [f'{contribs.get(label, 0)}%' for label in labels]
 
         datasets.append({
             "name": pic,
@@ -184,13 +199,13 @@ def get_report_summary(data):
         {
             "value": round(avg_performance, 2),
             "indicator": "Green" if avg_performance >= 70 else "Red",
-            "label": _("Avg Performance"),
+            "label": _("Average Performance"),
             "datatype": "Float",
         },
         {
             "value": round(avg_target_time, 2),
             "indicator": "Blue",
-            "label": _("Avg Final Target Time"),
+            "label": _("Average Final Target Time"),
             "datatype": "Float",
         }
     ]
