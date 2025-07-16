@@ -6,6 +6,18 @@ from frappe import _
 from collections import defaultdict
 
 
+# def get_assign_by_map():
+#     assign_by_data = frappe.db.sql("""
+#                                    SELECT m_assign_by.parent                             AS main_task,
+#                                           GROUP_CONCAT(emp.employee_name SEPARATOR ', ') AS assign_by_members
+#                                    FROM `tabMainTask Assign By` m_assign_by
+#                                             LEFT JOIN `tabEmployee` emp ON m_assign_by.employee = emp.name
+#                                    GROUP BY m_assign_by.parent
+#                                    """, as_dict=True)
+#
+#     return {row["main_task"]: row["assign_by_members"] for row in assign_by_data}
+
+
 def execute(filters=None):
     columns = get_columns()
 
@@ -14,7 +26,10 @@ def execute(filters=None):
 
     conditions = ""
     if user != "Administrator":
-        conditions = "WHERE (mt.owner = %(user)s OR mt.assigned_by = %(employee_id)s OR mt.name IN (SELECT mt2.name FROM `tabMainTask` mt2 LEFT JOIN `tabMainTask Team` mteam2 ON mt2.name = mteam2.parent WHERE mt2.owner = %(user)s OR %(employee_id)s   OR mteam2.employee = %(employee_id)s)) AND st.status = 'Done'"
+        conditions = """WHERE (mt.owner = %(user)s OR
+        mt.name IN (SELECT mt2.name FROM `tabMainTask` mt2 LEFT JOIN `tabMainTask Team` mteam2 ON mt2.name = mteam2.parent WHERE mt2.owner = %(user)s OR %(employee_id)s OR
+        mteam2.employee = %(employee_id)s)) OR
+        mt.name IN ( SELECT mt2.name FROM `tabMainTask` mt2 LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent  WHERE m_assign_by2.employee = %(employee_id)s ) AND st.status = 'Done'"""
         if filters.get("maintask"):
             conditions += " AND mt.name = %(maintask)s"
 
@@ -22,7 +37,6 @@ def execute(filters=None):
                 SELECT
                 mt.name AS mt_name,
                     mt.maintask_name AS maintask_name,
-                    mt.assigned_by_name AS assigned_by,
                     mt.assign_date,
                     mt.due_date,
                     mt.status AS mt_status,
@@ -49,12 +63,18 @@ def execute(filters=None):
                 ORDER BY mt.name, t.name, tp.employee, st.name
             """
     data = frappe.db.sql(query, {"user": user, "employee_id": employee_id,
-        "maintask": filters.get("maintask")}, as_dict=True)
+                                 "maintask": filters.get("maintask")}, as_dict=True)
+
+    # assign_by_map = get_assign_by_map()
+    #
+    # for row in data:
+    #     row["assign_by_members"] = assign_by_map.get(row["mt_name"], "")
 
     chart = get_chart_data(data)
     report_summary = get_report_summary(data)
 
     return columns, data, None, chart, report_summary
+
 
 def get_filters():
     return [
@@ -66,6 +86,7 @@ def get_filters():
             "reqd": 0
         }
     ]
+
 
 def get_columns():
     return [
@@ -158,7 +179,6 @@ def get_report_summary(data):
     avg_performance = sum(e.get("performance", 0) for e in data if e.get("performance")) / len(data)
     avg_target_time = sum(e.get("final_target_time", 0) for e in data if e.get("final_target_time")) / len(data)
     avg_contribution = sum(e.get("contribution", 0) for e in data if e.get("contribution")) / len(data)
-
 
     return [
         {

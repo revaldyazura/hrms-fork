@@ -1,6 +1,7 @@
 import frappe
 from frappe.query_builder.functions import Count
 
+
 #
 # @frappe.whitelist()
 # def get_main_task_data():
@@ -53,15 +54,27 @@ from frappe.query_builder.functions import Count
 
 def get_team_members_map():
     team_data = frappe.db.sql("""
-        SELECT
-            mteam.parent AS main_task,
-            GROUP_CONCAT(emp.employee_name SEPARATOR ', ') AS members
-        FROM `tabMainTask Team` mteam
-        LEFT JOIN `tabEmployee` emp ON mteam.employee = emp.name
-        GROUP BY mteam.parent
-    """, as_dict=True)
+                              SELECT mteam.parent                                   AS main_task,
+                                     GROUP_CONCAT(emp.employee_name SEPARATOR ', ') AS members
+                              FROM `tabMainTask Team` mteam
+                                       LEFT JOIN `tabEmployee` emp ON mteam.employee = emp.name
+                              GROUP BY mteam.parent
+                              """, as_dict=True)
 
     return {row["main_task"]: row["members"] for row in team_data}
+
+
+def get_assign_by_map():
+    assign_by_data = frappe.db.sql("""
+                                   SELECT m_assign_by.parent                             AS main_task,
+                                          GROUP_CONCAT(emp.employee_name SEPARATOR ', ') AS assign_by_members
+                                   FROM `tabMainTask Assign By` m_assign_by
+                                            LEFT JOIN `tabEmployee` emp ON m_assign_by.employee = emp.name
+                                   GROUP BY m_assign_by.parent
+                                   """, as_dict=True)
+
+    return {row["main_task"]: row["assign_by_members"] for row in assign_by_data}
+
 
 @frappe.whitelist()
 def get_task_report_data():
@@ -81,13 +94,17 @@ def get_task_report_data():
                     WHERE mt2.owner = %(user)s
                     OR mteam2.employee = %(employee_id)s
                 )
+                OR mt.name IN (
+                    SELECT mt2.name FROM `tabMainTask` mt2
+                    LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent
+                    WHERE m_assign_by2.employee = %(employee_id)s
+                )
         """
 
     query = f"""
         SELECT
             mt.name AS mt_name,
             mt.maintask_name AS maintask_name,
-            mt.assigned_by_name AS assigned_by,
             mt.assign_date,
             mt.due_date,
             mt.status AS mt_status,
@@ -118,10 +135,11 @@ def get_task_report_data():
 
     raw_data = frappe.db.sql(query, values, as_dict=True)
 
-    # Post-process team_members
     team_map = get_team_members_map()
+    assign_by_map = get_assign_by_map()
 
     for row in raw_data:
         row["team_members"] = team_map.get(row["mt_name"], "")
+        row["assign_by_members"] = assign_by_map.get(row["mt_name"], "")
 
     return raw_data

@@ -44,7 +44,9 @@ def export_individual_evaluation(filters=None):
     filters = frappe.parse_json(filters or '{}')
 
     query = """SELECT pic_subtask_name,
+        maintask,
                       maintask_name,
+        tasks,
                       task_name,
                       subtask_name,
                       subtask_type,
@@ -52,7 +54,7 @@ def export_individual_evaluation(filters=None):
                       performance,
                       final_target_time,
                       contribution
-               FROM `tabEvaluation` \
+               FROM `tabEvaluation` ev\
             """
 
     conditions = []
@@ -155,14 +157,14 @@ def export_individual_evaluation(filters=None):
 
                 # Merge Task
                 if row - t_row_start > 1:
-                    sheet.merge_range(t_row_start, 3, row - 1, 3, t_rows[0].get("task_name", t_key), colored_format)
+                    sheet.merge_range(t_row_start, 2, row - 1, 2, t_rows[0].get("task_name", t_key), colored_format)
                 else:
-                    sheet.write(t_row_start, 3, t_rows[0].get("task_name", t_key), colored_format)
+                    sheet.write(t_row_start, 2, t_rows[0].get("task_name", t_key), colored_format)
             # Merge Main Task
             if row - mt_row_start > 1:
-                sheet.merge_range(mt_row_start, 2, row - 1, 2, mt_rows[0].get("maintask_name", mt_key), colored_format)
+                sheet.merge_range(mt_row_start, 1, row - 1, 1, mt_rows[0].get("maintask_name", mt_key), colored_format)
             else:
-                sheet.write(mt_row_start, 2, mt_rows[0].get("maintask_name", mt_key), colored_format)
+                sheet.write(mt_row_start, 1, mt_rows[0].get("maintask_name", mt_key), colored_format)
         # Merge Employee
         if row - emp_row_start > 1:
             sheet.merge_range(emp_row_start, 0, row - 1, 0, emp_key, center_format)
@@ -249,7 +251,8 @@ def export_team_evaluation(filters=None):
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     data = frappe.db.sql(query, values, as_dict=True)
-    team_filename = data[0].get('team')
+    print('data team eval', data)
+    team_filename = data[0].get('team') if data else filters.get('team')
 
     total_working_hours, total_holiday = calculate_working_hours(from_date, to_date,
                                                                  'Annual Holiday') if to_date and from_date else 0

@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-06-13 10:47:01.992168",
+ "creation": "2025-07-16 10:34:37.369230",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -23,18 +23,17 @@
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Employee Name",
-   "permlevel": 1
+   "label": "Employee Name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-07-16 10:52:54.298675",
+ "modified": "2025-07-16 10:52:05.870015",
  "modified_by": "Administrator",
  "module": "HR",
- "name": "MainTask Team",
+ "name": "MainTask Assign By",
  "owner": "Administrator",
  "permissions": [],
  "row_format": "Dynamic",

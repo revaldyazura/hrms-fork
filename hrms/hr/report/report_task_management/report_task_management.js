@@ -2,14 +2,14 @@
 // For license information, please see license.txt
 
 frappe.query_reports["Report Task Management"] = {
-	filters: [
+	// filters: [
 		// {
 		// 	"fieldname": "my_filter",
 		// 	"label": __("My Filter"),
 		// 	"fieldtype": "Data",
 		// 	"reqd": 1,
 		// },
-	],
+	// ],
 	onload: function (report) {
 		frappe.query_report._prev_row = {}; // reset tiap reload
 	},

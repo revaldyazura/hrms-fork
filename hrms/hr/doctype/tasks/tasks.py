@@ -72,13 +72,24 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
         pluck="parent"
     )
 
-    if not parent_mteam:
-        return "1=0"
+    parent_assign_by = frappe.get_all(
+        "MainTask Assign By",
+        filters={"employee": employee_id},
+        pluck="parent"
+    )
+
+    # if not parent_mteam:
+    #     return "1=0"
+
+    # if not parent_assign_by:
+    #     return "1=0"
 
     if not employee_id:
         return "1=0"
 
     maintask_ids = "', '".join(parent_mteam)
+
+    assign_by_maintask_ids = "', '".join(parent_assign_by)
 
     parent_task_pic = frappe.get_all(
         "Task PIC",
@@ -88,9 +99,7 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
 
     task_ids = "', '".join(parent_task_pic) if parent_task_pic else ''
 
-    return f"( tabTasks.owner = '{user_id}' OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE owner = '{user_id}' OR assigned_by = '{employee_id}') OR tabTasks.name IN ('{task_ids}') OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE name IN ('{maintask_ids}')))"
-
-    # return f"(tabTasks.pic_task = '{employee_id}' OR tabTasks.owner = '{user_id}' OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE owner = '{user_id}' OR assigned_by = '{employee_id}') OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE name IN ('{maintask_ids}')))"
+    return f"( tabTasks.owner = '{user_id}' OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE owner = '{user_id}' OR assigned_by = '{employee_id}') OR tabTasks.name IN ('{task_ids}') OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE name IN ('{maintask_ids}')) OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE name IN ('{assign_by_maintask_ids}')))"
 
 
 @frappe.whitelist()
@@ -142,11 +151,6 @@ def has_permission(doc, ptype, user):
     if ptype == "delete":
         if doc.owner == user:
             return True
-        if doc.pic_task == employee_id and maintask.assigned_by != employee_id and maintask.owner != user:
-            frappe.throw(
-                f"{employee.employee_name} is the pic task only and not allowed to deleting {doc.task_name} task.",
-                frappe.PermissionError)
-            return False
 
         parent_task_pic = frappe.get_all(
             "Task PIC",
@@ -154,8 +158,17 @@ def has_permission(doc, ptype, user):
             pluck="parent"
         )
 
+        parent_assign_by = frappe.get_all(
+            "MainTask Assign By",
+            filters={"employee": employee_id},
+            pluck="parent"
+        )
+
         print(f'{type(parent_task_pic)} type, parent_task_pic value {parent_task_pic}')
-        if doc.name in parent_task_pic:
+        if doc.name in parent_task_pic and maintask.owner != user and doc.maintask not in parent_assign_by:
+            frappe.throw(
+                f"{employee.employee_name} is the pic task only and not allowed to deleting {doc.task_name} task.",
+                frappe.PermissionError)
             return False
 
         check_finished_subtask = frappe.get_all("SubTask", {"tasks": doc.name}, pluck="status")
@@ -215,7 +228,8 @@ def get_open_maintask_as_the_owner(doctype, txt, searchfield, start, page_len, f
 
     conditions = ""
     if user != "Administrator":
-        conditions = "WHERE (mt.owner = %(user)s OR mt.assigned_by = %(employee_id)s) AND mt.status = 'Open'"
+        conditions = """WHERE (mt.owner = %(user)s OR mt.assigned_by = %(employee_id)s) OR
+        mt.name IN ( SELECT mt2.name FROM `tabMainTask` mt2 LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent  WHERE m_assign_by2.employee = %(employee_id)s ) AND mt.status = 'Open'"""
 
     maintasks = frappe.db.sql(f"""
         SELECT mt.name, mt.maintask_name

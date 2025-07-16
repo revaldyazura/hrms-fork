@@ -75,24 +75,6 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
 
     employee_id = frappe.get_value("Employee", {"user_id": user_id}, "name")
 
-    # employee = frappe.get_doc("Employee", employee_id)
-    #
-    # parent_mteam = frappe.get_all(
-    #     "MainTask Team",
-    #     filters={"employee": employee_id},
-    #     pluck="parent"
-    # )
-    #
-    # if not employee_id:
-    #     return "1=0"
-    #
-    # if not parent_mteam:
-    #     return "1=0"
-    #
-    # maintask_ids = "', '".join(parent_mteam)
-    # query = f"(tabMainTask.assigned_by = '{employee_id}' OR tabMainTask.owner = '{user_id}' OR tabMainTask.name IN ('{maintask_ids}'))"
-    #
-    # return query
     conditions = [f"tabMainTask.owner = '{user_id}'"]
     if employee_id:
         conditions.append(f"tabMainTask.assigned_by = '{employee_id}'")
@@ -103,9 +85,19 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
             pluck="parent"
         )
 
+        parent_assign_by = frappe.get_all(
+            "MainTask Assign By",
+            filters={"employee": employee_id},
+            pluck="parent"
+        )
+
         if parent_mteam:
             maintask_ids = "', '".join(parent_mteam)
             conditions.append(f"tabMainTask.name IN ('{maintask_ids}')")
+
+        if parent_assign_by:
+            assign_by_maintask_ids = "', '".join(parent_assign_by)
+            conditions.append(f"tabMainTask.name IN ('{assign_by_maintask_ids}')")
 
     return " OR ".join(conditions)
 

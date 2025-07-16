@@ -10,7 +10,6 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 		<div class="filter-container">
 		<div class="filter-row">
 			<input type="text" id="filter-maintask" placeholder="Filter Main Task" class="form-control">
-			<input type="text" id="filter-assigned-by" placeholder="Filter Assigned By" class="form-control">
 			<input type="text" id="filter-pic-subtask" placeholder="Filter PIC SubTask" class="form-control">
 		</div>
 		<div class="filter-row">
@@ -103,7 +102,6 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				// Fungsi filtering
 				function applyFilters() {
 					const maintask = $('#filter-maintask').val().toLowerCase();
-					const assignedBy = $('#filter-assigned-by').val().toLowerCase();
 
 					const startDate = $('#filter-start-date').val();
 					const endDate = $('#filter-end-date').val();
@@ -126,7 +124,6 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 						}
 						return (
 							(!maintask || (row.maintask_name || "").toLowerCase().includes(maintask)) &&
-							(!assignedBy || (row.assigned_by || "").toLowerCase().includes(assignedBy)) &&
 							isInDateRange &&
 							// (!picTask || (row.pic_task_name || "").toLowerCase().includes(picTask)) &&
 							(!picSubtask || (row.pic_subtask_name || "").toLowerCase().includes(picSubtask)) &&
@@ -138,11 +135,10 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				}
 
 				// Trigger on input change
-				$('#filter-maintask, #filter-assigned-by, #filter-start-date, #filter-end-date,  #filter-pic-subtask, #filter-subtask-status')
+				$('#filter-maintask,  #filter-start-date, #filter-end-date,  #filter-pic-subtask, #filter-subtask-status')
 					.on('input change', applyFilters);
 				$('#reset-filters').on('click', function () {
 					$('#filter-maintask').val('');
-					$('#filter-assigned-by').val('');
 					// $('#filter-pic-task').val('');
 					$('#filter-pic-subtask').val('');
 					$('#filter-start-date').val('');
@@ -232,7 +228,19 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				// Assigned By
 				td = document.createElement("td");
 				td.rowSpan = mainTaskRowspan[row.mt_name];
-				td.textContent = row.assigned_by || "-";
+				td.className = "bullet-list";
+				let assign_members = row.assign_by_members ? row.assign_by_members.split(',').map(s => s.trim()) : [];
+				if (assign_members.length > 0) {
+					const ul = document.createElement("ul");
+					assign_members.forEach(assign_member => {
+						const li = document.createElement("li");
+						li.textContent = assign_member
+						ul.appendChild(li);
+					});
+					td.appendChild(ul);
+				} else {
+					td.textContent = "-";
+				}
 				tr.appendChild(td);
 
 				// Team
@@ -299,7 +307,7 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				tr.appendChild(td);
 				renderedTaskPic[picKey] = true;
 			}
-			
+
 			if (isOwnerSubtask) {// Sub Task
 				let td = document.createElement("td");
 				td.textContent = row.sub_task || "-";
@@ -325,7 +333,14 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				else if (row.sub_task_status === "Cancel") td.style.color = "red";
 				tr.appendChild(td);
 
-			} 
+			}
+			// else {
+			// 	for (let i =0; i<5; i++){
+			// 		td = document.createElement("td")
+			// 		td.textContent = "-"
+			// 		tr.appendChild(td)
+			// 	}
+			// }
 			tbody.appendChild(tr);
 
 		});

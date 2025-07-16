@@ -13,6 +13,18 @@ def get_team_members_map():
 
     return {row["main_task"]: row["members"] for row in team_data}
 
+def get_assign_by_map():
+    assign_by_data = frappe.db.sql("""
+        SELECT
+            m_assign_by.parent AS main_task,
+            GROUP_CONCAT(emp.employee_name SEPARATOR ', ') AS assign_by_members
+        FROM `tabMainTask Assign By` m_assign_by
+        LEFT JOIN `tabEmployee` emp ON m_assign_by.employee = emp.name
+        GROUP BY m_assign_by.parent
+    """, as_dict=True)
+
+    return {row["main_task"]: row["assign_by_members"] for row in assign_by_data}
+
 def execute(filters=None):
     columns = get_columns()
     data = []
@@ -32,17 +44,26 @@ def execute(filters=None):
                         LEFT JOIN `tabMainTask Team` mteam2 ON mt2.name = mteam2.parent
                         WHERE mt2.owner = %(user)s OR mteam2.employee = %(employee_id)s
                     )
+                    OR mt.name IN (
+                        SELECT mt2.name FROM `tabMainTask` mt2
+                        LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent
+                        WHERE m_assign_by2.employee = %(employee_id)s
+                    )
                 ) AND st.status = %(status)s
                 """
         else:
             conditions = """
                 WHERE (
                     mt.owner = %(user)s
-                    OR mt.assigned_by = %(employee_id)s
                     OR mt.name IN (
                         SELECT mt2.name FROM `tabMainTask` mt2
                         LEFT JOIN `tabMainTask Team` mteam2 ON mt2.name = mteam2.parent
                         WHERE mt2.owner = %(user)s OR mteam2.employee = %(employee_id)s
+                    )
+                    OR mt.name IN (
+                        SELECT mt2.name FROM `tabMainTask` mt2
+                        LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent
+                        WHERE m_assign_by2.employee = %(employee_id)s
                     )
                 )
                 """
@@ -56,7 +77,6 @@ def execute(filters=None):
             SELECT
             mt.name AS mt_name,
                 mt.maintask_name AS maintask_name,
-                mt.assigned_by_name AS assigned_by,
                 mt.assign_date,
                 mt.due_date,
                 mt.status AS mt_status,
@@ -89,8 +109,10 @@ def execute(filters=None):
                          as_dict=True)
 
     team_map = get_team_members_map()
+    assign_by_map = get_assign_by_map()
 
     for row in data:
+        row["assign_by_members"] = assign_by_map.get(row["mt_name"], "")
         row["team_members"] = team_map.get(row["mt_name"], "")
 
     processed_mt = set()
@@ -132,7 +154,8 @@ def execute(filters=None):
 def get_columns():
     return [
         {"label": _("Main Task"), "fieldname": "maintask_name", "fieldtype": "Data", "width": 200},
-        {"label": _("Assigned By"), "fieldname": "assigned_by", "fieldtype": "Data", "width": 150},
+        # {"label": _("Assigned By"), "fieldname": "assigned_by", "fieldtype": "Data", "width": 150},
+        {"label": _("Assigned By"), "fieldname": "assign_by_members", "fieldtype": "Data", "width": 200},
         {"label": _("Team Members"), "fieldname": "team_members", "fieldtype": "Data", "width": 200},
         {"label": _("Assign Date"), "fieldname": "assign_date", "fieldtype": "Date", "width": 120},
         {"label": _("Due Date"), "fieldname": "due_date", "fieldtype": "Date", "width": 120},

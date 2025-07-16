@@ -250,7 +250,7 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 				tr.appendChild(td);
 
 				renderedTask[taskKey] = true;
-			} 
+			}
 
 			const picKey = `${row.t_name}|||${row.pic_task_user_id}`;
 			if (!renderedTaskPic[picKey]) {
@@ -261,7 +261,7 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 				tr.appendChild(td);
 				renderedTaskPic[picKey] = true;
 			}
-			
+
 			if (isOwnerSubtask) {
 				// Sub Task
 				let td = document.createElement("td");
@@ -297,8 +297,14 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 				td = document.createElement("td");
 				td.textContent = row.contribution || "-";
 				tr.appendChild(td);
+			} else {
+				for (let i =0; i<7; i++){
+					td = document.createElement("td")
+					td.textContent = "-"
+					tr.appendChild(td)
+				}
 			}
-			console.log('column subtask', row.sub_task);
+
 			tbody.appendChild(tr);
 		});
 

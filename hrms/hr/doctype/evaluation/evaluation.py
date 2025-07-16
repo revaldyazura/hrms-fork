@@ -115,7 +115,7 @@ def user_edit_evaluation(subtask):
         if doc.tasks in parent_task_pic:
             return "task_pics"
 
-        if doc.pic_subtask == employee_id and employee_id != maintask.assigned_by and frappe.session.user != maintask.owner:
+        if doc.pic_subtask == employee_id and frappe.session.user != maintask.owner:
             return "pic_subtask"
 
     return "none"
@@ -135,7 +135,6 @@ def has_permission(doc, ptype, user):
 
     employee = frappe.get_doc("Employee", employee_id)
     tasks = frappe.get_doc("Tasks", doc.tasks)
-    pic_task = tasks.pic_task
     maintask = frappe.get_doc("MainTask", doc.maintask)
 
     parent_task_pic = frappe.get_all(
@@ -143,10 +142,22 @@ def has_permission(doc, ptype, user):
         filters={"employee": employee_id},
         pluck="parent"
     )
+
+    parent_assign_by = frappe.get_all(
+        "MainTask Assign By",
+        filters={"employee": employee_id},
+        pluck="parent"
+    )
+
     if ptype == "delete":
-        if doc.pic_subtask == employee_id and pic_task != employee_id and doc.tasks not in parent_task_pic and employee_id != maintask.assigned_by and maintask.owner != user:
-            frappe.throw(f"{employee.employee_name} is not allowed to deleting {doc.subtask_name} evaluation.",
+        if doc.pic_subtask == employee_id and doc.tasks not in parent_task_pic and maintask.owner != user:
+            frappe.throw(f"{employee.employee_name} is pic subtask only and not allowed to deleting {doc.subtask_name} evaluation.",
                          frappe.PermissionError)
+            return False
+        if doc.maintask in parent_assign_by:
+            frappe.throw(
+                f"{employee.employee_name} is assign by only and not allowed to deleting {doc.subtask_name} evaluation.",
+                frappe.PermissionError)
             return False
     elif doc.pic_subtask == employee_id and ptype != "delete":
         return True
@@ -156,7 +167,7 @@ def has_permission(doc, ptype, user):
 
     if doc.tasks:
         owner_task = tasks.owner
-        if pic_task == employee_id or owner_task == frappe.session.user or tasks in parent_task_pic:
+        if  owner_task == frappe.session.user or tasks in parent_task_pic:
             return True
 
     frappe.throw(f"{employee.employee_name} is not allowed to accessing {doc.subtask_name} evaluation.",
@@ -209,20 +220,25 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
         return ""
 
     employee_id = frappe.get_value("Employee", {"user_id": user_id}, "name")
-    # print((f'employee id: {employee_id}'))
+
     parent_mteam = frappe.get_all(
         "MainTask Team",
         filters={"employee": employee_id},
         pluck="parent"
     )
 
-    if not parent_mteam:
-        return "1=0"
+    parent_assign_by = frappe.get_all(
+        "MainTask Assign By",
+        filters={"employee": employee_id},
+        pluck="parent"
+    )
 
     if not employee_id:
         return "1=0"
 
     maintask_ids = "', '".join(parent_mteam)
+
+    assign_by_maintask_ids = "', '".join(parent_assign_by)
 
     return f"""
         (`tabEvaluation`.`pic_subtask` = '{employee_id}'
@@ -231,5 +247,5 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
             SELECT `name` FROM `tabMainTask` WHERE `owner` = '{user_id}' OR `assigned_by` = '{employee_id}' OR `name` IN ('{maintask_ids}')
         ) OR `tabEvaluation`.`tasks` IN (
             SELECT `name` FROM `tabTasks` WHERE `owner` = '{user_id}' OR `pic_task` = '{employee_id}'
-        ))
+        )OR `tabEvaluation`.`maintask` IN (SELECT `name` FROM `tabMainTask` WHERE name IN ('{assign_by_maintask_ids}')))
     """
