@@ -9,11 +9,9 @@
   "data_section",
   "maintask_name",
   "assign_date",
-  "assigned_by",
   "column_break_iomx",
   "status",
   "due_date",
-  "assigned_by_name",
   "assign_by_section",
   "table_aiqh",
   "section_break_wtby",
@@ -30,16 +28,6 @@
    "in_list_view": 1,
    "label": "Title",
    "reqd": 1
-  },
-  {
-   "description": "The employee who assign this task, or the project manager",
-   "fieldname": "assigned_by",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "ignore_user_permissions": 1,
-   "in_list_view": 1,
-   "label": "Assigned By",
-   "options": "Employee"
   },
   {
    "description": "Add multiple employee as the team members of this maintask, the choosen employee can assigned as PIC in task & subtask (you have to include yourself too)",
@@ -65,6 +53,7 @@
    "reqd": 1
   },
   {
+   "description": "The status of this maintask",
    "fieldname": "status",
    "fieldtype": "Select",
    "hidden": 1,
@@ -80,13 +69,6 @@
    "fieldtype": "Int",
    "hidden": 1,
    "label": "Total Time (in minutes)",
-   "permlevel": 1
-  },
-  {
-   "fieldname": "assigned_by_name",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Assigned by Name",
    "permlevel": 1
   },
   {
@@ -135,8 +117,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-16 10:56:35.609534",
- "modified_by": "Administrator",
+ "modified": "2025-07-16 20:26:31.340191",
+ "modified_by": "julianto@indonesiaindicator.com",
  "module": "HR",
  "name": "MainTask",
  "naming_rule": "Expression (old style)",

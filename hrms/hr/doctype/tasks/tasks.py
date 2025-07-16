@@ -228,8 +228,8 @@ def get_open_maintask_as_the_owner(doctype, txt, searchfield, start, page_len, f
 
     conditions = ""
     if user != "Administrator":
-        conditions = """WHERE (mt.owner = %(user)s OR mt.assigned_by = %(employee_id)s) OR
-        mt.name IN ( SELECT mt2.name FROM `tabMainTask` mt2 LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent  WHERE m_assign_by2.employee = %(employee_id)s ) AND mt.status = 'Open'"""
+        conditions = """WHERE (mt.owner = %(user)s) 
+        OR mt.name IN ( SELECT mt2.name FROM `tabMainTask` mt2 LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent  WHERE m_assign_by2.employee = %(employee_id)s ) AND mt.status = 'Open'"""
 
     maintasks = frappe.db.sql(f"""
         SELECT mt.name, mt.maintask_name

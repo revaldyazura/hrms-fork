@@ -16,15 +16,10 @@ class MainTask(Document):
         self.validate_maintask_data()
 
     def validate_date(self):
-        # if self.assign_date and getdate(self.assign_date) < getdate(today()):
-        #     throw(_("Assign date cannot be later than today."))
-
         self.validate_from_to_dates("assign_date", "due_date")
 
     def validate_maintask_data(self):
         self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
-        full_name = frappe.db.get_value("Employee", {"name": self.assigned_by}, "employee_name")
-        self.assigned_by_name = full_name if full_name else ""
 
 
 def before_save(doc, method):

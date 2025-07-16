@@ -9,11 +9,9 @@
   "data_section",
   "maintask",
   "maintask_name",
-  "pic_task",
   "column_break_cjye",
   "task_name",
   "status",
-  "pic_task_name",
   "section_break_esmb",
   "task_pic",
   "section_break_sezh",
@@ -52,16 +50,6 @@
    "reqd": 1
   },
   {
-   "description": "Employee that assigned to do this task",
-   "fieldname": "pic_task",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "ignore_user_permissions": 1,
-   "label": "PIC",
-   "options": "Employee",
-   "read_only": 1
-  },
-  {
    "description": "The status of this task",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -77,14 +65,6 @@
    "fieldtype": "Data",
    "label": "Maintask Title",
    "permlevel": 2
-  },
-  {
-   "fetch_from": "pic_task.employee_name",
-   "fieldname": "pic_task_name",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "PIC Task Name",
-   "read_only": 1
   },
   {
    "description": "The owner of this task",
@@ -149,8 +129,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-16 10:55:20.788892",
- "modified_by": "Administrator",
+ "modified": "2025-07-16 20:16:07.662423",
+ "modified_by": "julianto@indonesiaindicator.com",
  "module": "HR",
  "name": "Tasks",
  "naming_rule": "Expression (old style)",

@@ -166,6 +166,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "collapsible": 1,
    "fieldname": "additional_section",
    "fieldtype": "Section Break",
    "label": "Additional"
@@ -181,7 +182,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-16 16:29:45.763321",
+ "modified": "2025-07-16 20:29:14.131769",
  "modified_by": "julianto@indonesiaindicator.com",
  "module": "HR",
  "name": "Evaluation",
