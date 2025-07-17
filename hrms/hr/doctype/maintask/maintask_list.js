@@ -4,11 +4,5 @@ frappe.listview_settings['MainTask'] = {
 		indicator[1] = {Done: "green", Cancel: "red", Hold: "orange", Open: "blue"}[doc.status];
 		return indicator;
 	},
-	add_fields: ['assigned_by', 'assigned_by_name'],
 
-	formatters: {
-		assigned_by(val, df, doc) {
-			return doc.assigned_by_name || val;
-		}
-	}
 }

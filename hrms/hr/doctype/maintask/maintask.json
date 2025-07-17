@@ -9,9 +9,10 @@
   "data_section",
   "maintask_name",
   "assign_date",
+  "due_date",
   "column_break_iomx",
   "status",
-  "due_date",
+  "priority",
   "assign_by_section",
   "table_aiqh",
   "section_break_wtby",
@@ -51,17 +52,6 @@
    "in_list_view": 1,
    "label": "Due Date",
    "reqd": 1
-  },
-  {
-   "description": "The status of this maintask",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Open\nDone\nHold\nCancel",
-   "show_on_timeline": 1
   },
   {
    "description": "Calculated time from assign date to due date, per 8 hours of works (in minutes)",
@@ -112,12 +102,27 @@
    "fieldtype": "Table",
    "options": "MainTask Assign By",
    "reqd": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh"
+  },
+  {
+   "description": "The status of this maintask",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Open\nDone\nHold\nCancel"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-16 20:26:31.340191",
+ "modified": "2025-07-17 15:55:16.806486",
  "modified_by": "julianto@indonesiaindicator.com",
  "module": "HR",
  "name": "MainTask",

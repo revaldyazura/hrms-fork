@@ -40,7 +40,6 @@
    "fetch_from": "tasks.maintask",
    "fieldname": "maintask",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "MainTask",
    "options": "MainTask",
    "show_on_timeline": 1
@@ -213,8 +212,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-16 10:58:57.210720",
- "modified_by": "Administrator",
+ "modified": "2025-07-17 18:29:31.154236",
+ "modified_by": "julianto@indonesiaindicator.com",
  "module": "HR",
  "name": "SubTask",
  "naming_rule": "Expression (old style)",
