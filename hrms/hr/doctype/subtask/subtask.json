@@ -195,7 +195,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type",
-   "options": "Data Analyst\nDB Programming\nData Viz\nAI/ML\nPrompt Eng\nBig Data Viz\nAI Agents\nLLM & Fine Tuning\nProgramming\nTesting\nObserver\nSystem Design\nCode Versioning + Deployment\nGraphic Design\nUser Interface\nUX Design\nData Scrapper\nHardware\nOS\nNetworking\nCloud Computing\nInfrastruktur Kontainer\nMS Office\nMedia Sosial\nDokumentasi\nDomain Knowledge Expert\nBusiness Process Expert",
+   "options": "Data Analyst\nDB Programming\nData Viz\nAI/ML\nPrompt Eng\nBig Data Viz\nAI Agents\nLLM & Fine Tuning\nProgramming\nTesting\nObserver\nSystem Design\nCode Versioning + Deployment\nGraphic Design\nUser Interface\nUX Design\nData Scrapper\nHardware\nOS\nNetworking\nCloud Computing\nContainer Infrastructure\nMS Office\nSocial Media\nDocumentation\nDomain Knowledge Expert\nBusiness Process Expert\nAdministration\nRecruitment",
    "reqd": 1
   },
   {
@@ -212,7 +212,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-17 18:29:31.154236",
+ "modified": "2025-07-17 20:10:57.318901",
  "modified_by": "julianto@indonesiaindicator.com",
  "module": "HR",
  "name": "SubTask",
