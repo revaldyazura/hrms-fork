@@ -11,6 +11,63 @@ frappe.ui.form.on("SubTask", {
 				$(this).css('color', 'green');
 			}
 		});
+		if (!frm.is_new()) {
+			frappe.call({
+				method: "hrms.hr.doctype.subtask.subtask.check_if_evaluator",
+				args: {
+					subtask: frm.doc.name
+				},
+				callback: function (r) {
+					if (r.message === true) {
+						frm.add_custom_button("Evaluate This SubTask", () => {
+							frappe.prompt([
+								{
+									label: "SubTask",
+									fieldname: "subtask",
+									fieldtype: "Read Only",
+									default: frm.doc.name
+								},
+								{
+									label: "SubTask Title",
+									fieldname: "subtask_name",
+									fieldtype: "Read Only",
+									default: frm.doc.subtask_name
+								},
+								{
+									label: "PIC SubTask Name",
+									fieldname: "pic_subtask_name",
+									fieldtype: "Read Only",
+									default: frm.doc.pic_subtask_name
+								},
+								{
+									label: "Performance",
+									fieldname: "performance",
+									fieldtype: "Int",
+									reqd: 1
+								}
+							], (values) => {
+								frappe.call({
+									method: "frappe.client.insert",
+									args: {
+										doc: {
+											doctype: "Evaluation",
+											subtask: values.subtask,
+											performance: values.performance
+										}
+									},
+									callback: function (r) {
+										if (!r.exc) {
+											frappe.msgprint("Evaluation submitted successfully.");
+										}
+									}
+								});
+							}, "Evaluate SubTask");
+						});
+					}
+				}
+			})
+
+		}
 	},
 	onload: function (frm) {
 		frm.set_query("tasks", function () {

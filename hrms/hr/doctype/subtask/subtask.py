@@ -274,3 +274,15 @@ def get_task_with_same_pic(doctype, txt, searchfield, start, page_len, filters):
         "page_len": page_len,
     })
     return tasks
+
+@frappe.whitelist()
+def check_if_evaluator(subtask):
+	user = frappe.session.user
+	subtask = frappe.get_doc("SubTask", subtask)
+	evaluated_subtask = frappe.get_value("Evaluation", {"subtask": subtask.name}, "subtask")
+	if evaluated_subtask:
+		return False
+	# task = frappe.get_doc("Tasks", subtask.tasks)
+	maintask = frappe.get_doc("MainTask", subtask.maintask)
+
+	return subtask.owner == user or maintask.owner == user
