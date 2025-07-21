@@ -9,10 +9,10 @@
  "dynamic_filters_json": "{}",
  "filters_json": "{\"status\":\"Open\"}",
  "group_by_type": "Count",
- "idx": 0,
+ "idx": 1,
  "is_public": 1,
  "is_standard": 1,
- "modified": "2025-06-19 14:57:55.222632",
+ "modified": "2025-07-17 20:43:16.691396",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask Status",
@@ -25,6 +25,9 @@
   },
   {
    "role": "HR Manager"
+  },
+  {
+   "role": "Supervisor"
   }
  ],
  "time_interval": "Yearly",

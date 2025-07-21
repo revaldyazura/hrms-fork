@@ -3,19 +3,22 @@
  "creation": "2025-06-18 16:05:23.723024",
  "docstatus": 0,
  "doctype": "Page",
- "idx": 0,
- "modified": "2025-06-18 16:07:31.945807",
+ "idx": 4,
+ "modified": "2025-07-17 20:44:21.931837",
  "modified_by": "Administrator",
  "module": "HR",
- "name": "task-management-summ",
+ "name": "task-management-summary",
  "owner": "Administrator",
- "page_name": "task-management-summ",
+ "page_name": "task-management-summary",
  "roles": [
   {
    "role": "HR Manager"
   },
   {
    "role": "Manager"
+  },
+  {
+   "role": "Supervisor"
   }
  ],
  "script": null,
