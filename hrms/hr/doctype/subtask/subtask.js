@@ -20,49 +20,96 @@ frappe.ui.form.on("SubTask", {
 				callback: function (r) {
 					if (r.message === true) {
 						frm.add_custom_button("Evaluate This SubTask", () => {
-							frappe.prompt([
-								{
-									label: "SubTask",
-									fieldname: "subtask",
-									fieldtype: "Read Only",
-									default: frm.doc.name
-								},
-								{
-									label: "SubTask Title",
-									fieldname: "subtask_name",
-									fieldtype: "Read Only",
-									default: frm.doc.subtask_name
-								},
-								{
-									label: "PIC SubTask Name",
-									fieldname: "pic_subtask_name",
-									fieldtype: "Read Only",
-									default: frm.doc.pic_subtask_name
-								},
-								{
-									label: "Performance",
-									fieldname: "performance",
-									fieldtype: "Int",
-									reqd: 1
-								}
-							], (values) => {
-								frappe.call({
-									method: "frappe.client.insert",
-									args: {
-										doc: {
-											doctype: "Evaluation",
-											subtask: values.subtask,
-											performance: values.performance
-										}
+							const dialog = new frappe.ui.Dialog({
+								title: "Evaluate SubTask",
+								fields: [
+									{
+										label: "SubTask",
+										fieldname: "subtask",
+										fieldtype: "Read Only",
+										default: frm.doc.name
 									},
-									callback: function (r) {
-										if (!r.exc) {
-											frappe.msgprint("Evaluation submitted successfully.");
+									{
+										label: "SubTask Title",
+										fieldname: "subtask_name",
+										fieldtype: "Read Only",
+										default: frm.doc.subtask_name
+									},
+									{
+										label: "PIC SubTask Name",
+										fieldname: "pic_subtask_name",
+										fieldtype: "Read Only",
+										default: frm.doc.pic_subtask_name
+									},
+									{
+										label: "Performance",
+										fieldname: "performance",
+										fieldtype: "Int",
+										reqd: 1,
+										description: "Enter a performance rating between 0 to 120."
+									}
+								],
+								primary_action_label: "Submit",
+								primary_action(values) {
+									const perf = parseInt(values.performance);
+
+									if (isNaN(perf) || perf < 0 || perf > 120) {
+										frappe.msgprint({
+											title: __("Invalid Input"),
+											message: __("Performance must be a number between 0 and 120."),
+											indicator: "red"
+										});
+										return;
+									}
+
+									frappe.call({
+										method: "frappe.client.insert",
+										args: {
+											doc: {
+												doctype: "Evaluation",
+												subtask: values.subtask,
+												performance: perf
+											}
+										},
+										callback: function (r) {
+											if (!r.exc) {
+												frappe.msgprint("Evaluation submitted successfully.");
+												dialog.hide();
+											}
 										}
+									});
+								}
+							});
+
+							dialog.show();
+
+							// Tambahkan validasi real-time setelah dialog dirender
+							setTimeout(() => {
+								const input = dialog.fields_dict.performance.$wrapper.find("input");
+
+								input.on("input", function () {
+									let value = $(this).val();
+
+									// Hapus karakter non-digit
+									if (!/^\d*$/.test(value)) {
+										frappe.msgprint({
+											title: __("Invalid Input"),
+											message: __("Only numeric values are allowed."),
+											indicator: "red"
+										});
+										$(this).val(value.replace(/\D/g, ''));
+									}
+
+									// Batas maksimum
+									const numericValue = parseInt($(this).val() || "0");
+									if (numericValue > 120) {
+										frappe.msgprint("Maximum allowed value is 120.");
+										$(this).val("120");
 									}
 								});
-							}, "Evaluate SubTask");
+							}, 100);
 						});
+
 					}
 				}
 			})
@@ -86,6 +133,29 @@ frappe.ui.form.on("SubTask", {
 					tasks: frm.doc.tasks
 				}
 			};
+		});
+		frappe.after_ajax(() => {
+			// Tunggu hingga field tersedia di DOM
+			setTimeout(() => {
+				const field_wrapper = frm.fields_dict["target_time"];
+				if (!field_wrapper) return;
+
+				const input = field_wrapper.$wrapper.find("input");
+
+				input.on("input", function () {
+					let value = $(this).val();
+
+					// Cek apakah hanya angka
+					if (!/^\d*$/.test(value)) {
+						frappe.msgprint({
+							title: __("Invalid Input"),
+							message: __("Only numeric values are allowed in Target Time."),
+							indicator: "red"
+						});
+						$(this).val(value.replace(/\D/g, ""));
+					}
+				});
+			}, 300); // Delay sedikit agar field render dulu
 		});
 		if (!frm.is_new()) {
 			frappe.call({

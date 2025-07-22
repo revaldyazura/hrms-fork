@@ -63,6 +63,20 @@ def get_team_members_map():
 
     return {row["main_task"]: row["members"] for row in team_data}
 
+def get_subtask_type_map():
+    types_data = frappe.db.sql("""
+                              SELECT stype.parent                                   AS subtask,
+                                    GROUP_CONCAT(stype.subtask_type SEPARATOR ', ')AS type
+                              FROM `tabSubTask Type` stype
+                              GROUP BY stype.parent
+                              """, as_dict=True)
+    
+    data = {row["subtask"]: row["type"] for row in types_data}
+    print("Subtask Types:", types_data)  # Debugging line to check the output
+    print("Subtask Types Map:", data)  # Debugging line to check the output
+
+    return data
+
 
 def get_assign_by_map():
     assign_by_data = frappe.db.sql("""
@@ -110,13 +124,14 @@ def get_task_report_data():
             mt.status AS mt_status,
             t.name AS t_name,
             t.task_name AS task,
-            t.target_time,
+            t.target_time_minutes as target_time,
             emp_tp.user_id AS pic_task_user_id,
             emp_tp.employee_name AS task_pic_name,
+            st.name AS st_name,
             st.owner AS sub_task_owner,
             st.subtask_name AS sub_task,
             st.pic_subtask_name,
-            st.target_time AS subtask_target_time,
+            st.target_time_minutes AS subtask_target_time,
             st.value AS value_subtask,
             st.status AS sub_task_status
         FROM `tabMainTask` mt
@@ -141,5 +156,8 @@ def get_task_report_data():
     for row in raw_data:
         row["team_members"] = team_map.get(row["mt_name"], "")
         row["assign_by_members"] = assign_by_map.get(row["mt_name"], "")
+        row["subtask_types"] = get_subtask_type_map().get(row["st_name"], "")
+        
+    print("Raw Data:", raw_data)  # Debugging line to check the output
 
     return raw_data

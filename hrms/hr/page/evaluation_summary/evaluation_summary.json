@@ -4,13 +4,23 @@
  "docstatus": 0,
  "doctype": "Page",
  "idx": 0,
- "modified": "2025-06-19 13:54:16.949426",
+ "modified": "2025-07-22 10:48:12.067258",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "evaluation-summary",
  "owner": "Administrator",
  "page_name": "evaluation-summary",
- "roles": [],
+ "roles": [
+  {
+   "role": "HR Manager"
+  },
+  {
+   "role": "Manager"
+  },
+  {
+   "role": "Supervisor"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,

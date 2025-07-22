@@ -17,9 +17,10 @@
   "pic_subtask",
   "pic_subtask_name",
   "column_break_fdww",
-  "value",
-  "subtask_type",
   "status",
+  "value",
+  "type_section",
+  "type",
   "section_break_ddaa",
   "target_time",
   "target_time_minutes",
@@ -191,14 +192,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "subtask_type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Type",
-   "options": "Data Analyst\nDB Programming\nData Viz\nAI/ML\nPrompt Eng\nBig Data Viz\nAI Agents\nLLM & Fine Tuning\nProgramming\nTesting\nObserver\nSystem Design\nCode Versioning + Deployment\nGraphic Design\nUser Interface\nUX Design\nData Scrapper\nHardware\nOS\nNetworking\nCloud Computing\nContainer Infrastructure\nMS Office\nSocial Media\nDocumentation\nDomain Knowledge Expert\nBusiness Process Expert\nAdministration\nRecruitment",
-   "reqd": 1
-  },
-  {
    "fieldname": "parent1_section",
    "fieldtype": "Section Break",
    "label": "Parent"
@@ -207,13 +200,23 @@
    "fieldname": "submission_section",
    "fieldtype": "Section Break",
    "label": "Submission"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Table",
+   "options": "SubTask Type"
+  },
+  {
+   "fieldname": "type_section",
+   "fieldtype": "Section Break",
+   "label": "Types"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-17 20:10:57.318901",
- "modified_by": "julianto@indonesiaindicator.com",
+ "modified": "2025-07-21 20:43:51.793605",
+ "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",
  "naming_rule": "Expression (old style)",

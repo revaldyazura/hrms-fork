@@ -24,6 +24,29 @@ frappe.ui.form.on("Tasks", {
 				}
 			};
 		});
+		frappe.after_ajax(() => {
+			// Tunggu hingga field tersedia di DOM
+			setTimeout(() => {
+				const field_wrapper = frm.fields_dict["target_time"];
+				if (!field_wrapper) return;
+
+				const input = field_wrapper.$wrapper.find("input");
+
+				input.on("input", function () {
+					let value = $(this).val();
+
+					// Cek apakah hanya angka
+					if (!/^\d*$/.test(value)) {
+						frappe.msgprint({
+							title: __("Invalid Input"),
+							message: __("Only numeric values are allowed in Target Time."),
+							indicator: "red"
+						});
+						$(this).val(value.replace(/\D/g, ""));
+					}
+				});
+			}, 300); // Delay sedikit agar field render dulu
+		});
 		frm.fields_dict["task_pic"].grid.get_field("employee").get_query = function (doc, cdt, cdn) {
 			if (!frm.doc.maintask) {
 				frappe.msgprint("Choose the main task field first.");

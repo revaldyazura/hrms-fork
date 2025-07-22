@@ -55,7 +55,7 @@ def execute(filters=None):
                       ev.task_name,
                       ev.subtask,
                       ev.subtask_name,
-                      st.target_time AS subtask_target_time,
+                      st.target_time_minutes AS subtask_target_time,
                     ev.pic_subtask_name,
                       ev.subtask_type,
                         ev.value_subtask AS value_subtask,

@@ -34,52 +34,70 @@ class SubTask(Document):
                 ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
                 self.created_by = ref_doc.owner
                 self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+                self.owner = ref_doc.owner
+                self.attachment = None
+                self.description = None
                 if self.status != "Open":
                     self.status = "Open"
-        elif self.auto_repeat:
-            print('self.auto_repeat triggered in validate')
-            reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
-            ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
-            self.created_by = ref_doc.owner
-            self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
-            if self.status != "Open":
-                self.status = "Open"
-        elif frappe.flags.in_auto_repeat:
-            print('frappe.flags.in_auto_repeat triggered in validate')
-            reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
-            ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
-            self.created_by = ref_doc.owner
-            self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
-            if self.status != "Open":
-                self.status = "Open"
+        # elif self.auto_repeat:
+        #     print('self.auto_repeat triggered in validate')
+        #     reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+        #     ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+        #     self.created_by = ref_doc.owner
+        #     self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+        #     self.owner = ref_doc.owner
+        #     self.attachment = ''
+        #     self.description = ''
+        #     if self.status != "Open":
+        #         self.status = "Open"
+        # elif frappe.flags.in_auto_repeat:
+        #     print('frappe.flags.in_auto_repeat triggered in validate')
+        #     reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+        #     ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+        #     self.created_by = ref_doc.owner
+        #     self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+        #     self.owner = ref_doc.owner
+        #     self.attachment = ''
+        #     self.description = ''
+        #     if self.status != "Open":
+        #         self.status = "Open"
 
-    def before_insert(self):
-        if self.flags.updater_reference:
-            print('self.flags.updater_reference triggered in before_insert')
-            if self.flags.updater_reference.get("doctype") == "Auto Repeat":
-                print('doctype auto repeat triggered in before_insert')
-                reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
-                ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
-                self.created_by = ref_doc.owner
-                self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
-                if self.status != "Open":
-                    self.status = "Open"
-        elif self.auto_repeat:
-            print('self.auto_repeat triggered in before_insert')
-            reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
-            ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
-            self.created_by = ref_doc.owner
-            self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
-            if self.status != "Open":
-                self.status = "Open"
-        elif frappe.flags.in_auto_repeat:
-            print('frappe.flags.in_auto_repeat triggered in before_insert')
-            reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
-            ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
-            self.created_by = ref_doc.owner
-            self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
-            if self.status != "Open":
-                self.status = "Open"
+    # def before_insert(self):
+    #     if self.flags.updater_reference:
+    #         print('self.flags.updater_reference triggered in before_insert')
+    #         if self.flags.updater_reference.get("doctype") == "Auto Repeat":
+    #             print('doctype auto repeat triggered in before_insert')
+    #             reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+    #             ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+    #             self.created_by = ref_doc.owner
+    #             self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+    #             self.owner = ref_doc.owner
+    #             self.attachment = ''
+    #             self.description = ''
+    #             if self.status != "Open":
+    #                 self.status = "Open"
+    #     elif self.auto_repeat:
+    #         print('self.auto_repeat triggered in before_insert')
+    #         reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+    #         ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+    #         self.created_by = ref_doc.owner
+    #         self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+    #         self.owner = ref_doc.owner
+    #         self.attachment = ''
+    #         self.description = ''
+    #         if self.status != "Open":
+    #             self.status = "Open"
+    #     elif frappe.flags.in_auto_repeat:
+    #         print('frappe.flags.in_auto_repeat triggered in before_insert')
+    #         reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+    #         ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+    #         self.created_by = ref_doc.owner
+    #         self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+    #         self.owner = ref_doc.owner
+    #         self.attachment = ''
+    #         self.description = ''
+    #         if self.status != "Open":
+    #             self.status = "Open"
 
 
 def update_fields(doc, method):

@@ -81,14 +81,14 @@ def execute(filters=None):
                 mt.due_date,
                 mt.status AS mt_status,
                 t.task_name AS task,
-                t.target_time,
+                t.target_time_minutes as target_time,
                 emp.user_id AS pic_task_user_id,
                 emp.employee_name AS pic_task_name,
                 st.owner AS sub_task_owner,
                 st.name AS st_name,
                 st.subtask_name AS sub_task,
                 st.pic_subtask_name,
-                st.target_time AS subtask_target_time,
+                st.target_time_minutes AS subtask_target_time,
                 st.value AS value_subtask,
                 st.status AS sub_task_status
             FROM `tabMainTask` mt

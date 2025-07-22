@@ -11,6 +11,36 @@ frappe.ui.form.on("Evaluation", {
 				query: "hrms.hr.doctype.evaluation.evaluation.get_open_subtask_as_owner"
 			};
 		});
+		frappe.after_ajax(() => {
+			// Tunggu hingga field tersedia di DOM
+			setTimeout(() => {
+				const field_wrapper = frm.fields_dict["performance"];
+				if (!field_wrapper) return;
+
+				const input = field_wrapper.$wrapper.find("input");
+
+				input.on("input", function () {
+					let value = $(this).val();
+
+					// Cek apakah hanya angka
+					if (!/^\d*$/.test(value)) {
+						frappe.msgprint({
+							title: __("Invalid Input"),
+							message: __("Only numeric values are allowed in Performance."),
+							indicator: "red"
+						});
+						$(this).val(value.replace(/\D/g, ""));
+					}
+
+					// Batas maksimum
+					const numericValue = parseInt($(this).val() || "0");
+					if (numericValue > 120) {
+						frappe.msgprint("Maximum allowed value is 120.");
+						$(this).val("120");
+					}
+				});
+			}, 300); // Delay sedikit agar field render dulu
+		});
 		if (!frm.is_new()) {
 			frappe.call({
 				method: "hrms.hr.doctype.evaluation.evaluation.user_edit_evaluation",

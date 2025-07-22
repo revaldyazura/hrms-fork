@@ -199,6 +199,7 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				<th>PIC Task</th>
 				<th>Sub Task</th>
 				<th>Sub Task Target Time</th>
+				<th>Sub Task Types</th>
 				<th>PIC Sub Task</th>
 				<th>Value</th>
 				<th>Sub Task Status</th>
@@ -315,6 +316,26 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 
 				td = document.createElement("td");
 				td.textContent = row.subtask_target_time || "-";
+				tr.appendChild(td);
+
+				td = document.createElement("td");
+				// td.rowSpan = picTaskRowspan[picKey];
+				td.className = "bullet-list";
+
+
+				let subtask_types = row.subtask_types ? row.subtask_types.split(',').map(s => s.trim()) : [];
+				if (subtask_types.length > 0) {
+					const ul = document.createElement("ul");
+					subtask_types.forEach(type => {
+						const li = document.createElement("li");
+						li.textContent = type;
+						ul.appendChild(li);
+					});
+					td.appendChild(ul);
+				} else {
+					td.textContent = "-";
+				}
+
 				tr.appendChild(td);
 
 				td = document.createElement("td");
