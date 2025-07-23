@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "EVL.#####",
+ "autoname": "EVL-.YYYY.MM.-.#######",
  "creation": "2025-05-04 13:52:24.897427",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -17,7 +17,6 @@
   "value_subtask",
   "final_target_time",
   "contribution",
-  "subtask_type",
   "subtask_done_date",
   "parents_section",
   "maintask",
@@ -170,20 +169,13 @@
    "fieldname": "additional_section",
    "fieldtype": "Section Break",
    "label": "Additional"
-  },
-  {
-   "fetch_from": "subtask.subtask_type",
-   "fieldname": "subtask_type",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Type"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-16 20:29:14.131769",
- "modified_by": "julianto@indonesiaindicator.com",
+ "modified": "2025-07-23 20:49:04.117735",
+ "modified_by": "Administrator",
  "module": "HR",
  "name": "Evaluation",
  "naming_rule": "Expression (old style)",

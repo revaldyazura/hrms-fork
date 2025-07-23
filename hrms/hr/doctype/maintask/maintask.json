@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "MT.#####",
+ "autoname": "MT-.YYYY.MM.-.#######",
  "creation": "2025-05-04 12:56:51.620225",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -122,7 +122,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-23 10:53:57.513603",
+ "modified": "2025-07-23 20:49:32.925358",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",
