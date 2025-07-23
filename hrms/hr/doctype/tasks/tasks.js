@@ -80,3 +80,17 @@ frappe.ui.form.on("Tasks", {
 		}
 	},
 });
+frappe.ui.form.on('Task PIC', {
+  employee: function (frm, cdt, cdn) {
+    const row = locals[cdt][cdn];
+    if (!row.employee) return;
+	
+	const is_duplicate = frm.doc.task_pic.filter(r => r.employee === row.employee).length > 1;
+    if (is_duplicate) {
+      frappe.msgprint(__('{0} has been choosen as PIC Task member', [frappe.model.get_value(cdt, cdn, 'employee_name') || '']));
+      frappe.model.set_value(cdt, cdn, 'employee', null);
+      frappe.model.set_value(cdt, cdn, 'employee_name', null);
+      return;
+    }
+  }
+});

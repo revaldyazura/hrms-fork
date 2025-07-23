@@ -14,7 +14,7 @@
   "status",
   "priority",
   "assign_by_section",
-  "table_aiqh",
+  "assign_by",
   "section_break_wtby",
   "team",
   "additional_section",
@@ -97,13 +97,6 @@
    "label": "Assign By"
   },
   {
-   "description": "You can add multiple employee here",
-   "fieldname": "table_aiqh",
-   "fieldtype": "Table",
-   "options": "MainTask Assign By",
-   "reqd": 1
-  },
-  {
    "fieldname": "priority",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -117,13 +110,20 @@
    "fieldtype": "Select",
    "label": "Status",
    "options": "Open\nDone\nHold\nCancel"
+  },
+  {
+   "description": "You can add multiple employee here",
+   "fieldname": "assign_by",
+   "fieldtype": "Table",
+   "options": "MainTask Assign By",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-17 15:55:16.806486",
- "modified_by": "julianto@indonesiaindicator.com",
+ "modified": "2025-07-23 10:53:57.513603",
+ "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",
  "naming_rule": "Expression (old style)",

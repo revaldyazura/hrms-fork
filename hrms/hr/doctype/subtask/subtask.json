@@ -85,6 +85,7 @@
   },
   {
    "description": "The value of this subtask, each number is equals to:\n1 = Basic\n2 = Intermediate\n3 = Advance",
+   "documentation_url": "/app/kamus-kompetensi",
    "fieldname": "value",
    "fieldtype": "Select",
    "label": "Value",
@@ -215,7 +216,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-21 20:43:51.793605",
+ "modified": "2025-07-22 14:42:24.991128",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

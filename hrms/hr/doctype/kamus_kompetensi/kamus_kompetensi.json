@@ -1,28 +1,33 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:type",
- "creation": "2025-07-21 20:18:51.441184",
+ "autoname": "field:kompetensi",
+ "creation": "2025-07-22 13:34:15.444114",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "type"
+  "kompetensi",
+  "text_editor_cjcq"
  ],
  "fields": [
   {
-   "fieldname": "type",
+   "fieldname": "text_editor_cjcq",
+   "fieldtype": "Text Editor"
+  },
+  {
+   "fieldname": "kompetensi",
    "fieldtype": "Data",
-   "label": "Type",
+   "label": "Kompetensi",
    "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-23 10:29:21.035843",
+ "modified": "2025-07-22 14:18:07.634405",
  "modified_by": "Administrator",
  "module": "HR",
- "name": "SubTask Types",
+ "name": "Kamus Kompetensi",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
@@ -39,7 +44,6 @@
    "write": 1
   },
   {
-   "create": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -47,47 +51,11 @@
    "report": 1,
    "role": "Employee",
    "share": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Leader",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Supervisor",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Manager",
-   "share": 1,
-   "write": 1
   }
  ],
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "title_field": "type"
+ "title_field": "kompetensi"
 }

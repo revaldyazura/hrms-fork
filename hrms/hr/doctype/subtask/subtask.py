@@ -302,5 +302,13 @@ def check_if_evaluator(subtask):
 		return False
 	# task = frappe.get_doc("Tasks", subtask.tasks)
 	maintask = frappe.get_doc("MainTask", subtask.maintask)
+	roles = frappe.get_all("Has Role", filters={"parent": user}, pluck="role")
 
-	return subtask.owner == user or maintask.owner == user
+	if maintask.owner == user:
+		return True
+	if subtask.owner == user and ('leader' in roles or 'manager' in roles or 'supervisor' in roles):
+		return True
+	if "System Manager" in roles:
+		return True
+
+	return False

@@ -164,7 +164,7 @@ frappe.ui.form.on("SubTask", {
 					subtask_name: frm.doc.name
 				},
 				callback: function (r) {
-					const readonly_fields = ['task_name', 'target_time', 'maintask', 'tasks', "pic_subtask", "value", "status"];
+					const readonly_fields = ['subtask_name', 'target_time','unit_target_time', 'maintask', 'tasks', "pic_subtask", "value", "status", 'type'];
 					if (r.message === "pic_subtask") {
 						readonly_fields.forEach(field => {
 							frm.set_df_property(field, "read_only", 1);
