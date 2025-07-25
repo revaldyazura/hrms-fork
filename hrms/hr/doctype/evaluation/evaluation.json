@@ -38,7 +38,7 @@
    "reqd": 1
   },
   {
-   "description": "The grade of the selected subtask, it can't be over than 120",
+   "description": "Grade of the selected subtask (1\u2013120)",
    "fieldname": "performance",
    "fieldtype": "Int",
    "label": "Performance",
@@ -174,7 +174,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-23 20:49:04.117735",
+ "modified": "2025-07-25 17:49:05.318808",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Evaluation",

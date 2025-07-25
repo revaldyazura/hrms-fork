@@ -46,7 +46,7 @@ frappe.ui.form.on("SubTask", {
 										fieldname: "performance",
 										fieldtype: "Int",
 										reqd: 1,
-										description: "Enter a performance rating between 0 to 120."
+										description: "Grade of the selected subtask (1–120)"
 									}
 								],
 								primary_action_label: "Submit",
@@ -98,6 +98,16 @@ frappe.ui.form.on("SubTask", {
 											indicator: "red"
 										});
 										$(this).val(value.replace(/\D/g, ''));
+									}
+
+									if (value === "0") {
+										frappe.msgprint({
+											title: __("Invalid Value"),
+											message: __("Performance must be greater than 0."),
+											indicator: "red"
+										});
+										$(this).val("1"); // Kosongkan input
+										return;
 									}
 
 									// Batas maksimum
@@ -154,6 +164,15 @@ frappe.ui.form.on("SubTask", {
 						});
 						$(this).val(value.replace(/\D/g, ""));
 					}
+					if (value === "0") {
+						frappe.msgprint({
+							title: __("Invalid Value"),
+							message: __("Target Time must be greater than 0."),
+							indicator: "red"
+						});
+						$(this).val("1"); // Kosongkan input
+						return;
+					}
 				});
 			}, 300); // Delay sedikit agar field render dulu
 		});
@@ -164,7 +183,7 @@ frappe.ui.form.on("SubTask", {
 					subtask_name: frm.doc.name
 				},
 				callback: function (r) {
-					const readonly_fields = ['subtask_name', 'target_time','unit_target_time', 'maintask', 'tasks', "pic_subtask", "value", "status", 'type'];
+					const readonly_fields = ['subtask_name', 'target_time', 'unit_target_time', 'maintask', 'tasks', "pic_subtask", "value", "status", 'type'];
 					if (r.message === "pic_subtask") {
 						readonly_fields.forEach(field => {
 							frm.set_df_property(field, "read_only", 1);

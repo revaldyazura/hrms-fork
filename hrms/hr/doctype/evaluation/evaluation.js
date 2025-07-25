@@ -31,6 +31,15 @@ frappe.ui.form.on("Evaluation", {
 						});
 						$(this).val(value.replace(/\D/g, ""));
 					}
+					if (value === "0") {
+						frappe.msgprint({
+							title: __("Invalid Value"),
+							message: __("Performance must be greater than 0."),
+							indicator: "red"
+						});
+						$(this).val("1"); // Kosongkan input
+						return;
+					}
 
 					// Batas maksimum
 					const numericValue = parseInt($(this).val() || "0");

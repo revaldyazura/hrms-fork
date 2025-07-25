@@ -44,6 +44,15 @@ frappe.ui.form.on("Tasks", {
 						});
 						$(this).val(value.replace(/\D/g, ""));
 					}
+					if (value === "0") {
+						frappe.msgprint({
+							title: __("Invalid Value"),
+							message: __("Target Time must be greater than 0."),
+							indicator: "red"
+						});
+						$(this).val("1"); // Kosongkan input
+						return;
+					}
 				});
 			}, 300); // Delay sedikit agar field render dulu
 		});
