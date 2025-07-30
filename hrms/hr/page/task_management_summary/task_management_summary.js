@@ -27,7 +27,8 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 			<button id="reset-filters" class="btn btn-secondary">Reset Filters</button>
 		</div>
 		</div>
-		<div id="main-task-table"></div>
+		<div id="task-table"></div>
+		<div id="pagination-controls" class="text-center m-3"></div>
 
 		<style>
 			.filter-container {
@@ -51,52 +52,106 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 				padding: 6px 10px;
 			}
 
-			#main-task-table {
+			#task-table {
 				overflow-x: auto;
 				padding: 12px;
 			}
 
-			#main-task-table table {
+			#task-table table {
 				border-collapse: collapse;
 				width: 100%;
 				min-width: 1200px;
 			}
 
-			#main-task-table th,
-			#main-task-table td {
+			#task-table th,
+			#task-table td {
 				border: 1px solid #ccc;
 				text-align: center;
 				vertical-align: middle;
 				padding: 8px;
 			}
 
-			#main-task-table thead {
+			#task-table thead {
 				background-color: #f0f0f0;
 			}
 
-			#main-task-table td.bullet-list {
+			#task-table td.bullet-list {
 				text-align: left;
 			}
 
-			#main-task-table td.bullet-list ul {
+			#task-table td.bullet-list ul {
 				padding-left: 20px;
 				margin: 0;
 			}
 
-			#main-task-table td.bullet-list ul li {
+			#task-table td.bullet-list ul li {
 				list-style-type: disc;
 				line-height: 1.5;
 			}
+
+			#pagination-controls button {
+				border: 1px solid #ccc;
+				padding: 6px 12px;
+				margin: 0 4px;
+				cursor: pointer;
+				border-radius: 4px;
+				background-color: #f9f9f9;
+				transition: background-color 0.3s ease;
+			}
+			#pagination-controls button:hover {
+				background-color: #e6e6e6;
+			}
+			#pagination-controls button.active {
+				background-color: #007bff;
+				color: white;
+				border-color: #007bff;
+			}
+			#pagination-controls {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 6px;
+				flex-wrap: wrap;
+			}
+
+			#pagination-controls .page-btn,
+			#pagination-controls .arrow-btn {
+				border: 1px solid #ccc;
+				padding: 6px 12px;
+				cursor: pointer;
+				border-radius: 4px;
+				background-color: #f9f9f9;
+				transition: background-color 0.3s ease;
+				font-weight: 500;
+			}
+
+			#pagination-controls .page-btn:hover,
+			#pagination-controls .arrow-btn:hover {
+				background-color: #e6e6e6;
+			}
+
+			#pagination-controls .page-btn.active {
+				background-color: #007bff;
+				color: white;
+				border-color: #007bff;
+				cursor: default;
+			}
+
+			#pagination-controls .ellipsis {
+				padding: 6px 10px;
+				color: #777;
+				pointer-events: none;
+			}
+			
 		</style>
 	`);
 
 	frappe.call({
 		method: "hrms.hr.page.task_management_summary.task_management_summary.get_task_report_data",
-		// method: "hrms.hr.page.task_management_summary.task_management_summary.get_main_task_data",
 		callback: function (r) {
 			if (r.message) {
-				console.log('data result: ', r.message)
-				render_table(r.message);
+				console.log('task data result: ', r.message)
+				render_table(r.message, 1);
 				let allData = r.message; // simpan semua data
 
 				// Fungsi filtering
@@ -131,7 +186,7 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 						);
 					});
 
-					render_table(filtered);
+					render_table(filtered, 1);
 				}
 
 				// Trigger on input change
@@ -144,7 +199,7 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 					$('#filter-start-date').val('');
 					$('#filter-end-date').val('');
 					$('#filter-subtask-status').val('');
-					render_table(allData); // tampilkan semua data
+					render_table(allData, 1); // tampilkan semua data
 				});
 			}
 		}
@@ -166,15 +221,117 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 		return formattedDate
 	}
 
-	function render_table(data) {
-		const container = document.getElementById("main-task-table");
+	function renderPaginationControls(currentPage, totalPages) {
+		const pagination = document.getElementById("pagination-controls");
+		pagination.innerHTML = "";
+
+		const createButton = (text, page, className = "page-btn", disabled = false) => {
+			const btn = document.createElement("button");
+			btn.textContent = text;
+			btn.className = className;
+			if (disabled) {
+				btn.disabled = true;
+				btn.style.opacity = 0.5;
+			}
+			if (className === "page-btn" && page === currentPage) {
+				btn.classList.add("active");
+			}
+			btn.addEventListener("click", () => {
+				if (!disabled && page !== currentPage) {
+					render_table(globalData, page); // ← panggil render_table dengan halaman baru
+				}
+			});
+			return btn;
+		};
+
+		// tombol kiri
+		pagination.appendChild(createButton("«", currentPage - 1, "arrow-btn", currentPage === 1));
+
+		let maxPagesToShow = 5;
+		let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+		let endPage = startPage + maxPagesToShow - 1;
+
+		if (endPage > totalPages) {
+			endPage = totalPages;
+			startPage = Math.max(1, endPage - maxPagesToShow + 1);
+		}
+
+		if (startPage > 1) {
+			pagination.appendChild(createButton("1", 1));
+			if (startPage > 2) {
+				pagination.appendChild(createEllipsis());
+			}
+		}
+
+		for (let i = startPage; i <= endPage; i++) {
+			pagination.appendChild(createButton(i, i));
+		}
+
+		if (endPage < totalPages) {
+			if (endPage < totalPages - 1) {
+				pagination.appendChild(createEllipsis());
+			}
+			pagination.appendChild(createButton(totalPages, totalPages));
+		}
+
+		pagination.appendChild(createButton("»", currentPage + 1, "arrow-btn", currentPage === totalPages));
+	}
+
+	function createEllipsis() {
+		const ellipsis = document.createElement("span");
+		ellipsis.className = "ellipsis";
+		ellipsis.innerText = "...";
+		return ellipsis;
+	}
+
+
+
+
+	let currentPage = 1;
+	const mainTasksPerPage = 3;
+	let globalData = [];
+
+	function groupByMainTask(data) {
+		const grouped = {};
+		data.forEach(row => {
+			if (!grouped[row.mt_name]) {
+				grouped[row.mt_name] = [];
+			}
+			grouped[row.mt_name].push(row);
+		});
+		return grouped;
+	}
+
+	function paginateMainTaskGroups(groupedData, page = 1) {
+		const mainTaskKeys = Object.keys(groupedData);
+		const start = (page - 1) * mainTasksPerPage;
+		const end = start + mainTasksPerPage;
+		const selectedKeys = mainTaskKeys.slice(start, end);
+
+		let paginatedRows = [];
+		selectedKeys.forEach(key => {
+			paginatedRows = paginatedRows.concat(groupedData[key]);
+		});
+		return paginatedRows;
+	}
+
+
+	function render_table(data, page = 1) {
+		globalData = data; // simpan data yang akan dipakai ulang
+		currentPage = page; // simpan current page global
+
+		const container = document.getElementById("task-table");
 		container.innerHTML = "";
+
+		const grouped = groupByMainTask(data);
+		const paginatedRows = paginateMainTaskGroups(grouped, page);
 
 		// Hitung rowspan
 		const mainTaskRowspan = {};
 		const taskRowspan = {};
 		const picTaskRowspan = {};
 
+		data = paginatedRows;
 		data.forEach(row => {
 			mainTaskRowspan[row.mt_name] = (mainTaskRowspan[row.mt_name] || 0) + 1;
 			const key = `${row.mt_name}|||${row.t_name}`;
@@ -366,11 +523,13 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 
 		});
 
+		const totalPages = Math.ceil(Object.keys(grouped).length / mainTasksPerPage);
+		renderPaginationControls(page, totalPages);
 		container.appendChild(table);
 	}
 
 	// function render_table(data) {
-	// 	const container = document.getElementById("main-task-table");
+	// 	const container = document.getElementById("task-table");
 	// 	container.innerHTML = "";
 
 	// 	// Buat struktur data: mt → task → pic_task → [subtask]

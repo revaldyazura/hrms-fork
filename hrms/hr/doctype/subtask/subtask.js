@@ -174,7 +174,26 @@ frappe.ui.form.on("SubTask", {
 						return;
 					}
 				});
-			}, 300); // Delay sedikit agar field render dulu
+			}, 300);
+			setTimeout(() => {
+				const field_wrapper = frm.fields_dict["subtask_name"];
+				if (!field_wrapper) return;
+
+				const input = field_wrapper.$wrapper.find("input");
+
+				input.on("input", function () {
+					const value = $(this).val();
+					if (value.length === 140) {
+						frappe.msgprint({
+							title: __("Limit Reached"),
+							message: __("You have reached the maximum of 140 characters for SubTask Title."),
+							indicator: "yellow"
+						});
+						$(this).val(value.slice(0, 140)); // potong string agar tetap maksimal 140
+					}
+				});
+			}, 300);
+			// Delay sedikit agar field render dulu
 		});
 		if (!frm.is_new()) {
 			frappe.call({

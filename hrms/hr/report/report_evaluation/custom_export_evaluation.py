@@ -6,6 +6,19 @@ from io import BytesIO
 from datetime import datetime, timedelta
 from itertools import groupby
 
+def get_subtask_type_map():
+    types_data = frappe.db.sql("""
+                              SELECT stype.parent                                   AS subtask,
+                                    GROUP_CONCAT(stype.subtask_type SEPARATOR ', ')AS type
+                              FROM `tabSubTask Type` stype
+                              GROUP BY stype.parent
+                              """, as_dict=True)
+    
+    data = {row["subtask"]: row["type"] for row in types_data}
+    print("Subtask Types:", types_data)  # Debugging line to check the output
+    print("Subtask Types Map:", data)  # Debugging line to check the output
+
+    return data
 
 def calculate_working_hours(from_date_str, to_date_str, holiday_list_name):
     from_date = datetime.strptime(from_date_str, "%Y-%m-%d").date()
@@ -48,8 +61,8 @@ def export_individual_evaluation(filters=None):
                       maintask_name,
         tasks,
                       task_name,
+                      subtask,
                       subtask_name,
-                      subtask_type,
                       value_subtask,
                       performance,
                       final_target_time,
@@ -77,6 +90,8 @@ def export_individual_evaluation(filters=None):
         query += " WHERE " + " AND ".join(conditions)
     data = frappe.db.sql(query, values, as_dict=True)
     employee_filename = data[0].get('pic_subtask_name')
+    for row in data:
+        row["subtask_types"] = get_subtask_type_map().get(row["subtask"], "")
 
     total_working_hours, total_holiday = calculate_working_hours(from_date, to_date,
                                                                  'Annual Holiday') if to_date and from_date else 0
@@ -141,7 +156,7 @@ def export_individual_evaluation(filters=None):
                 for tr in t_rows:
 
                     sheet.write(row, 3, tr["subtask_name"], colored_format)
-                    sheet.write(row, 4, tr["subtask_type"], colored_format)
+                    sheet.write(row, 4, tr["subtask_types"], colored_format)
                     sheet.write_number(row, 5, int(tr["value_subtask"]), colored_format)
                     sheet.write_number(row, 6, tr["performance"], colored_format)
                     sheet.write_number(row, 7, tr["final_target_time"], colored_format)
@@ -222,7 +237,6 @@ def export_team_evaluation(filters=None):
                       ev.task_name,
                       ev.subtask,
                       ev.subtask_name,
-                      ev.subtask_type,
                       ev.value_subtask,
                       ev.performance,
                       ev.final_target_time,
@@ -251,6 +265,8 @@ def export_team_evaluation(filters=None):
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     data = frappe.db.sql(query, values, as_dict=True)
+    for row in data:
+        row["subtask_types"] = get_subtask_type_map().get(row["subtask"], "")
     print('data team eval', data)
     team_filename = data[0].get('team') if data else filters.get('team')
 
@@ -320,7 +336,7 @@ def export_team_evaluation(filters=None):
                     for tr in t_rows:
 
                         sheet.write(row, 4, tr["subtask_name"], colored_format)
-                        sheet.write(row, 5, tr["subtask_type"], colored_format)
+                        sheet.write(row, 5, tr["subtask_types"], colored_format)
                         sheet.write_number(row, 6, int(tr["value_subtask"]), colored_format)
                         sheet.write_number(row, 7, tr["performance"], colored_format)
                         sheet.write_number(row, 8, tr["final_target_time"], colored_format)
@@ -422,7 +438,7 @@ def export_team_evaluation(filters=None):
             t_row_start = row
             for tr in t_rows:
                 sheet.write(row, 2, tr["subtask_name"], colored_format)
-                sheet.write(row, 3, tr["subtask_type"], colored_format)
+                sheet.write(row, 3, tr["subtask_types"], colored_format)
                 sheet.write_number(row, 4, int(tr["value_subtask"]), colored_format)
                 sheet.write_number(row, 5, tr["final_target_time"], colored_format)
                 row += 1
@@ -440,10 +456,10 @@ def export_team_evaluation(filters=None):
             sheet.merge_range(mt_row_start, 9, row - 1, 9, f'=G{mt_row_start+1}*I{mt_row_start+1}', colored_format)
         else:
             sheet.write(mt_row_start, 0, mt_rows[0].get("maintask_name", mt_key), colored_format)
-            sheet.write(mt_row_start, 6, f'=AVERAGE(E{row}:E{row})', colored_format)
-            sheet.write(mt_row_start, 7, f'=SUM(F{row}:F{row})', colored_format)
-            sheet.write_formula(row, 8, f'=H{row}/E{additional_data_row+1}', colored_format)
-            sheet.write_formula(row, 9, f'=G{row}*I{row}', colored_format)
+            sheet.write_formula(mt_row_start, 6, f'=AVERAGE(E{row}:E{row})', colored_format)
+            sheet.write_formula(mt_row_start, 7, f'=SUM(F{row}:F{row})', colored_format)
+            sheet.write_formula(mt_row_start, 8, f'=H{row}/E{additional_data_row+1}', colored_format)
+            sheet.write_formula(mt_row_start, 9, f'=G{row}*I{row}', colored_format)
 
     workbook.close()
     output.seek(0)

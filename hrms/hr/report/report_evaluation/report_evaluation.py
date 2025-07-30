@@ -6,18 +6,6 @@ from frappe import _
 from collections import defaultdict
 
 
-# def get_assign_by_map():
-#     assign_by_data = frappe.db.sql("""
-#                                    SELECT m_assign_by.parent                             AS main_task,
-#                                           GROUP_CONCAT(emp.employee_name SEPARATOR ', ') AS assign_by_members
-#                                    FROM `tabMainTask Assign By` m_assign_by
-#                                             LEFT JOIN `tabEmployee` emp ON m_assign_by.employee = emp.name
-#                                    GROUP BY m_assign_by.parent
-#                                    """, as_dict=True)
-#
-#     return {row["main_task"]: row["assign_by_members"] for row in assign_by_data}
-
-
 def execute(filters=None):
     columns = get_columns()
 
@@ -30,8 +18,8 @@ def execute(filters=None):
             conditions = "WHERE ev.maintask = %(maintask)s AND st.status = 'Done'"
         else:
             conditions = """
-            WHERE (
-                ev.maintask IN (
+            WHERE 
+                (ev.maintask IN (
                     SELECT mt2.name
                     FROM `tabMainTask` mt2
                     LEFT JOIN `tabMainTask Team` mteam2 ON mt2.name = mteam2.parent
@@ -44,6 +32,7 @@ def execute(filters=None):
                     WHERE m_assign_by2.employee = %(employee_id)s
                 )
             )
+             AND ev.contribution IS NOT NULL
             AND st.status = 'Done'
             """
 
@@ -57,7 +46,6 @@ def execute(filters=None):
                       ev.subtask_name,
                       st.target_time_minutes AS subtask_target_time,
                     ev.pic_subtask_name,
-                      ev.subtask_type,
                         ev.value_subtask AS value_subtask,
                         ev.performance AS performance,
                         ev.final_target_time AS final_target_time,
@@ -72,21 +60,6 @@ def execute(filters=None):
     data = frappe.db.sql(query, {"user": user, "employee_id": employee_id,
                                  "maintask": filters.get("maintask")}, as_dict=True)
     print(f'data report eval {data}')
-    # assign_by_map = get_assign_by_map()
-    #
-    # for row in data:
-    #     row["assign_by_members"] = assign_by_map.get(row["mt_name"], "")
-
-    # unique_rows = {}
-    # for row in data:
-    #     subtask_key = row.get("st_name")  # atau 'st.name' tergantung alias
-    #     if not subtask_key:
-    #         continue
-    #     # Simpan hanya satu baris per subtask
-    #     if subtask_key not in unique_rows:
-    #         unique_rows[subtask_key] = row
-    #
-    # deduplicated_data = list(unique_rows.values())
 
     chart = get_chart_data(data)
     report_summary = get_report_summary(data)
@@ -137,9 +110,9 @@ def get_chart_data(data):
         # Handle jika kontribusi disimpan dalam format string "12.5%"
         try:
             if isinstance(contribution, str) and "%" in contribution:
-                contribution = float(contribution.replace("%", ""))
+                contribution = round(float(contribution.replace("%", "")), 2)
             else:
-                contribution = float(contribution or 0)
+                contribution = round(float(contribution or 0), 2)
         except:
             contribution = 0
 
@@ -149,16 +122,23 @@ def get_chart_data(data):
         else:
             contribution_map[pic] = {maintask: contribution}
 
-    labels = sorted(list(labels_set))[:30]  # Limit maksimum 30 MainTask
+    labels = [label for label in sorted(list(labels_set))[:30]]
     datasets = []
 
     for pic, contribs in contribution_map.items():
-        dataset_values = [f'{contribs.get(label, 0)}%' for label in labels]
+        dataset_values = [contribs.get(label.replace(" (Contribution)", ""), 0) for label in labels]
+
+
+        if all(v == 0 for v in dataset_values):
+            continue
 
         datasets.append({
             "name": pic,
             "values": dataset_values
         })
+        
+        print(f'Contribution for {pic}: {dataset_values}')
+
 
     return {
         "data": {
@@ -169,7 +149,7 @@ def get_chart_data(data):
         "colors": ["#5e64ff", "#ff5858", "#00ca00", "#ffa00a", "#743ee2", "#3f8efc", "#fa8231", "#f7b731"][
                   :len(datasets)],
         "barOptions": {
-            "stacked": False
+            "stacked": True
         }
     }
 

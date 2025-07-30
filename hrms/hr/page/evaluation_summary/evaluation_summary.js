@@ -22,7 +22,7 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 		</div>
 		</div>
 		<div id="evaluation-table"></div>
-
+		<div id="pagination-controls" class="text-center m-3"></div>
 		<style>
 			.filter-container {
 				padding: 12px;
@@ -80,6 +80,61 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 				list-style-type: disc;
 				line-height: 1.5;
 			}
+
+			
+			#pagination-controls button {
+				border: 1px solid #ccc;
+				padding: 6px 12px;
+				margin: 0 4px;
+				cursor: pointer;
+				border-radius: 4px;
+				background-color: #f9f9f9;
+				transition: background-color 0.3s ease;
+			}
+			#pagination-controls button:hover {
+				background-color: #e6e6e6;
+			}
+			#pagination-controls button.active {
+				background-color: #007bff;
+				color: white;
+				border-color: #007bff;
+			}
+			#pagination-controls {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 6px;
+				flex-wrap: wrap;
+			}
+
+			#pagination-controls .page-btn,
+			#pagination-controls .arrow-btn {
+				border: 1px solid #ccc;
+				padding: 6px 12px;
+				cursor: pointer;
+				border-radius: 4px;
+				background-color: #f9f9f9;
+				transition: background-color 0.3s ease;
+				font-weight: 500;
+			}
+
+			#pagination-controls .page-btn:hover,
+			#pagination-controls .arrow-btn:hover {
+				background-color: #e6e6e6;
+			}
+
+			#pagination-controls .page-btn.active {
+				background-color: #007bff;
+				color: white;
+				border-color: #007bff;
+				cursor: default;
+			}
+
+			#pagination-controls .ellipsis {
+				padding: 6px 10px;
+				color: #777;
+				pointer-events: none;
+			}
 		</style>
 	`);
 
@@ -87,14 +142,13 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 		method: "hrms.hr.page.evaluation_summary.evaluation_summary.get_evaluation_data",
 		callback: function (r) {
 			if (r.message) {
-				console.log('data result: ', r.message)
-				render_table(r.message);
+				console.log('eval data result: ', r.message)
+				render_table(r.message, 1);
 				let allData = r.message; // simpan semua data
 
 				// Fungsi filtering
 				function applyFilters() {
 					const maintask = $('#filter-maintask').val().toLowerCase();
-					// const assignedBy = $('#filter-assigned-by').val().toLowerCase();
 
 					const startDate = $('#filter-start-date').val();
 					const endDate = $('#filter-end-date').val();
@@ -102,9 +156,6 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 						frappe.msgprint("You can't put start date over the due date, please change it okay.");
 						return;
 					}
-					// const picTask = $('#filter-pic-task').val().toLowerCase();
-					// const picSubtask = $('#filter-pic-subtask').val().toLowerCase();
-					// const status = $('#filter-subtask-status').val().toLowerCase();
 
 					const filtered = allData.filter(row => {
 						const assignDate = (row.assign_date || "").split('T')[0]; // ensure format is YYYY-MM-DD
@@ -117,34 +168,22 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 						}
 						return (
 							(!maintask || (row.maintask_name || "").toLowerCase().includes(maintask)) &&
-							// (!assignedBy || (row.assigned_by || "").toLowerCase().includes(assignedBy)) &&
 							isInDateRange
-							// &&
-							// (!picTask || (row.pic_task_name || "").toLowerCase().includes(picTask)) &&
-							// (!picSubtask || (row.pic_subtask_name || "").toLowerCase().includes(picSubtask)) &&
-							// (!status || (row.sub_task_status || "").toLowerCase() === status)
 						);
 					});
 
-					render_table(filtered);
+					render_table(filtered, 1);
 				}
 
 				// Trigger on input change
 				$('#filter-maintask, #filter-start-date, #filter-end-date '
-					// '#filter-assigned-by, ' +
-					// +
-					// '#filter-pic-task, #filter-pic-subtask, #filter-subtask-status'
 				)
 					.on('input change', applyFilters);
 				$('#reset-filters').on('click', function () {
 					$('#filter-maintask').val('');
-					// $('#filter-assigned-by').val('');
-					// $('#filter-pic-task').val('');
-					// $('#filter-pic-subtask').val('');
 					$('#filter-start-date').val('');
 					$('#filter-end-date').val('');
-					// $('#filter-subtask-status').val('');
-					render_table(allData); // tampilkan semua data
+					render_table(allData, 1); // tampilkan semua data
 				});
 			}
 		}
@@ -166,14 +205,117 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 		return formattedDate
 	}
 
-	function render_table(data) {
+	function renderPaginationControls(currentPage, totalPages) {
+		const pagination = document.getElementById("pagination-controls");
+		pagination.innerHTML = "";
+
+		const createButton = (text, page, className = "page-btn", disabled = false) => {
+			const btn = document.createElement("button");
+			btn.textContent = text;
+			btn.className = className;
+			if (disabled) {
+				btn.disabled = true;
+				btn.style.opacity = 0.5;
+			}
+			if (className === "page-btn" && page === currentPage) {
+				btn.classList.add("active");
+			}
+			btn.addEventListener("click", () => {
+				if (!disabled && page !== currentPage) {
+					render_table(globalData, page); // ← panggil render_table dengan halaman baru
+				}
+			});
+			return btn;
+		};
+
+		// tombol kiri
+		pagination.appendChild(createButton("«", currentPage - 1, "arrow-btn", currentPage === 1));
+
+		let maxPagesToShow = 5;
+		let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+		let endPage = startPage + maxPagesToShow - 1;
+
+		if (endPage > totalPages) {
+			endPage = totalPages;
+			startPage = Math.max(1, endPage - maxPagesToShow + 1);
+		}
+
+		if (startPage > 1) {
+			pagination.appendChild(createButton("1", 1));
+			if (startPage > 2) {
+				pagination.appendChild(createEllipsis());
+			}
+		}
+
+		for (let i = startPage; i <= endPage; i++) {
+			pagination.appendChild(createButton(i, i));
+		}
+
+		if (endPage < totalPages) {
+			if (endPage < totalPages - 1) {
+				pagination.appendChild(createEllipsis());
+			}
+			pagination.appendChild(createButton(totalPages, totalPages));
+		}
+
+		pagination.appendChild(createButton("»", currentPage + 1, "arrow-btn", currentPage === totalPages));
+	}
+
+	function createEllipsis() {
+		const ellipsis = document.createElement("span");
+		ellipsis.className = "ellipsis";
+		ellipsis.innerText = "...";
+		return ellipsis;
+	}
+
+
+
+
+	let currentPage = 1;
+	const mainTasksPerPage = 3;
+	let globalData = [];
+
+	function groupByMainTask(data) {
+		const grouped = {};
+		data.forEach(row => {
+			if (!grouped[row.mt_name]) {
+				grouped[row.mt_name] = [];
+			}
+			grouped[row.mt_name].push(row);
+		});
+		return grouped;
+	}
+
+	function paginateMainTaskGroups(groupedData, page = 1) {
+		const mainTaskKeys = Object.keys(groupedData);
+		const start = (page - 1) * mainTasksPerPage;
+		const end = start + mainTasksPerPage;
+		const selectedKeys = mainTaskKeys.slice(start, end);
+
+		let paginatedRows = [];
+		selectedKeys.forEach(key => {
+			paginatedRows = paginatedRows.concat(groupedData[key]);
+		});
+		return paginatedRows;
+	}
+
+	function render_table(data, page = 1) {
+
+		globalData = data; // simpan data yang akan dipakai ulang
+		currentPage = page; 
+
 		const container = document.getElementById("evaluation-table");
 		container.innerHTML = "";
+
+		const grouped = groupByMainTask(data);
+		const paginatedRows = paginateMainTaskGroups(grouped, page);
 
 		// Hitung rowspan
 		const mainTaskRowspan = {};
 		const taskRowspan = {};
 		const picTaskRowspan = {};
+
+		data = paginatedRows;
 
 		data.forEach(row => {
 			mainTaskRowspan[row.mt_name] = (mainTaskRowspan[row.mt_name] || 0) + 1;
@@ -297,17 +439,13 @@ frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 				td = document.createElement("td");
 				td.textContent = row.contribution || "-";
 				tr.appendChild(td);
-			} else {
-				for (let i =0; i<7; i++){
-					td = document.createElement("td")
-					td.textContent = "-"
-					tr.appendChild(td)
-				}
 			}
 
 			tbody.appendChild(tr);
 		});
 
+		const totalPages = Math.ceil(Object.keys(grouped).length / mainTasksPerPage);
+		renderPaginationControls(page, totalPages);
 		container.appendChild(table);
 	}
 }
