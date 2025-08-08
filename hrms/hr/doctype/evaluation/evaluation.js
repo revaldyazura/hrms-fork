@@ -8,7 +8,7 @@ frappe.ui.form.on("Evaluation", {
 		// });
 		frm.set_query("subtask", function () {
 			return {
-				query: "hrms.hr.doctype.evaluation.evaluation.get_open_subtask_as_owner"
+				query: "hrms.hr.doctype.evaluation.evaluation.get_done_subtask_as_owner"
 			};
 		});
 		frappe.after_ajax(() => {

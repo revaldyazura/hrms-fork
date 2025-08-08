@@ -18,7 +18,10 @@
   "pic_subtask_name",
   "column_break_fdww",
   "status",
+  "priority",
   "value",
+  "section_break_opdh",
+  "description",
   "type_section",
   "type",
   "section_break_ddaa",
@@ -26,14 +29,20 @@
   "target_time_minutes",
   "column_break_wgoc",
   "unit_target_time",
+  "total_time",
   "section_break_tkdb",
   "created_by",
-  "subtask_open_date",
+  "subtask_start_date",
   "subtask_done_date",
+  "column_break_kemw",
+  "subtask_open_date",
+  "subtask_pause_date",
+  "subtask_close_date",
+  "last_in_progress_timestamp",
   "submission_tab",
   "submission_section",
   "attachment",
-  "description"
+  "submission_text"
  ],
  "fields": [
   {
@@ -117,8 +126,7 @@
   {
    "description": "Description of this subtask",
    "fieldname": "description",
-   "fieldtype": "Text Editor",
-   "label": "Description"
+   "fieldtype": "Text Editor"
   },
   {
    "description": "The owner of this subtask",
@@ -134,17 +142,19 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Open\nDone\nHold\nCancel"
+   "options": "Open\nIn Progress\nPause\nDone\nClose\nCancel"
   },
   {
    "fieldname": "subtask_open_date",
    "fieldtype": "Date",
-   "label": "Sub Task Open Date"
+   "label": "Sub Task Open Date",
+   "permlevel": 2
   },
   {
    "fieldname": "subtask_done_date",
    "fieldtype": "Date",
-   "label": "Sub Task Done Date"
+   "label": "Sub Task Done Date",
+   "permlevel": 2
   },
   {
    "fieldname": "column_break_vzkj",
@@ -211,12 +221,65 @@
    "fieldname": "type_section",
    "fieldtype": "Section Break",
    "label": "Types"
+  },
+  {
+   "fieldname": "section_break_opdh",
+   "fieldtype": "Section Break",
+   "label": "Description"
+  },
+  {
+   "fieldname": "submission_text",
+   "fieldtype": "Text Editor",
+   "label": "Text"
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh"
+  },
+  {
+   "description": "This field shows the total accumulated time spent working on the subtask. It will only appear if the subtask has ever been in 'Pause' or 'Done' status, meaning it has previously been 'In Progress'.",
+   "fieldname": "total_time",
+   "fieldtype": "Int",
+   "label": "Total Time (In Minutes)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_kemw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_in_progress_timestamp",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Last In Progress Timestamp"
+  },
+  {
+   "fieldname": "subtask_start_date",
+   "fieldtype": "Date",
+   "label": "Sub Task Start Date",
+   "permlevel": 2
+  },
+  {
+   "fieldname": "subtask_pause_date",
+   "fieldtype": "Date",
+   "label": "Sub Task Pause Date",
+   "permlevel": 2
+  },
+  {
+   "fieldname": "subtask_close_date",
+   "fieldtype": "Date",
+   "label": "Sub Task Close Date",
+   "permlevel": 2
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-23 20:46:59.872386",
+ "modified": "2025-08-05 10:32:44.513025",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

@@ -7,6 +7,7 @@ from marshmallow.utils import pluck
 import frappe
 from frappe import _, scrub, throw
 from frappe.model.document import Document
+from frappe.utils import now_datetime, get_datetime
 
 
 class Evaluation(Document):
@@ -17,16 +18,18 @@ class Evaluation(Document):
 
     def before_insert(self):
         subtask = frappe.get_doc("SubTask", self.subtask)
-        if subtask.status == 'Open':
-            frappe.msgprint(f"SubTask '{subtask.subtask_name}' status updated to Done after the performance is evaluated.")
+        if subtask.status == "Done":
+            frappe.msgprint(
+                f"SubTask '{subtask.subtask_name}' status updated to Close after the performance is evaluated."
+            )
 
             frappe.db.set_value(
                 "SubTask",
                 self.subtask,
                 {
-                    "status": "Done",
-                    "subtask_done_date": frappe.utils.getdate(self.modified)
-                }
+                    "status": "Close",
+                    "subtask_close_date": frappe.utils.getdate(now_datetime()),
+                },
             )
 
     def validate_performance(self):
@@ -34,7 +37,9 @@ class Evaluation(Document):
             throw(_("Performance grade cannot be greater than 120."))
 
     def validate_evaluation_data(self):
-        self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
+        self.created_by = frappe.db.get_value(
+            "Employee", {"user_id": self.owner}, "employee_name"
+        )
 
 
 def update_fields(doc, method):
@@ -52,37 +57,50 @@ def update_fields(doc, method):
     doc.pic_subtask = subtask.pic_subtask
     doc.tasks = subtask.tasks
     doc.maintask = tasks_doc.maintask
-    doc.final_target_time = round((subtask.target_time_minutes * doc.performance) / 100, 2)
+    doc.final_target_time = round(
+        (subtask.target_time_minutes * doc.performance) / 100, 2
+    )
     doc.save(ignore_permissions=True)
 
-    all_subtasks = frappe.get_all('SubTask', filters={'maintask': subtask.maintask},
-                                  fields=['name', 'target_time_minutes', 'value'])
+    all_subtasks = frappe.get_all(
+        "SubTask",
+        filters={"maintask": subtask.maintask},
+        fields=["name", "target_time_minutes", "value"],
+    )
     total_subtask = len(all_subtasks)
 
-    evaluations = frappe.get_all('Evaluation', filters={'maintask': tasks_doc.maintask},
-                                 fields=['name', 'subtask', 'performance'])
+    evaluations = frappe.get_all(
+        "Evaluation",
+        filters={"maintask": tasks_doc.maintask},
+        fields=["name", "subtask", "performance"],
+    )
     evaluated_subtasks = len(evaluations)
 
     if total_subtask == evaluated_subtasks and total_subtask > 0:
         total_tvr = 0
-        subtask_map = {s['name']: s for s in all_subtasks}
+        subtask_map = {s["name"]: s for s in all_subtasks}
 
         eval_tvr_map = {}
 
         for eval in evaluations:
-            sub = subtask_map.get(eval['subtask'])
+            sub = subtask_map.get(eval["subtask"])
             if sub:
-                eval_tvr = (sub['target_time_minutes'] * int(sub['value']) * eval['performance']) / 100
-                eval_tvr_map[eval['name']] = eval_tvr
+                eval_tvr = (
+                    sub["target_time_minutes"] * int(sub["value"]) * eval["performance"]
+                ) / 100
+                eval_tvr_map[eval["name"]] = eval_tvr
                 total_tvr += eval_tvr
 
         if total_tvr > 0:
             for eval in evaluations:
-                eval_tvr = eval_tvr_map.get(eval['name'], 0)
+                eval_tvr = eval_tvr_map.get(eval["name"], 0)
                 contribution = str(round((eval_tvr / total_tvr) * 100, 2)) + "%"
-                frappe.db.set_value("Evaluation", eval.name, "contribution", contribution)
+                frappe.db.set_value(
+                    "Evaluation", eval.name, "contribution", contribution
+                )
 
     frappe.flags.in_update = False
+
 
 @frappe.whitelist()
 def user_edit_evaluation(subtask):
@@ -105,11 +123,9 @@ def user_edit_evaluation(subtask):
     if doc.tasks:
         task_owner = frappe.get_value("Tasks", doc.tasks, "owner")
         parent_task_pic = frappe.get_all(
-            "Task PIC",
-            filters={"employee": employee_id},
-            pluck="parent"
+            "Task PIC", filters={"employee": employee_id}, pluck="parent"
         )
-        if task_owner == frappe.session.user :
+        if task_owner == frappe.session.user:
             return "task_owner"
 
         if doc.tasks in parent_task_pic:
@@ -119,6 +135,7 @@ def user_edit_evaluation(subtask):
             return "pic_subtask"
 
     return "none"
+
 
 def has_permission(doc, ptype, user):
     print("has permission evaluation called")
@@ -138,26 +155,29 @@ def has_permission(doc, ptype, user):
     maintask = frappe.get_doc("MainTask", doc.maintask)
 
     parent_task_pic = frappe.get_all(
-        "Task PIC",
-        filters={"employee": employee_id},
-        pluck="parent"
+        "Task PIC", filters={"employee": employee_id}, pluck="parent"
     )
 
     parent_assign_by = frappe.get_all(
-        "MainTask Assign By",
-        filters={"employee": employee_id},
-        pluck="parent"
+        "MainTask Assign By", filters={"employee": employee_id}, pluck="parent"
     )
 
     if ptype == "delete":
-        if doc.pic_subtask == employee_id and doc.tasks not in parent_task_pic and maintask.owner != user:
-            frappe.throw(f"{employee.employee_name} is pic subtask only and not allowed to deleting {doc.subtask_name} evaluation.",
-                         frappe.PermissionError)
+        if (
+            doc.pic_subtask == employee_id
+            and doc.tasks not in parent_task_pic
+            and maintask.owner != user
+        ):
+            frappe.throw(
+                f"{employee.employee_name} is pic subtask only and not allowed to deleting {doc.subtask_name} evaluation.",
+                frappe.PermissionError,
+            )
             return False
         if doc.maintask in parent_assign_by:
             frappe.throw(
                 f"{employee.employee_name} is assign by only and not allowed to deleting {doc.subtask_name} evaluation.",
-                frappe.PermissionError)
+                frappe.PermissionError,
+            )
             return False
     elif doc.pic_subtask == employee_id and ptype != "delete":
         return True
@@ -167,47 +187,44 @@ def has_permission(doc, ptype, user):
 
     if doc.tasks:
         owner_task = tasks.owner
-        if  owner_task == frappe.session.user or tasks in parent_task_pic:
+        if owner_task == frappe.session.user or tasks in parent_task_pic:
             return True
 
-    frappe.throw(f"{employee.employee_name} is not allowed to accessing {doc.subtask_name} evaluation.",
-                 frappe.PermissionError)
+    frappe.throw(
+        f"{employee.employee_name} is not allowed to accessing {doc.subtask_name} evaluation.",
+        frappe.PermissionError,
+    )
     return False
+
 
 def after_delete(doc, method):
     subtask = frappe.get_doc("SubTask", doc.subtask)
-    if subtask.status == 'Done':
-        # subtask.status = 'Open'
-        # subtask.subtask_done_date = None
+    if subtask.status == "Close":
         frappe.db.set_value(
-            "SubTask",
-            doc.subtask,
-            {
-                "status": "Open",
-                "subtask_done_date": None
-            }
+            "SubTask", doc.subtask, {"status": "Done", "subtask_close_date": None}
         )
         # subtask.save(ignore_permissions=True)
         frappe.msgprint(
-            f"SubTask '{subtask.subtask_name}' status updated to Open after deleting evaluation.")
+            f"SubTask '{subtask.subtask_name}' status updated to Done after deleting evaluation."
+        )
 
 
 @frappe.whitelist()
-def get_open_subtask_as_owner(doctype, txt, searchfield, start, page_len, filters):
+def get_done_subtask_as_owner(doctype, txt, searchfield, start, page_len, filters):
     user_id = frappe.session.user
 
     employee_id = frappe.get_value("Employee", {"user_id": user_id}, "name")
 
-    subtasks = frappe.db.sql("""
+    subtasks = frappe.db.sql(
+        """
         SELECT st.name, st.subtask_name
         FROM `tabSubTask` st
         JOIN `tabMainTask` mt ON st.maintask = mt.name
-        WHERE (st.owner = %(user_id)s OR mt.owner = %(user_id)s OR mt.assigned_by = %(employee_id)s) AND st.status = 'Open'
+        WHERE (st.owner = %(user_id)s OR mt.owner = %(user_id)s OR mt.assigned_by = %(employee_id)s) AND st.status = 'Done'
         GROUP BY st.name
-    """, {
-        "user_id": f"{user_id}",
-        "employee_id": f"{employee_id}"
-    })
+    """,
+        {"user_id": f"{user_id}", "employee_id": f"{employee_id}"},
+    )
     return subtasks
 
 
@@ -222,15 +239,11 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
     employee_id = frappe.get_value("Employee", {"user_id": user_id}, "name")
 
     parent_mteam = frappe.get_all(
-        "MainTask Team",
-        filters={"employee": employee_id},
-        pluck="parent"
+        "MainTask Team", filters={"employee": employee_id}, pluck="parent"
     )
 
     parent_assign_by = frappe.get_all(
-        "MainTask Assign By",
-        filters={"employee": employee_id},
-        pluck="parent"
+        "MainTask Assign By", filters={"employee": employee_id}, pluck="parent"
     )
 
     if not employee_id:

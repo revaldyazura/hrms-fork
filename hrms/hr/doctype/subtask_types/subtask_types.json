@@ -19,7 +19,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-23 10:29:21.035843",
+ "modified": "2025-07-31 17:24:53.380864",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask Types",
@@ -46,7 +46,8 @@
    "read": 1,
    "report": 1,
    "role": "Employee",
-   "share": 1
+   "share": 1,
+   "write": 1
   },
   {
    "create": 1,

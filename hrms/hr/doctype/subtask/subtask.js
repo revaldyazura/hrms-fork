@@ -3,22 +3,87 @@
 
 frappe.ui.form.on("SubTask", {
 	refresh(frm) {
-		frm.fields_dict['status'].$input.on('change', function () {
-			var selectedOption = $(this).val();
-			if (selectedOption === 'Cancel') {
-				$(this).css('color', 'red');
-			} else if (selectedOption === 'Done') {
-				$(this).css('color', 'green');
-			}
-		});
+		if (frm.is_new()) {
+			frm.set_df_property("status", "options", ["Open"]);
+			frm.set_value("status", "Open");
+			frm.add_custom_button('Agent Suggestion for SubTask Value', async function () {
+				if (!frm.doc.subtask_name || !frm.doc.description) {
+					frappe.msgprint(__('Please fill Title and Description.'));
+					return;
+				}
+
+				frappe.prompt([
+					{
+						fieldtype: 'Data',
+						label: 'Title',
+						fieldname: 'subtask_name',
+						default: frm.doc.subtask_name,
+						reqd: 1
+					},
+					{
+						fieldtype: 'Text Editor',
+						label: 'Description',
+						fieldname: 'description',
+						default: frm.doc.description,
+						reqd: 1
+					}
+				], async (values) => {
+					try {
+						const response = await frappe.call({
+							method: "hrms.hr.doctype.subtask.subtask.ai_suggestion",
+							args: {
+								title: values.subtask_name,
+								description: values.description
+							}
+						});
+
+						const result = response.message;
+						if (result.error) {
+							throw result.error;
+						}
+
+						const d = new frappe.ui.Dialog({
+							title: 'AI Result',
+							fields: [
+								{
+									label: 'Prediction Summary',
+									fieldname: 'summary',
+									fieldtype: 'Small Text',
+									default: result.summary || '',
+									read_only: 1
+								},
+								{
+									label: 'Suggestions',
+									fieldname: 'suggestions',
+									fieldtype: 'Text',
+									default: (result.suggestions || []).join('\n'),
+									read_only: 1
+								}
+							],
+							primary_action_label: 'Close',
+							primary_action() {
+								d.hide();
+							}
+						});
+						d.show();
+
+					} catch (err) {
+						console.error(err);
+						frappe.msgprint(__('Failed to contact AI (server).'));
+					}
+				});
+			});
+
+
+		}
 		if (!frm.is_new()) {
 			frappe.call({
-				method: "hrms.hr.doctype.subtask.subtask.check_if_evaluator",
+				method: "hrms.hr.doctype.subtask.subtask.button_evaluation_subtask",
 				args: {
 					subtask: frm.doc.name
 				},
 				callback: function (r) {
-					if (r.message === true) {
+					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'system_manager_done') {
 						frm.add_custom_button("Evaluate This SubTask", () => {
 							const dialog = new frappe.ui.Dialog({
 								title: "Evaluate SubTask",
@@ -40,6 +105,18 @@ frappe.ui.form.on("SubTask", {
 										fieldname: "pic_subtask_name",
 										fieldtype: "Read Only",
 										default: frm.doc.pic_subtask_name
+									},
+									{
+										label: "Target Time Minutes",
+										fieldname: "target_time_minutes",
+										fieldtype: "Read Only",
+										default: frm.doc.target_time_minutes
+									},
+									{
+										label: "Total Time Minutes",
+										fieldname: "total_time",
+										fieldtype: "Read Only",
+										default: frm.doc.total_time
 									},
 									{
 										label: "Performance",
@@ -119,11 +196,39 @@ frappe.ui.form.on("SubTask", {
 								});
 							}, 100);
 						});
-
+					} else if (r.message?.status == "Close") {
+						frm.add_custom_button("View Evaluation", () => {
+							frappe.set_route("Form", "Evaluation", r.message.evaluation_name);
+						});
 					}
 				}
 			})
-
+			frappe.call({
+				method: "hrms.hr.doctype.subtask.subtask.user_edit_subtask",
+				args: {
+					subtask_name: frm.doc.name
+				},
+				callback: function (r) {
+					const readonly_fields = ['subtask_name', 'target_time', 'unit_target_time', 'maintask', 'tasks', "pic_subtask", "value", "priority", 'type', 'description'];
+					if (frm.doc.status === "Close") {
+						frm.set_value("status", "Close");
+						frm.set_read_only(true);
+						frm.disable_save();
+					}
+					if (r.message === "pic_subtask") {
+						readonly_fields.forEach(field => {
+							frm.set_df_property(field, "read_only", 1);
+							// frm.set_value("status", "Open");
+						});
+						frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done"]);
+					} else if (r.message == "task_pics" || r.message == "owner_task") {
+						frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done", "Cancel"]);
+					} else if (r.message === "none") {
+						frm.set_read_only(true);
+						frm.disable_save();
+					}
+				}
+			});
 		}
 	},
 	onload: function (frm) {
@@ -196,23 +301,7 @@ frappe.ui.form.on("SubTask", {
 			// Delay sedikit agar field render dulu
 		});
 		if (!frm.is_new()) {
-			frappe.call({
-				method: "hrms.hr.doctype.subtask.subtask.user_edit_subtask",
-				args: {
-					subtask_name: frm.doc.name
-				},
-				callback: function (r) {
-					const readonly_fields = ['subtask_name', 'target_time', 'unit_target_time', 'maintask', 'tasks', "pic_subtask", "value", "status", 'type'];
-					if (r.message === "pic_subtask") {
-						readonly_fields.forEach(field => {
-							frm.set_df_property(field, "read_only", 1);
-						});
-					} else if (r.message === "none") {
-						frm.set_read_only(true);
-						frm.disable_save();
-					}
-				}
-			});
+
 		}
 	},
 

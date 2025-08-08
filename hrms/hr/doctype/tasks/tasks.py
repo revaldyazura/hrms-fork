@@ -50,8 +50,9 @@ def update_fields(doc, method):
         subtasks = frappe.get_all("SubTask", filters={"tasks": doc.name}, pluck="name")
         for subtask_name in subtasks:
             subtask = frappe.get_doc("SubTask", subtask_name)
-            if subtask.status != "Done":
-                frappe.db.set_value("SubTask", subtask_name, "status", doc.status)
+            if subtask.status not in ("Done", "Close", "In Progress", "Pause"):
+                frappe.db.set_value("SubTask", subtask_name, "status", now_status)
+                frappe.msgprint(f"Updated SubTask status to {now_status}")
 
     frappe.flags.in_update = False
 
@@ -99,35 +100,6 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
     task_ids = "', '".join(parent_task_pic) if parent_task_pic else ''
 
     return f"( tabTasks.owner = '{user_id}' OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE owner = '{user_id}' OR assigned_by = '{employee_id}') OR tabTasks.name IN ('{task_ids}') OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE name IN ('{maintask_ids}')) OR tabTasks.maintask IN (SELECT name FROM tabMainTask WHERE name IN ('{assign_by_maintask_ids}')))"
-
-
-@frappe.whitelist()
-def user_edit_tasks(task_name):
-    if frappe.session.user == "Administrator":
-        return "admin"
-
-    doc = frappe.get_doc("Tasks", task_name)
-    employee_id = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
-
-    if not employee_id:
-        return "none"
-
-    parent_task_pic = frappe.get_all(
-        "Task PIC",
-        filters={"employee": employee_id},
-        pluck="parent"
-    )
-
-    print(f'{type(parent_task_pic)} type, parent_task_pic value {parent_task_pic}')
-    if doc.name in parent_task_pic:
-        return "task_pics"
-
-    if doc.maintask:
-        owner_maintask = frappe.get_value("MainTask", doc.maintask, "owner")
-        if owner_maintask == frappe.session.user:
-            return "pic_maintask"
-
-    return "none"
 
 
 def has_permission(doc, ptype, user):
@@ -185,6 +157,35 @@ def has_permission(doc, ptype, user):
 
 
 @frappe.whitelist()
+def user_edit_tasks(task_name):
+    if frappe.session.user == "Administrator":
+        return "admin"
+
+    doc = frappe.get_doc("Tasks", task_name)
+    employee_id = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
+
+    if not employee_id:
+        return "none"
+
+    parent_task_pic = frappe.get_all(
+        "Task PIC",
+        filters={"employee": employee_id},
+        pluck="parent"
+    )
+
+    print(f'{type(parent_task_pic)} type, parent_task_pic value {parent_task_pic}')
+    if doc.name in parent_task_pic:
+        return "task_pics"
+
+    if doc.maintask:
+        owner_maintask = frappe.get_value("MainTask", doc.maintask, "owner")
+        if owner_maintask == frappe.session.user:
+            return "pic_maintask"
+
+    return "none"
+
+
+@frappe.whitelist()
 def get_employees_by_role_and_team(doctype, txt, searchfield, start, page_len, filters):
     maintask = filters.get("maintask")
     if not maintask:
@@ -237,3 +238,37 @@ def get_open_maintask_as_the_owner(doctype, txt, searchfield, start, page_len, f
         "employee_id": f"{employee_id}"
     })
     return maintasks
+
+@frappe.whitelist()
+def get_subtask_template_list():
+    return frappe.get_all("SubTask Template", fields=["name", "template_name"])
+
+@frappe.whitelist()
+def get_template_details(template_name):
+    return frappe.get_all("SubTask Template Detail", filters={"parent": template_name}, fields=["subtask_name_template","value_template", "description_template", "target_time_template", "unit_target_time_template", "status_template", "type_template", "priority_template"])
+
+@frappe.whitelist()
+def create_subtask_from_template(tasks, values, count):
+    import json
+    print(f"create_subtask_from_template called with values: {values} and count: {count}")
+    # values = frappe._dict(values)
+    if isinstance(values, str):
+        values = json.loads(values)
+    for i in range(int(count)):
+        subtask = frappe.new_doc("SubTask")
+        subtask.tasks = tasks
+        subtask.subtask_name = values[f"subtask_name_template_{i}"]
+        subtask.value = values[f"value_template_{i}"]
+        subtask.description = values[f"description_template_{i}"]
+        subtask.pic_subtask = values[f"pic_subtask_template_{i}"]
+        subtask.target_time = values[f"target_time_template_{i}"]
+        subtask.unit_target_time = values[f"unit_target_time_template_{i}"]
+        subtask.status = values[f"status_template_{i}"]
+
+        type_list = frappe.parse_json(values[f"subtask_type_{i}"])
+        for type in type_list:
+            if type.get("type"):
+                subtask.append("type", {"subtask_type": type.get("type")})
+
+        print(f"SubTask values: {subtask.as_dict()}")
+        subtask.insert()

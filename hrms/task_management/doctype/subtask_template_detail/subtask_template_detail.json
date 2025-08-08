@@ -1,0 +1,88 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-01 16:32:32.378328",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "subtask_name_template",
+  "status_template",
+  "priority_template",
+  "value_template",
+  "description_template",
+  "target_time_template",
+  "unit_target_time_template",
+  "type_template"
+ ],
+ "fields": [
+  {
+   "fieldname": "subtask_name_template",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title"
+  },
+  {
+   "fieldname": "status_template",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Open"
+  },
+  {
+   "documentation_url": "/app/kamus-kompetensi",
+   "fieldname": "value_template",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Value",
+   "options": "1\n2\n3"
+  },
+  {
+   "fieldname": "description_template",
+   "fieldtype": "Text Editor",
+   "in_list_view": 1,
+   "label": "Description"
+  },
+  {
+   "fieldname": "target_time_template",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Target Time"
+  },
+  {
+   "fieldname": "unit_target_time_template",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Unit Target Time",
+   "options": "Hours\nMinutes"
+  },
+  {
+   "fieldname": "type_template",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "Administration\nAI Agents\nAI/ML\nBig Data Viz\nBusiness Process Expert\nCloud Computing\nCode Versioning + Deployment\nContainer Infrastructure\nData Analyst\nData Scrapper\nData Viz\nDB Programming\nDocumentation\nDomain Knowledge Expert\nGraphic Design\nHardware\nLLM & Fine Tuning\nMS Office\nNetworking\nObserver\nOS\nProgramming\nPrompt Eng\nRecruitment\nSocial Media\nSystem Design\nTesting\nUser Interface\nUX Design"
+  },
+  {
+   "fieldname": "priority_template",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-08-05 11:29:09.782531",
+ "modified_by": "Administrator",
+ "module": "Task Management",
+ "name": "SubTask Template Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

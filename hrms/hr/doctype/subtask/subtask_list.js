@@ -1,8 +1,15 @@
 frappe.listview_settings['SubTask'] = {
 	get_indicator: function (doc) {
-		var indicator = [__(doc.status), frappe.utils.guess_colour(doc.status), "status,=," + doc.status];
-		indicator[1] = {Done: "green", Cancel: "red", Hold: "orange", Open: "blue"}[doc.status];
-		return indicator;
+		let color_map = {
+			"Done": "green",
+			"Cancel": "red",
+			"Pause": "orange",
+			"Open": "grey",
+			"Close": "purple",
+			"In Progress": "blue" // pakai string key dan warna valid CSS
+		};
+		
+		return [__(doc.status), color_map[doc.status] || "gray", "status,=," + doc.status];
 	},
 	add_fields: ['maintask', 'maintask_name', 'tasks', 'tasks_name', 'pic_subtask', 'pic_subtask_name'],
 
