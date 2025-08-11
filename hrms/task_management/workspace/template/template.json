@@ -1,0 +1,43 @@
+{
+ "app": "hrms",
+ "charts": [],
+ "content": "[{\"id\":\"rm3KOWhMIh\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Template Task Management</span>\",\"col\":12}},{\"id\":\"GeQFquM7k-\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Tasks Template\",\"col\":6}},{\"id\":\"PWwp83okDm\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"SubTask Template\",\"col\":6}}]",
+ "creation": "2025-08-01 10:34:56.453027",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "duplicate",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Template",
+ "link_type": "DocType",
+ "links": [],
+ "modified": "2025-08-11 20:06:30.837609",
+ "modified_by": "Administrator",
+ "module": "Task Management",
+ "name": "Template",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "Task Management",
+ "public": 1,
+ "quick_lists": [
+  {
+   "document_type": "Tasks Template",
+   "label": "Tasks Template",
+   "quick_list_filter": "[]"
+  },
+  {
+   "document_type": "SubTask Template",
+   "label": "SubTask Template",
+   "quick_list_filter": "[]"
+  }
+ ],
+ "roles": [],
+ "sequence_id": 21.0,
+ "shortcuts": [],
+ "title": "Template",
+ "type": "Workspace"
+}
