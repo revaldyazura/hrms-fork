@@ -1,7 +1,7 @@
 {
  "app": "hrms",
  "charts": [],
- "content": "[{\"id\":\"RVRjn2rp2g\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Knowledge</span>\",\"col\":12}},{\"id\":\"PLpz9WiJnm\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Kamus Kompetensi\",\"col\":12}}]",
+ "content": "[{\"id\":\"RVRjn2rp2g\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Knowledge</span>\",\"col\":12}},{\"id\":\"PLpz9WiJnm\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Kamus Kompetensi\",\"col\":6}},{\"id\":\"xkvky0swHs\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"SubTask Types\",\"col\":6}}]",
  "creation": "2025-07-22 13:33:28.608822",
  "custom_blocks": [],
  "docstatus": 0,
@@ -15,7 +15,7 @@
  "label": "Knowledge",
  "link_type": "DocType",
  "links": [],
- "modified": "2025-07-22 13:50:16.867400",
+ "modified": "2025-08-11 10:38:41.020896",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Knowledge",
@@ -27,6 +27,11 @@
   {
    "document_type": "Kamus Kompetensi",
    "label": "Kamus Kompetensi",
+   "quick_list_filter": "[]"
+  },
+  {
+   "document_type": "SubTask Types",
+   "label": "SubTask Types",
    "quick_list_filter": "[]"
   }
  ],
