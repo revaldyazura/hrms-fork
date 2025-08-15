@@ -128,14 +128,20 @@ def execute(filters=None):
                 "completed_maintask": frappe.db.count(
                     "MainTask", filters={"name": tsm.mt_name, "status": "Done"}
                 ),
-                "completed_subtask": frappe.db.count(
-                    "SubTask", filters={"maintask": tsm.mt_name, "status": "Done"}
-                ),
                 "open_subtask": frappe.db.count(
                     "SubTask", filters={"maintask": tsm.mt_name, "status": "Open"}
                 ),
-                "hold_subtask": frappe.db.count(
-                    "SubTask", filters={"maintask": tsm.mt_name, "status": "Hold"}
+                "in_progress_subtask": frappe.db.count(
+                    "SubTask", filters={"maintask": tsm.mt_name, "status": "In Progress"}
+                ),
+                "pause_subtask": frappe.db.count(
+                    "SubTask", filters={"maintask": tsm.mt_name, "status": "Pause"}
+                ),
+                "completed_subtask": frappe.db.count(
+                    "SubTask", filters={"maintask": tsm.mt_name, "status": "Done"}
+                ),
+                "close_subtask": frappe.db.count(
+                    "SubTask", filters={"maintask": tsm.mt_name, "status": "Close"}
                 ),
                 "cancel_subtask": frappe.db.count(
                     "SubTask", filters={"maintask": tsm.mt_name, "status": "Cancel"}
@@ -175,18 +181,19 @@ def get_chart_data(data):
     total = []
     completed = []
     open = []
-    hold = []
+    in_progress = []
+    pause = []
+    close = []
     cancel = []
 
     for tsm in data:
-        # if tsm.mt_name in idx_mt:
-        #     pass
-        # else:
-        #     idx_mt.append(tsm.mt_name)
+        
         labels.append(tsm["maintask_name"])
         open.append(tsm["open_subtask"])
+        in_progress.append(tsm["in_progress_subtask"])
+        pause.append(tsm["pause_subtask"])
         completed.append(tsm["completed_subtask"])
-        hold.append(tsm["hold_subtask"])
+        close.append(tsm["close_subtask"])
         cancel.append(tsm["cancel_subtask"])
 
     return {
@@ -194,13 +201,15 @@ def get_chart_data(data):
             "labels": labels[:30],
             "datasets": [
                 {"name": _("Open"), "values": open[:30]},
+                {"name": _("In Progress"), "values": in_progress[:30]},
+                {"name": _("Pause"), "values": pause[:30]},
                 {"name": _("Done"), "values": completed[:30]},
-                {"name": _("Hold"), "values": hold[:30]},
+                {"name": _("Close"), "values": close[:30]},
                 {"name": _("Cancel"), "values": cancel[:30]},
             ],
         },
         "type": "bar",
-        "colors": ["#0000FF", "#008000", "#FFD580", "#FF0000"],
+        "colors": ["#4B4B61","#0000FF","#FFD580", "#008000",  "#5A0363",  "#FF0000"],
         "barOptions": {"stacked": True},
     }
 

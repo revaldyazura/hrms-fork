@@ -18,7 +18,7 @@ frappe.query_reports["Report Task Management"] = {
 			fieldname: "status",
 			label: __("Sub Task Status"),
 			fieldtype: "Select",
-			options: " \nOpen\nDone\nHold\nCancel",
+			options: " \nOpen\nIn Progress\nPause\nDone\nClose\nCancel",
 			default: "Open",
 		},
 	],
@@ -40,10 +40,14 @@ frappe.query_reports["Report Task Management"] = {
 				value = `<span style="color: green; font-weight: bold;">${value}</span>`;
 			} else if (value.includes("Cancel")) {
 				value = `<span style="color: red; font-weight: bold;">${value}</span>`;
-			} else if (value.includes("Hold")) {
+			} else if (value.includes("Pause")) {
 				value = `<span style="color: orange; font-weight: bold;">${value}</span>`;
 			} else if (value.includes("Open")) {
+				value = `<span style="color: grey; font-weight: bold;">${value}</span>`;
+			}else if (value.includes("In Progress")) {
 				value = `<span style="color: blue; font-weight: bold;">${value}</span>`;
+			}else if (value.includes("Close")) {
+				value = `<span style="color: violet; font-weight: bold;">${value}</span>`;
 			}
 		}
 

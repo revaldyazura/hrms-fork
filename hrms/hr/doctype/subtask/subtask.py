@@ -125,16 +125,22 @@ def has_permission(doc, ptype, user):
 	if user == "Administrator":
 		return True
 
-	if ptype in ("read", None):
-		return True
-
 	employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
 	if not employee_id:
 		return False
 
+	parent_mteam = frappe.get_all(
+		"MainTask Team",
+		filters={"employee": employee_id},
+		pluck="parent"
+	)
+
+	if ptype in ("read", None) and doc.maintask in parent_mteam:
+		return True
+
 	employee = frappe.get_doc("Employee", employee_id)
 	tasks = frappe.get_doc("Tasks", doc.tasks)
-
+	
 	parent_task_pic = frappe.get_all(
 		"Task PIC",
 		filters={"employee": employee_id},
@@ -151,12 +157,12 @@ def has_permission(doc, ptype, user):
 		maintask = frappe.get_doc("MainTask", doc.maintask)
 		if doc.pic_subtask == employee_id and doc.tasks not in parent_task_pic and maintask.owner != user and doc.maintask not in parent_assign_by:
 			frappe.throw(f"{employee.employee_name} is pic subtask only and not allowed to deleting {doc.subtask_name} subtask.",
-						 frappe.PermissionError)
+							frappe.PermissionError)
 			return False
 		check_evaluated = frappe.get_value("Evaluation", {"subtask": doc.name}, "subtask")
 		if check_evaluated:
 			frappe.throw(_(f"Sorry {employee.employee_name} this subtask is evaluated, you can't delete it.",
-						   frappe.PermissionError))
+							frappe.PermissionError))
 			return False
 	elif doc.pic_subtask == employee_id and ptype != "delete":
 		return True
@@ -168,7 +174,7 @@ def has_permission(doc, ptype, user):
 			return True
 
 	frappe.throw(f"{employee.employee_name} is not allowed to accessing {doc.subtask_name} subtask.",
-				 frappe.PermissionError)
+					frappe.PermissionError)
 	return False
 
 
