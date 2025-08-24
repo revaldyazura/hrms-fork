@@ -6,74 +6,302 @@ frappe.ui.form.on("SubTask", {
 		if (frm.is_new()) {
 			frm.set_df_property("status", "options", ["Open"]);
 			frm.set_value("status", "Open");
-			frm.add_custom_button('Agent Suggestion for SubTask Value', async function () {
-				if (!frm.doc.subtask_name || !frm.doc.description) {
-					frappe.msgprint(__('Please fill Title and Description.'));
-					return;
+			ensure_ai_button(frm);
+			// 	frm.add_custom_button('Agent Suggestion for SubTask Value', async function () {
+			// 		if (!frm.doc.subtask_name || !frm.doc.description) {
+			// 			frappe.msgprint(__('Please fill Title and Description.'));
+			// 			return;
+			// 		}
+
+			// 		frappe.prompt([
+			// 			{
+			// 				fieldtype: 'Data',
+			// 				label: 'Title',
+			// 				fieldname: 'subtask_name',
+			// 				default: frm.doc.subtask_name,
+			// 				reqd: 1
+			// 			},
+			// 			{
+			// 				fieldtype: 'Text Editor',
+			// 				label: 'Description',
+			// 				fieldname: 'description',
+			// 				default: frm.doc.description,
+			// 				reqd: 1
+			// 			}
+			// 		], async (values) => {
+			// 			try {
+			// 				frappe.dom.freeze(__('Contacting Agent...'));
+
+			// 				const response = await frappe.call({
+			// 					method: "hrms.hr.doctype.subtask.subtask.ai_suggestion",
+			// 					args: {
+			// 						title: values.subtask_name,
+			// 						description: values.description
+			// 					}
+			// 				});
+
+			// 				frappe.dom.unfreeze();
+
+			// 				const result = response.message || {};
+			// 				if (result.error) {
+			// 					throw result.error;
+			// 				}
+
+			// 				// ---- helper: escape biar aman di HTML
+			// 				const esc = (s) => frappe.utils.escape_html(s == null ? "" : String(s));
+
+			// 				// ---- mapping nilai level -> Value SubTask (1/2/3)
+			// 				const levelToValue = { "basic": 1, "intermediate": 2, "advanced": 3 };
+			// 				let suggestedValue = 1; // default Basic
+			// 				let topLevelRank = 1;
+
+			// 				const relevant = Array.isArray(result.relevant_skillset) ? result.relevant_skillset : [];
+			// 				relevant.forEach(it => {
+			// 					const lvl = String(it.level || "").toLowerCase().trim();
+			// 					const v = levelToValue[lvl] || 1;
+			// 					if (v > topLevelRank) {
+			// 						topLevelRank = v;
+			// 						suggestedValue = v;
+			// 					}
+			// 				});
+
+			// 				// ---- bikin tabel skillset (HTML)
+			// 				const skillsTableRows = relevant.map((it, idx) => {
+			// 					return `
+			// 	<tr>
+			// 		<td style="vertical-align:top;">${idx + 1}</td>
+			// 		<td style="vertical-align:top;">${esc(it.skill)}</td>
+			// 		<td style="vertical-align:top;">${esc(it.sub_skill_set)}</td>
+			// 		<td style="vertical-align:top;">${esc(it.level)}</td>
+			// 		<td style="vertical-align:top;">${esc(it.reasonings)}</td>
+			// 	</tr>
+			// `;
+			// 				}).join("");
+
+			// 				const skillsTable = `
+			// 			<div style="max-height:240px; overflow:auto; border:1px solid #e5e7eb; border-radius:6px;">
+			// 				<table class="table table-bordered" style="margin:0;">
+			// 					<thead>
+			// 						<tr>
+			// 							<th style="width:40px;">#</th>
+			// 							<th>Skill</th>
+			// 							<th>Sub Skill</th>
+			// 							<th>Level</th>
+			// 							<th>Reasoning</th>
+			// 						</tr>
+			// 					</thead>
+			// 					<tbody>${skillsTableRows || `
+			// 						<tr><td colspan="5" style="text-align:center;color:#888;">No relevant skills detected</td></tr>
+			// 					`}</tbody>
+			// 				</table>
+			// 			</div>
+			// 		`;
+
+
+			// 				// ---- dialog hasil AI
+			// 				const d = new frappe.ui.Dialog({
+			// 					title: 'Agent Suggestion',
+			// 					fields: [
+			// 						{ fieldtype: 'Section Break', label: 'Result' },
+			// 						{
+			// 							fieldtype: 'HTML', fieldname: 'ai_preview', options: `
+			// 							<div style="margin:12px 0 6px; font-weight:600;">Relevant Skillset</div>
+			// 							${skillsTable}
+			// 						`},
+			// 						{ fieldtype: 'Section Break' },
+			// 						{
+			// 							fieldtype: 'Select',
+			// 							fieldname: 'picked_value',
+			// 							label: 'Value SubTask',
+			// 							options: [
+			// 								{ label: '1 - Basic', value: '1' },
+			// 								{ label: '2 - Intermediate', value: '2' },
+			// 								{ label: '3 - Advanced', value: '3' }
+			// 							],
+			// 							default: String(suggestedValue),
+			// 							description: __('Estimated difficulty level (you can change it).')
+			// 						}
+			// 					],
+			// 					primary_action_label: 'Apply to Form',
+			// 					primary_action(values2) {
+			// 						if (values2.picked_value) {
+			// 							frm.set_value('value', values2.picked_value);
+			// 						}
+			// 						d.hide();
+			// 						frappe.show_alert({ message: __('Agent suggestion applied'), indicator: 'green' });
+			// 					},
+			// 					secondary_action_label: 'Close',
+			// 					secondary_action() { d.hide(); }
+			// 				});
+
+			// 				d.show();
+
+			// 			} catch (err) {
+			// 				frappe.dom.unfreeze();
+			// 				console.error(err);
+			// 				frappe.msgprint(__('Failed to contact AI (server).'));
+			// 			}
+			// 		});
+			// 	});
+			function ensure_ai_button(frm) {
+				// Hapus tombol lama jika ada (biar gak dobel binding)
+				if (frm._ai_btn && frm._ai_btn.remove) {
+					frm._ai_btn.remove();
+					frm._ai_btn = null;
 				}
 
-				frappe.prompt([
-					{
-						fieldtype: 'Data',
-						label: 'Title',
-						fieldname: 'subtask_name',
-						default: frm.doc.subtask_name,
-						reqd: 1
-					},
-					{
-						fieldtype: 'Text Editor',
-						label: 'Description',
-						fieldname: 'description',
-						default: frm.doc.description,
-						reqd: 1
-					}
-				], async (values) => {
-					try {
-						const response = await frappe.call({
-							method: "hrms.hr.doctype.subtask.subtask.ai_suggestion",
-							args: {
-								title: values.subtask_name,
-								description: values.description
-							}
-						});
+				const hasCache = !!frm._ai_suggestion_cache;
 
-						const result = response.message;
-						if (result.error) {
-							throw result.error;
+				if (!hasCache) {
+					// Mode awal: Generate Suggestion
+					frm._ai_btn = frm.add_custom_button('Agent Suggestion for SubTask Value', async function () {
+						if (!frm.doc.subtask_name || !frm.doc.description) {
+							frappe.msgprint(__('Please fill Title and Description.'));
+							return;
 						}
 
-						const d = new frappe.ui.Dialog({
-							title: 'AI Result',
-							fields: [
-								{
-									label: 'Prediction Summary',
-									fieldname: 'summary',
-									fieldtype: 'Small Text',
-									default: result.summary || '',
-									read_only: 1
-								},
-								{
-									label: 'Suggestions',
-									fieldname: 'suggestions',
-									fieldtype: 'Text',
-									default: (result.suggestions || []).join('\n'),
-									read_only: 1
-								}
-							],
-							primary_action_label: 'Close',
-							primary_action() {
-								d.hide();
+						// Prompt user edit judul/desc
+						frappe.prompt([
+							{ fieldtype: 'Data', label: 'Title', fieldname: 'subtask_name', default: frm.doc.subtask_name, reqd: 1 },
+							{ fieldtype: 'Text Editor', label: 'Description', fieldname: 'description', default: frm.doc.description, reqd: 1 }
+						], async (values) => {
+							try {
+								frappe.dom.freeze(__('Contacting Agent...'));
+								const response = await frappe.call({
+									method: "hrms.hr.doctype.subtask.subtask.ai_suggestion",
+									args: { title: values.subtask_name, description: values.description }
+								});
+								frappe.dom.unfreeze();
+
+								const result = response.message || {};
+								if (result.error) throw result.error;
+
+								// ---- hitung suggestedValue & build HTML
+								const cache = build_ai_cache(result);
+								// taruh di memori form
+								frm._ai_suggestion_cache = cache;
+
+								// tampilkan dialog hasil
+								show_ai_dialog(frm, cache);
+
+								// ubah tombol jadi "Show Last Agent Suggestion"
+								switch_to_show_last_mode(frm);
+
+							} catch (err) {
+								frappe.dom.unfreeze();
+								console.error(err);
+								frappe.msgprint(__('Failed to contact AI (server).'));
 							}
 						});
-						d.show();
+					});
+				} else {
+					// Sudah ada cache: langsung tombol “Show Last Agent Suggestion”
+					switch_to_show_last_mode(frm);
+				}
+			}
 
-					} catch (err) {
-						console.error(err);
-						frappe.msgprint(__('Failed to contact AI (server).'));
-					}
+			function switch_to_show_last_mode(frm) {
+				if (frm._ai_btn && frm._ai_btn.text) {
+					frm._ai_btn.text('Show Last Agent Suggestion');
+					// bersihkan handler lama lalu pasang baru
+					$(frm._ai_btn).off('click').on('click', function () {
+						if (frm._ai_suggestion_cache) {
+							show_ai_dialog(frm, frm._ai_suggestion_cache);
+						} else {
+							frappe.show_alert({ message: __('No cached suggestion found'), indicator: 'orange' });
+						}
+					});
+				}
+			}
+
+			function build_ai_cache(result) {
+				const esc = (s) => frappe.utils.escape_html(s == null ? "" : String(s));
+				const levelToValue = { "basic": 1, "intermediate": 2, "advanced": 3 };
+
+				const relevant = Array.isArray(result.relevant_skillset) ? result.relevant_skillset : [];
+
+				let suggestedValue = 1;
+				let topLevelRank = 1;
+				relevant.forEach(it => {
+					const lvl = String(it.level || "").toLowerCase().trim();
+					const v = levelToValue[lvl] || 1;
+					if (v > topLevelRank) { topLevelRank = v; suggestedValue = v; }
 				});
-			});
 
+				const rows = relevant.map((it, idx) => `
+    <tr>
+      <td style="vertical-align:top;">${idx + 1}</td>
+      <td style="vertical-align:top;">${esc(it.skill)}</td>
+      <td style="vertical-align:top;">${esc(it.sub_skill_set)}</td>
+      <td style="vertical-align:top;">${esc(it.level)}</td>
+      <td style="vertical-align:top;">${esc(it.reasonings)}</td>
+    </tr>
+  `).join("");
+
+				const tableHTML = `
+    <div style="max-height:240px; overflow:auto; border:1px solid #e5e7eb; border-radius:6px;">
+      <table class="table table-bordered" style="margin:0;">
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th>Skill</th>
+            <th>Sub Skill</th>
+            <th>Level</th>
+            <th>Reasoning</th>
+          </tr>
+        </thead>
+        <tbody>${rows || `<tr><td colspan="5" style="text-align:center;color:#888;">No relevant skills detected</td></tr>`
+					}</tbody>
+      </table>
+    </div>
+  `;
+
+				return {
+					raw: result,               // simpan raw kalau perlu
+					relevant_skillset: relevant,
+					suggestedValue,
+					tableHTML
+				};
+			}
+
+			function show_ai_dialog(frm, cache) {
+				const d = new frappe.ui.Dialog({
+					title: 'Agent Suggestion',
+					fields: [
+						{ fieldtype: 'Section Break', label: 'Result' },
+						{
+							fieldtype: 'HTML', fieldname: 'ai_preview', options: `
+        <div style="margin:12px 0 6px; font-weight:600;">Relevant Skillset</div>
+        ${cache.tableHTML}
+      `},
+						{ fieldtype: 'Section Break' },
+						{
+							fieldtype: 'Select',
+							fieldname: 'picked_value',
+							label: 'Value SubTask',
+							options: [
+								{ label: '1 - Basic', value: '1' },
+								{ label: '2 - Intermediate', value: '2' },
+								{ label: '3 - Advanced', value: '3' }
+							],
+							default: String(cache.suggestedValue),
+							description: __('Estimated difficulty level (you can change it).')
+						}
+					],
+					primary_action_label: 'Apply to Form',
+					primary_action(values2) {
+						if (values2.picked_value) {
+							frm.set_value('value', values2.picked_value);
+						}
+						d.hide();
+						frappe.show_alert({ message: __('Agent suggestion applied'), indicator: 'green' });
+					},
+					secondary_action_label: 'Close',
+					secondary_action() { d.hide(); }
+				});
+
+				d.show();
+			}
 
 		}
 		if (!frm.is_new()) {

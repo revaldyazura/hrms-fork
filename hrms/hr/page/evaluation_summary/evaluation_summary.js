@@ -1,7 +1,7 @@
 frappe.pages['evaluation-summary'].on_page_load = function (wrapper) {
 	var page = frappe.ui.make_app_page({
 		parent: wrapper,
-		title: 'Evaluation Summary',
+		title: 'Evaluation',
 		single_column: true
 	});
 	// Tempatkan kontainer

@@ -48,7 +48,7 @@ def get_evaluation_data():
                     ON mt2.name = m_assign_by2.parent
                     WHERE m_assign_by2.employee = %(employee_id)s
                 ))
-                AND st.status = 'Done'"""
+                AND st.status = 'Close'"""
         # conditions = "WHERE mt.owner = %(user)s AND st.status = %(status)s"
 
     query = f"""

@@ -10,7 +10,7 @@
    "label": "SubTask Status"
   }
  ],
- "content": "[{\"id\":\"friS3Qbg28\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Task Management</span>\",\"col\":12}},{\"id\":\"k1e1I6aLsF\",\"type\":\"chart\",\"data\":{\"chart_name\":\"SubTask Status\",\"col\":12}},{\"id\":\"Fl7kUMDC03\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Evaluation of a MainTask\",\"col\":12}},{\"id\":\"hJVj45ivpX\",\"type\":\"card\",\"data\":{\"card_name\":\"Summary\",\"col\":6}},{\"id\":\"m4m5vnTNSd\",\"type\":\"card\",\"data\":{\"card_name\":\"Overview\",\"col\":6}},{\"id\":\"RuRNUXnzCw\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
+ "content": "[{\"id\":\"friS3Qbg28\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Task Management</span>\",\"col\":12}},{\"id\":\"k1e1I6aLsF\",\"type\":\"chart\",\"data\":{\"chart_name\":\"SubTask Status\",\"col\":12}},{\"id\":\"Fl7kUMDC03\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Evaluation of a MainTask\",\"col\":12}},{\"id\":\"hJVj45ivpX\",\"type\":\"card\",\"data\":{\"card_name\":\"Table Based\",\"col\":6}},{\"id\":\"m4m5vnTNSd\",\"type\":\"card\",\"data\":{\"card_name\":\"Chart Based\",\"col\":6}},{\"id\":\"RuRNUXnzCw\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
  "creation": "2025-06-17 17:15:09.455368",
  "custom_blocks": [],
  "docstatus": 0,
@@ -25,10 +25,10 @@
  "link_type": "DocType",
  "links": [
   {
-   "description": "Tables to show all highlighted data from maintask, task, subtask and evaluation",
+   "description": "Chart to show all highlighted team data",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Summary",
+   "label": "Chart Based",
    "link_count": 2,
    "link_type": "DocType",
    "onboard": 0,
@@ -37,7 +37,37 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Task Management Summary",
+   "label": "Task Team Overview",
+   "link_count": 0,
+   "link_to": "task-management-team",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Division Task Overview",
+   "link_count": 0,
+   "link_to": "task-management-division",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "description": "Tables to show all highlighted data from maintask, task, subtask and evaluation",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Table Based",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Task Forge",
    "link_count": 0,
    "link_to": "task-management-summary",
    "link_type": "Page",
@@ -46,36 +76,16 @@
   },
   {
    "hidden": 0,
-   "is_query_report": 1,
-   "label": "Evaluation Summary",
+   "is_query_report": 0,
+   "label": "Evaluation",
    "link_count": 0,
    "link_to": "evaluation-summary",
    "link_type": "Page",
    "onboard": 0,
    "type": "Link"
-  },
-  {
-   "description": "Chart to show all highlighted team data from subtask",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Overview",
-   "link_count": 1,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Team Overview",
-   "link_count": 0,
-   "link_to": "task-management-team",
-   "link_type": "Page",
-   "onboard": 0,
-   "type": "Link"
   }
  ],
- "modified": "2025-08-13 14:10:31.481481",
+ "modified": "2025-08-22 16:55:00.345447",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Summary",

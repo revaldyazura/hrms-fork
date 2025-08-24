@@ -20,3 +20,8 @@ hrms/public/frontend
 hrms/www/hrms.html
 hrms/public/roster
 hrms/www/roster.html
+hrms/hr/report/report_evaluation/data_report_eval.json
+.gitignore
+hrms/hr/report/report_subtask/notes_pages.txt
+hrms/hr/page/task_management_summary/raw_data_page.json
+hrms/hr/doctype/maintask/generate_task_template.json

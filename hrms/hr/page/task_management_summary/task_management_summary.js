@@ -1,7 +1,7 @@
 frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 	var page = frappe.ui.make_app_page({
 		parent: wrapper,
-		title: 'Task Management Summary',
+		title: 'Task Forge',
 		single_column: true
 	});
 
@@ -17,9 +17,11 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 			<input type="text" id="filter-end-date" class="form-control" placeholder="Due Date" onfocus="(this.type='date')" onblur="(this.type='text')">
 			<select id="filter-subtask-status" class="form-control">
 				<option value="">Sub Task Status</option>
-				<option value="Open" style="color: blue">Open</option>
-				<option value="Hold" style="color: orange">Hold</option>
+				<option value="Open" style="color: grey">Open</option>
+				<option value="In Progress" style="color: blue">In Progress</option>
+				<option value="Pause" style="color: orange">Pause</option>
 				<option value="Done" style="color: green">Done</option>
+				<option value="Close" style="color: purple">Close</option>
 				<option value="Cancel" style="color: red">Cancel</option>
 			</select>
 		</div>
@@ -505,9 +507,11 @@ frappe.pages['task-management-summary'].on_page_load = function (wrapper) {
 
 				td = document.createElement("td");
 				td.textContent = row.sub_task_status || "-";
-				if (row.sub_task_status === "Open") td.style.color = "blue";
+				if (row.sub_task_status === "Open") td.style.color = "grey";
+				if (row.sub_task_status === "In Progress") td.style.color = "blue";
 				else if (row.sub_task_status === "Done") td.style.color = "green";
-				else if (row.sub_task_status === "Hold") td.style.color = "orange";
+				else if (row.sub_task_status === "Close") td.style.color = "purple";
+				else if (row.sub_task_status === "Pause") td.style.color = "orange";
 				else if (row.sub_task_status === "Cancel") td.style.color = "red";
 				tr.appendChild(td);
 

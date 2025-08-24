@@ -299,14 +299,13 @@ def button_evaluation_subtask(subtask):
 @frappe.whitelist()  
 def ai_suggestion(title, description):
     try:
-        url = "https://your-ai-endpoint.com/predict"
+        url = "http://10.12.1.148:9968/classify-skillset"
         payload = {
-            "title": title,
+            "task": title,
             "description": description
         }
         headers = {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer your_secret_token" 
+            "Content-Type": "application/json"
         }
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
