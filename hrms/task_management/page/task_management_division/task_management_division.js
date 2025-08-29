@@ -5,74 +5,6 @@ frappe.pages['task-management-division'].on_page_load = async function (wrapper)
     single_column: true
   });
 
-  const teamField = page.add_field({
-    label: 'Team',
-    fieldtype: 'Select',
-    fieldname: 'team_filter',
-    options: [],
-    default: '-- All Teams --',
-    onchange: () => {
-      updateTeamHeaderFromField();
-      const selectedLabel = teamField.get_value();         // ini label (team_name)
-      const teamDocname = TEAM_MAP.get(selectedLabel) || null; // ini 'name'
-      load_data(teamDocname);
-    }
-  });
-
-  const TEAM_MAP = new Map(); // label -> value (docname)
-
-  // 2) Muat daftar Team lalu set default = team user login
-  await init_team_filter(teamField);
-  updateTeamHeaderFromField();
-
-  // ===== helpers filter =====
-  async function init_team_filter(ctrl) {
-    const { message } = await frappe.call({
-      method: 'hrms.task_management.page.task_management_division.task_management_division.get_team_options'
-    });
-    const pairs = message || []; // [{label, value}]
-
-    // isi map & opsi (label yang ditampilkan user)
-    TEAM_MAP.clear();
-    TEAM_MAP.set('-- All Teams --', null);
-    const optionLabels = ['-- All Teams --'];
-    pairs.forEach(({ label, value }) => {
-      if (!label || !value) return;
-      TEAM_MAP.set(label, value);
-      optionLabels.push(label);
-    });
-
-    ctrl.df.options = optionLabels.join('\n');
-    ctrl.refresh();
-
-    // default = team user (Employee.team = <name/docname>)
-    const userTeamValue = await get_current_user_team(); // ini 'name'
-    let defaultLabel = '-- All Teams --';
-    for (const [label, val] of TEAM_MAP.entries()) {
-      if (val === userTeamValue) {
-        defaultLabel = label;
-        break;
-      }
-    }
-    ctrl.set_value(defaultLabel);
-    updateTeamHeaderFromField();
-
-    // load pertama kirim 'name' (atau null kalau All)
-    load_data(defaultLabel !== '-- All Teams --' ? userTeamValue : null);
-  }
-
-  async function get_current_user_team() {
-    try {
-      const user = frappe.session.user;
-      const r = await frappe.db.get_value('Employee', { user_id: user }, 'team');
-      return r?.message?.team || null; // <- ini adalah docname Team (value)
-    } catch (e) {
-      console.warn('get_current_user_team failed:', e);
-      return null;
-    }
-  }
-
-  // 3) Chart.js
   if (!window.Chart) {
     await new Promise((res, rej) => {
       const s = document.createElement('script');
@@ -138,7 +70,7 @@ frappe.pages['task-management-division'].on_page_load = async function (wrapper)
 
   $(page.body).append(`
     <div class="tmto">
-      <h3 id="team_title">🧩 ${teamField.get_value()} OVERVIEW</h3>
+      <h3 id="team_title">🧩 TEAM OVERVIEW</h3>
       <div class="metrics">
         ${m('Total Team Members', 'total_members')}
         ${m('Total Ongoing SubTask', 'ongoing_tasks')}
@@ -156,6 +88,77 @@ frappe.pages['task-management-division'].on_page_load = async function (wrapper)
     </div>
   `);
 
+  function m(label, id) {
+    return `<div class="card metric"><div class="label">${label}</div><div id="${id}" class="value">–</div></div>`
+  }
+  function c(title, id) {
+    return `<div class="card chart"><div class="title">${title}</div><canvas id="${id}" height="120"></canvas></div>`
+  }
+
+  function setText(id, val) { document.getElementById(id).innerText = val ?? '–'; }
+
+  const teamField = page.add_field({
+    label: 'Team',
+    fieldtype: 'Select',
+    fieldname: 'team_filter',
+    options: [],
+    default: '-- All Teams --',
+    onchange: () => {
+      updateTeamHeaderFromField();
+      const selectedLabel = teamField.get_value();
+      const teamDocname = TEAM_MAP.get(selectedLabel) || null;
+      load_data(teamDocname);
+    }
+  });
+
+  const TEAM_MAP = new Map();
+
+  await init_team_filter(teamField);
+  updateTeamHeaderFromField();
+
+  async function init_team_filter(ctrl) {
+    const { message } = await frappe.call({
+      method: 'hrms.task_management.page.task_management_division.task_management_division.get_team_options'
+    });
+    const pairs = message || [];
+
+    TEAM_MAP.clear();
+    TEAM_MAP.set('-- All Teams --', null);
+    const optionLabels = ['-- All Teams --'];
+    pairs.forEach(({ label, value }) => {
+      if (!label || !value) return;
+      TEAM_MAP.set(label, value);
+      optionLabels.push(label);
+    });
+
+    ctrl.df.options = optionLabels.join('\n');
+    ctrl.refresh();
+
+    const userTeamValue = await get_current_user_team();
+    let defaultLabel = '-- All Teams --';
+    for (const [label, val] of TEAM_MAP.entries()) {
+      if (val === userTeamValue) {
+        defaultLabel = label;
+        break;
+      }
+    }
+    ctrl.set_value(defaultLabel);
+    updateTeamHeaderFromField();
+
+    load_data(defaultLabel !== '-- All Teams --' ? userTeamValue : null);
+  }
+
+  async function get_current_user_team() {
+    try {
+      const user = frappe.session.user;
+      const r = await frappe.db.get_value('Employee', { user_id: user }, 'team');
+      return r?.message?.team || null;
+    } catch (e) {
+      console.warn('get_current_user_team failed:', e);
+      return null;
+    }
+  }
+
   function teamLabel(val) {
     return (val && val !== '-- All Teams --') ? val : 'All Teams';
   }
@@ -164,21 +167,8 @@ frappe.pages['task-management-division'].on_page_load = async function (wrapper)
     const el = document.getElementById('team_title');
     if (!el || !teamField) return;
     const label = teamLabel(teamField.get_value());
-    // Gunakan textContent agar aman dari HTML injection
     el.textContent = `🧩 ${label} OVERVIEW`;
-    // (opsional) update judul page-head juga
-    // page.set_title(`Division SubTask Overview — ${label}`);
   }
-
-  function m(label, id) {
-    return `<div class="card metric"><div class="label">${label}</div><div id="${id}" class="value">–</div></div>`
-  }
-  function c(title, id) {
-    return `<div class="card chart"><div class="title">${title}</div><canvas id="${id}" height="120"></canvas></div>`
-  }
-
-  // helper
-  function setText(id, val) { document.getElementById(id).innerText = val ?? '–'; }
 
   function drawBar(canvasId, src, opts = {}) {
     const ctx = document.getElementById(canvasId).getContext('2d');
@@ -226,7 +216,7 @@ frappe.pages['task-management-division'].on_page_load = async function (wrapper)
 
     frappe.call({
       method: 'hrms.task_management.page.task_management_division.task_management_division.get_team_overview',
-      args: { team: team_docname || null }, // <— kirim ke backend
+      args: { team: team_docname || null },
       callback: (r) => {
         if (!r.message) return;
         const d = r.message;
@@ -237,7 +227,7 @@ frappe.pages['task-management-division'].on_page_load = async function (wrapper)
         setText('avg_completion_rate', `${d.avg_completion_rate}%`);
         setText('avg_value', d.avg_value);
 
-        // re-render charts (bersihkan canvas kalau perlu)
+
         ['chart_ongoing', 'chart_value', 'chart_completion', 'chart_highprio'].forEach(id => {
           const old = Chart.getChart(id);
           if (old) old.destroy();
