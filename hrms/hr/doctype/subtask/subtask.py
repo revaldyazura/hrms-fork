@@ -130,13 +130,19 @@ def has_permission(doc, ptype, user):
 	if not employee_id:
 		return False
 
+	parent_assign_by = frappe.get_all(
+		"MainTask Assign By",
+		filters={"employee": employee_id},
+		pluck="parent"
+	)
+ 
 	parent_mteam = frappe.get_all(
 		"MainTask Team",
 		filters={"employee": employee_id},
 		pluck="parent"
 	)
-
-	if ptype in ("read", None) and doc.maintask in parent_mteam:
+    
+	if ptype in ("read", None) and (doc.maintask in parent_mteam or doc.maintask in parent_assign_by):
 		return True
 
 	employee = frappe.get_doc("Employee", employee_id)
@@ -144,12 +150,6 @@ def has_permission(doc, ptype, user):
 	
 	parent_task_pic = frappe.get_all(
 		"Task PIC",
-		filters={"employee": employee_id},
-		pluck="parent"
-	)
-
-	parent_assign_by = frappe.get_all(
-		"MainTask Assign By",
 		filters={"employee": employee_id},
 		pluck="parent"
 	)

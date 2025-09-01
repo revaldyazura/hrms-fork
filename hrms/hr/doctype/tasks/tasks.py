@@ -106,12 +106,30 @@ def has_permission(doc, ptype, user):
     if user == "Administrator":
         return True
 
-    if ptype in ("read", None):
-        return True
-
     employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
     if not employee_id:
         return False
+
+    parent_mteam = frappe.get_all(
+		"MainTask Team",
+		filters={"employee": employee_id},
+		pluck="parent"
+	)
+    
+    parent_task_pic = frappe.get_all(
+        "Task PIC",
+        filters={"employee": employee_id},
+        pluck="parent"
+    )
+
+    parent_assign_by = frappe.get_all(
+        "MainTask Assign By",
+        filters={"employee": employee_id},
+        pluck="parent"
+    )
+        
+    if ptype in ("read", None) and (doc.maintask in parent_mteam or doc.maintask in parent_assign_by):
+        return True
 
     employee = frappe.get_doc("Employee", employee_id)
     maintask = frappe.get_doc("MainTask", doc.maintask)
@@ -119,18 +137,6 @@ def has_permission(doc, ptype, user):
     if ptype == "delete":
         if doc.owner == user:
             return True
-
-        parent_task_pic = frappe.get_all(
-            "Task PIC",
-            filters={"employee": employee_id},
-            pluck="parent"
-        )
-
-        parent_assign_by = frappe.get_all(
-            "MainTask Assign By",
-            filters={"employee": employee_id},
-            pluck="parent"
-        )
 
         print(f'{type(parent_task_pic)} type, parent_task_pic value {parent_task_pic}')
         if doc.name in parent_task_pic and maintask.owner != user and doc.maintask not in parent_assign_by:
