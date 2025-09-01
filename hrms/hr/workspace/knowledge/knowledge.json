@@ -1,7 +1,7 @@
 {
  "app": "hrms",
  "charts": [],
- "content": "[{\"id\":\"RVRjn2rp2g\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Knowledge</span>\",\"col\":12}},{\"id\":\"PLpz9WiJnm\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Kamus Kompetensi\",\"col\":4}},{\"id\":\"xkvky0swHs\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"SubTask Types\",\"col\":4}},{\"id\":\"6fTDLtGOOx\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Tutorial\",\"col\":4}}]",
+ "content": "[{\"id\":\"RVRjn2rp2g\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Task Management</span>\",\"col\":12}},{\"id\":\"PLpz9WiJnm\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Kamus Kompetensi\",\"col\":4}},{\"id\":\"xkvky0swHs\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"SubTask Types\",\"col\":4}},{\"id\":\"6fTDLtGOOx\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Tutorial\",\"col\":4}}]",
  "creation": "2025-07-22 13:33:28.608822",
  "custom_blocks": [],
  "docstatus": 0,
@@ -15,7 +15,7 @@
  "label": "Knowledge",
  "link_type": "DocType",
  "links": [],
- "modified": "2025-08-12 11:08:50.197536",
+ "modified": "2025-08-29 16:27:30.867997",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Knowledge",

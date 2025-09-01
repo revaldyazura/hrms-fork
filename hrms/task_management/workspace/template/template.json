@@ -1,7 +1,7 @@
 {
  "app": "hrms",
  "charts": [],
- "content": "[{\"id\":\"rm3KOWhMIh\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Template Task Management</span>\",\"col\":12}},{\"id\":\"GeQFquM7k-\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Tasks Template\",\"col\":6}},{\"id\":\"PWwp83okDm\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"SubTask Template\",\"col\":6}}]",
+ "content": "[{\"id\":\"rm3KOWhMIh\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Task Management</span>\",\"col\":12}},{\"id\":\"GeQFquM7k-\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Tasks Template\",\"col\":6}},{\"id\":\"PWwp83okDm\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"SubTask Template\",\"col\":6}}]",
  "creation": "2025-08-01 10:34:56.453027",
  "custom_blocks": [],
  "docstatus": 0,
@@ -15,7 +15,7 @@
  "label": "Template",
  "link_type": "DocType",
  "links": [],
- "modified": "2025-08-11 20:06:30.837609",
+ "modified": "2025-08-29 16:27:17.213005",
  "modified_by": "Administrator",
  "module": "Task Management",
  "name": "Template",

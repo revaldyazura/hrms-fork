@@ -102,41 +102,6 @@ def update_fields(doc, method):
     frappe.flags.in_update = False
 
 
-@frappe.whitelist()
-def user_edit_evaluation(subtask):
-    print("user edit evaluation called")
-
-    if frappe.session.user == "Administrator":
-        return "admin"
-
-    doc = frappe.get_doc("SubTask", subtask)
-    employee_id = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
-
-    maintask = frappe.get_doc("MainTask", doc.maintask)
-
-    if not employee_id:
-        return False
-
-    if doc.owner == frappe.session.user:
-        return "owner_evaluation"
-
-    if doc.tasks:
-        task_owner = frappe.get_value("Tasks", doc.tasks, "owner")
-        parent_task_pic = frappe.get_all(
-            "Task PIC", filters={"employee": employee_id}, pluck="parent"
-        )
-        if task_owner == frappe.session.user:
-            return "task_owner"
-
-        if doc.tasks in parent_task_pic:
-            return "task_pics"
-
-        if doc.pic_subtask == employee_id and frappe.session.user != maintask.owner:
-            return "pic_subtask"
-
-    return "none"
-
-
 def has_permission(doc, ptype, user):
     print("has permission evaluation called")
 
@@ -209,6 +174,42 @@ def after_delete(doc, method):
         )
 
 
+
+@frappe.whitelist()
+def user_edit_evaluation(subtask):
+    print("user edit evaluation called")
+
+    if frappe.session.user == "Administrator":
+        return "admin"
+
+    doc = frappe.get_doc("SubTask", subtask)
+    employee_id = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
+
+    maintask = frappe.get_doc("MainTask", doc.maintask)
+
+    if not employee_id:
+        return False
+
+    if doc.owner == frappe.session.user:
+        return "owner_evaluation"
+
+    if doc.tasks:
+        task_owner = frappe.get_value("Tasks", doc.tasks, "owner")
+        parent_task_pic = frappe.get_all(
+            "Task PIC", filters={"employee": employee_id}, pluck="parent"
+        )
+        if task_owner == frappe.session.user:
+            return "task_owner"
+
+        if doc.tasks in parent_task_pic:
+            return "task_pics"
+
+        if doc.pic_subtask == employee_id and frappe.session.user != maintask.owner:
+            return "pic_subtask"
+
+    return "none"
+
+
 @frappe.whitelist()
 def get_done_subtask_as_owner(doctype, txt, searchfield, start, page_len, filters):
     user_id = frappe.session.user
@@ -233,7 +234,7 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
 
     roles = frappe.get_all("Has Role", filters={"parent": user_id}, pluck="role")
 
-    if "System Manager" in roles:
+    if "System Manager" in roles and user_id == "Administrator":
         return ""
 
     employee_id = frappe.get_value("Employee", {"user_id": user_id}, "name")

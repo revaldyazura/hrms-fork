@@ -67,14 +67,13 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
     user_id = user or frappe.session.user
 
     roles = frappe.get_all("Has Role", filters={"parent": user_id}, pluck="role")
-    if "System Manager" in roles:
+    if "System Manager" in roles and user_id == "Administrator":
         return ""
 
     employee_id = frappe.get_value("Employee", {"user_id": user_id}, "name")
 
     conditions = [f"tabMainTask.owner = '{user_id}'"]
     if employee_id:
-        conditions.append(f"tabMainTask.assigned_by = '{employee_id}'")
 
         parent_mteam = frappe.get_all(
             "MainTask Team",
@@ -95,7 +94,8 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
         if parent_assign_by:
             assign_by_maintask_ids = "', '".join(parent_assign_by)
             conditions.append(f"tabMainTask.name IN ('{assign_by_maintask_ids}')")
-
+            
+    print("maintask query conditions:", conditions)
     return " OR ".join(conditions)
 
 
