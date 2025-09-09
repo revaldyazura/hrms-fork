@@ -14,6 +14,7 @@ class SubTask(Document):
 		print("validate subtask called")
 		self.validate_subtask_name()
 		self.track_time_status_change()
+		ensure_employee_in_maintask_child_table(self)
 
 
 	def validate_subtask_name(self):
@@ -57,14 +58,12 @@ class SubTask(Document):
 			now = now_datetime()
 
 			if self.status == "In Progress":
-				# Simpan timestamp saat mulai kerja
 				self.last_in_progress_timestamp = now
 
 			elif self.status in ("Pause", "Done"):
-				# Hitung durasi kerja dan tambahkan ke total_time
 				if not self.last_in_progress_timestamp:
 					frappe.throw(f"Can't change status to '{self.status}', you have to change it to 'In Progress' first.",)
-				duration = int((now - get_datetime(self.last_in_progress_timestamp)).total_seconds() / 60)  # dalam menit
+				duration = int((now - get_datetime(self.last_in_progress_timestamp)).total_seconds() / 60)  
 				self.total_time = (self.total_time or 0) + duration
 				self.last_in_progress_timestamp = None
 
@@ -178,6 +177,73 @@ def has_permission(doc, ptype, user):
 					frappe.PermissionError)
 	return False
 
+def _lock_maintask_for_maintask_update(maintask_id: str):
+    """Opsional: cegah duplikasi bila ada save paralel."""
+    frappe.db.sql("SELECT name FROM `tab{}` WHERE name=%s FOR UPDATE".format("MainTask"), maintask_id)
+
+def _append_child_table_maintask_row_if_missing(parent_doc, employee_id: str, employee_name: str | None, child):
+    
+    rows = getattr(parent_doc, child, []) or []
+    for r in rows:
+        if getattr(r, "employee", None) == employee_id:
+            return False 
+
+    newr = parent_doc.append(child, {})
+    setattr(newr, "employee", employee_id)
+    if "employee_name":
+        if employee_name:
+            setattr(newr, "employee_name", employee_name)
+        else:
+            db_name = frappe.db.get_value("Employee", employee_id, "employee_name")
+            setattr(newr, "employee_name", db_name)
+
+    return True
+
+def ensure_employee_in_maintask_child_table(doc: Document | str):
+    
+    if isinstance(doc, str):
+        doc = frappe.get_doc("SubTask", doc)
+
+    emp_id = getattr(doc, "pic_subtask", None)
+    parent_id = getattr(doc, "maintask", None)
+
+    if not emp_id or not parent_id:
+        return 
+
+    _lock_maintask_for_maintask_update(parent_id)
+
+    parent = frappe.get_doc("MainTask", parent_id)
+    emp_name = getattr(doc, "pic_subtask_name", None)
+    
+    emp_reports_to = frappe.db.get_value("Employee", emp_id, "reports_to")
+    emp_reports_to_name = frappe.db.get_value("Employee", emp_reports_to, "employee_name") if emp_reports_to else None
+
+    team_added = _append_child_table_maintask_row_if_missing(parent, emp_id, emp_name, "team")
+    assign_by_added = _append_child_table_maintask_row_if_missing(parent, emp_reports_to, emp_reports_to_name, "assign_by") if emp_reports_to else False
+
+    if team_added & assign_by_added:
+        parent.save(ignore_permissions=True)
+        frappe.msgprint(
+            f"Employee <b>{frappe.utils.escape_html(emp_name or emp_id)}</b> "
+            f"added to Team MainTask <b>{frappe.utils.escape_html(parent.maintask_name)}</b>.",
+            f"and Employee <b>{frappe.utils.escape_html(emp_reports_to_name or emp_reports_to)}</b> "
+            f"added to Assign By MainTask <b>{frappe.utils.escape_html(parent.maintask_name)}</b>.",
+            alert=True
+        )
+    elif team_added:
+        parent.save(ignore_permissions=True)
+        frappe.msgprint(
+			f"Employee <b>{frappe.utils.escape_html(emp_name or emp_id)}</b> "
+			f"added to Team MainTask <b>{frappe.utils.escape_html(parent.maintask_name)}</b>.",
+			alert=True
+		)
+    elif assign_by_added:
+        parent.save(ignore_permissions=True)
+        frappe.msgprint(
+            f"Employee <b>{frappe.utils.escape_html(emp_reports_to_name or emp_reports_to)}</b> "
+            f"added to Assign By MainTask <b>{frappe.utils.escape_html(parent.maintask_name)}</b>.",
+            alert=True
+        )
 
 @frappe.whitelist()
 def user_edit_subtask(subtask_name):
@@ -298,7 +364,7 @@ def button_evaluation_subtask(subtask):
 	return False
 
 @frappe.whitelist()  
-def ai_suggestion(title, description):
+def subtask_value_agent_suggestion(title, description):
     try:
         url = "http://10.12.1.148:9968/classify-skillset"
         payload = {
@@ -312,5 +378,38 @@ def ai_suggestion(title, description):
         response.raise_for_status()
         return response.json()
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "AI Suggestion Error")
+        frappe.log_error(frappe.get_traceback(), "Agent Subtask Value Suggestion Error")
         return {"error": str(e)}
+    
+@frappe.whitelist()  
+def pic_subtask_agent_suggestion(title, description):
+    try:
+        url = "http://10.12.1.148:9968/classify-person"
+        payload = {
+            "task": title,
+            "description": description
+        }
+        headers = {
+            "Content-Type": "application/json"
+        }
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Agent PIC Subtask Suggestion Error")
+        return {"error": str(e)}
+    
+@frappe.whitelist()
+def get_employee_from_agent_data(name: str, status: str = "Active", limit: int = 10):
+    # cari employee_name yang mengandung keyword
+    if not name:
+        return []
+
+    rows = frappe.get_all(
+        "Employee",
+        filters={"status": status},
+        or_filters=[["employee_name", "like", f"%{name}%"]],
+        fields=["name", "employee_name", "department", "company"],
+        limit_page_length=limit,
+    )
+    return rows

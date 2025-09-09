@@ -6,155 +6,21 @@ frappe.ui.form.on("SubTask", {
 		if (frm.is_new()) {
 			frm.set_df_property("status", "options", ["Open"]);
 			frm.set_value("status", "Open");
-			ensure_ai_button(frm);
-			// 	frm.add_custom_button('Agent Suggestion for SubTask Value', async function () {
-			// 		if (!frm.doc.subtask_name || !frm.doc.description) {
-			// 			frappe.msgprint(__('Please fill Title and Description.'));
-			// 			return;
-			// 		}
+			ensure_subtask_value_agent_button(frm);
+			ensure_pic_subtask_agent_button(frm);
 
-			// 		frappe.prompt([
-			// 			{
-			// 				fieldtype: 'Data',
-			// 				label: 'Title',
-			// 				fieldname: 'subtask_name',
-			// 				default: frm.doc.subtask_name,
-			// 				reqd: 1
-			// 			},
-			// 			{
-			// 				fieldtype: 'Text Editor',
-			// 				label: 'Description',
-			// 				fieldname: 'description',
-			// 				default: frm.doc.description,
-			// 				reqd: 1
-			// 			}
-			// 		], async (values) => {
-			// 			try {
-			// 				frappe.dom.freeze(__('Contacting Agent...'));
-
-			// 				const response = await frappe.call({
-			// 					method: "hrms.hr.doctype.subtask.subtask.ai_suggestion",
-			// 					args: {
-			// 						title: values.subtask_name,
-			// 						description: values.description
-			// 					}
-			// 				});
-
-			// 				frappe.dom.unfreeze();
-
-			// 				const result = response.message || {};
-			// 				if (result.error) {
-			// 					throw result.error;
-			// 				}
-
-			// 				// ---- helper: escape biar aman di HTML
-			// 				const esc = (s) => frappe.utils.escape_html(s == null ? "" : String(s));
-
-			// 				// ---- mapping nilai level -> Value SubTask (1/2/3)
-			// 				const levelToValue = { "basic": 1, "intermediate": 2, "advanced": 3 };
-			// 				let suggestedValue = 1; // default Basic
-			// 				let topLevelRank = 1;
-
-			// 				const relevant = Array.isArray(result.relevant_skillset) ? result.relevant_skillset : [];
-			// 				relevant.forEach(it => {
-			// 					const lvl = String(it.level || "").toLowerCase().trim();
-			// 					const v = levelToValue[lvl] || 1;
-			// 					if (v > topLevelRank) {
-			// 						topLevelRank = v;
-			// 						suggestedValue = v;
-			// 					}
-			// 				});
-
-			// 				// ---- bikin tabel skillset (HTML)
-			// 				const skillsTableRows = relevant.map((it, idx) => {
-			// 					return `
-			// 	<tr>
-			// 		<td style="vertical-align:top;">${idx + 1}</td>
-			// 		<td style="vertical-align:top;">${esc(it.skill)}</td>
-			// 		<td style="vertical-align:top;">${esc(it.sub_skill_set)}</td>
-			// 		<td style="vertical-align:top;">${esc(it.level)}</td>
-			// 		<td style="vertical-align:top;">${esc(it.reasonings)}</td>
-			// 	</tr>
-			// `;
-			// 				}).join("");
-
-			// 				const skillsTable = `
-			// 			<div style="max-height:240px; overflow:auto; border:1px solid #e5e7eb; border-radius:6px;">
-			// 				<table class="table table-bordered" style="margin:0;">
-			// 					<thead>
-			// 						<tr>
-			// 							<th style="width:40px;">#</th>
-			// 							<th>Skill</th>
-			// 							<th>Sub Skill</th>
-			// 							<th>Level</th>
-			// 							<th>Reasoning</th>
-			// 						</tr>
-			// 					</thead>
-			// 					<tbody>${skillsTableRows || `
-			// 						<tr><td colspan="5" style="text-align:center;color:#888;">No relevant skills detected</td></tr>
-			// 					`}</tbody>
-			// 				</table>
-			// 			</div>
-			// 		`;
-
-
-			// 				// ---- dialog hasil AI
-			// 				const d = new frappe.ui.Dialog({
-			// 					title: 'Agent Suggestion',
-			// 					fields: [
-			// 						{ fieldtype: 'Section Break', label: 'Result' },
-			// 						{
-			// 							fieldtype: 'HTML', fieldname: 'ai_preview', options: `
-			// 							<div style="margin:12px 0 6px; font-weight:600;">Relevant Skillset</div>
-			// 							${skillsTable}
-			// 						`},
-			// 						{ fieldtype: 'Section Break' },
-			// 						{
-			// 							fieldtype: 'Select',
-			// 							fieldname: 'picked_value',
-			// 							label: 'Value SubTask',
-			// 							options: [
-			// 								{ label: '1 - Basic', value: '1' },
-			// 								{ label: '2 - Intermediate', value: '2' },
-			// 								{ label: '3 - Advanced', value: '3' }
-			// 							],
-			// 							default: String(suggestedValue),
-			// 							description: __('Estimated difficulty level (you can change it).')
-			// 						}
-			// 					],
-			// 					primary_action_label: 'Apply to Form',
-			// 					primary_action(values2) {
-			// 						if (values2.picked_value) {
-			// 							frm.set_value('value', values2.picked_value);
-			// 						}
-			// 						d.hide();
-			// 						frappe.show_alert({ message: __('Agent suggestion applied'), indicator: 'green' });
-			// 					},
-			// 					secondary_action_label: 'Close',
-			// 					secondary_action() { d.hide(); }
-			// 				});
-
-			// 				d.show();
-
-			// 			} catch (err) {
-			// 				frappe.dom.unfreeze();
-			// 				console.error(err);
-			// 				frappe.msgprint(__('Failed to contact AI (server).'));
-			// 			}
-			// 		});
-			// 	});
-			function ensure_ai_button(frm) {
+			function ensure_subtask_value_agent_button(frm) {
 				// Hapus tombol lama jika ada (biar gak dobel binding)
-				if (frm._ai_btn && frm._ai_btn.remove) {
-					frm._ai_btn.remove();
-					frm._ai_btn = null;
+				if (frm._agent_subtask_value_btn && frm._agent_subtask_value_btn.remove) {
+					frm._agent_subtask_value_btn.remove();
+					frm._agent_subtask_value_btn = null;
 				}
 
-				const hasCache = !!frm._ai_suggestion_cache;
+				const hasCache = !!frm._agent_subtask_value_cache;
 
 				if (!hasCache) {
 					// Mode awal: Generate Suggestion
-					frm._ai_btn = frm.add_custom_button('Agent Suggestion for SubTask Value', async function () {
+					frm._agent_subtask_value_btn = frm.add_custom_button('Agent Suggestion for SubTask Value', async function () {
 						if (!frm.doc.subtask_name || !frm.doc.description) {
 							frappe.msgprint(__('Please fill Title and Description.'));
 							return;
@@ -166,9 +32,9 @@ frappe.ui.form.on("SubTask", {
 							{ fieldtype: 'Text Editor', label: 'Description', fieldname: 'description', default: frm.doc.description, reqd: 1 }
 						], async (values) => {
 							try {
-								frappe.dom.freeze(__('Contacting Agent...'));
+								frappe.dom.freeze(__('Contacting Agent Subtask Value Suggestion...'));
 								const response = await frappe.call({
-									method: "hrms.hr.doctype.subtask.subtask.ai_suggestion",
+									method: "hrms.hr.doctype.subtask.subtask.subtask_value_agent_suggestion",
 									args: { title: values.subtask_name, description: values.description }
 								});
 								frappe.dom.unfreeze();
@@ -177,36 +43,36 @@ frappe.ui.form.on("SubTask", {
 								if (result.error) throw result.error;
 
 								// ---- hitung suggestedValue & build HTML
-								const cache = build_ai_cache(result);
+								const cache = build_agent_subtask_value_cache(result);
 								// taruh di memori form
-								frm._ai_suggestion_cache = cache;
+								frm._agent_subtask_value_cache = cache;
 
 								// tampilkan dialog hasil
-								show_ai_dialog(frm, cache);
+								show_agent_subtask_value(frm, cache);
 
 								// ubah tombol jadi "Show Last Agent Suggestion"
-								switch_to_show_last_mode(frm);
+								show_last_subtask_value(frm);
 
 							} catch (err) {
 								frappe.dom.unfreeze();
 								console.error(err);
-								frappe.msgprint(__('Failed to contact AI (server).'));
+								frappe.msgprint(__('Failed to contact Agent Subtask Value (server).'));
 							}
 						});
 					});
 				} else {
 					// Sudah ada cache: langsung tombol “Show Last Agent Suggestion”
-					switch_to_show_last_mode(frm);
+					show_last_subtask_value(frm);
 				}
 			}
 
-			function switch_to_show_last_mode(frm) {
-				if (frm._ai_btn && frm._ai_btn.text) {
-					frm._ai_btn.text('Show Last Agent Suggestion');
+			function show_last_subtask_value(frm) {
+				if (frm._agent_subtask_value_btn && frm._agent_subtask_value_btn.text) {
+					frm._agent_subtask_value_btn.text('Show Last Subtask Value Suggestion');
 					// bersihkan handler lama lalu pasang baru
-					$(frm._ai_btn).off('click').on('click', function () {
-						if (frm._ai_suggestion_cache) {
-							show_ai_dialog(frm, frm._ai_suggestion_cache);
+					$(frm._agent_subtask_value_btn).off('click').on('click', function () {
+						if (frm._agent_subtask_value_cache) {
+							show_agent_subtask_value(frm, frm._agent_subtask_value_cache);
 						} else {
 							frappe.show_alert({ message: __('No cached suggestion found'), indicator: 'orange' });
 						}
@@ -214,29 +80,65 @@ frappe.ui.form.on("SubTask", {
 				}
 			}
 
-			function build_ai_cache(result) {
+			function build_agent_subtask_value_cache(result) {
 				const esc = (s) => frappe.utils.escape_html(s == null ? "" : String(s));
 				const levelToValue = { "basic": 1, "intermediate": 2, "advanced": 3 };
 
 				const relevant = Array.isArray(result.relevant_skillset) ? result.relevant_skillset : [];
 
-				let suggestedValue = 1;
-				let topLevelRank = 1;
-				relevant.forEach(it => {
-					const lvl = String(it.level || "").toLowerCase().trim();
-					const v = levelToValue[lvl] || 1;
-					if (v > topLevelRank) { topLevelRank = v; suggestedValue = v; }
+				// ---- helper: normalisasi skor
+				const getScore = (it) => {
+					// prioritas: percentage_score (0..1), fallback: percentage_score_str (e.g. "85%")
+					if (it.percentage_score != null && it.percentage_score !== "") {
+						const v = Number(it.percentage_score);
+						return isFinite(v) ? v : 0;
+					}
+					if (it.percentage_score_str) {
+						const s = String(it.percentage_score_str).replace("%", "").trim();
+						const v = Number(s);
+						return isFinite(v) ? v / 100 : 0;
+					}
+					return 0;
+				};
+
+				// ---- pilih item dengan skor tertinggi
+				let bestIdx = -1;
+				let bestScore = -1;
+				relevant.forEach((it, idx) => {
+					const sc = getScore(it);
+					if (sc > bestScore) {
+						bestScore = sc;
+						bestIdx = idx;
+					}
 				});
 
-				const rows = relevant.map((it, idx) => `
-    <tr>
-      <td style="vertical-align:top;">${idx + 1}</td>
-      <td style="vertical-align:top;">${esc(it.skill)}</td>
-      <td style="vertical-align:top;">${esc(it.sub_skill_set)}</td>
-      <td style="vertical-align:top;">${esc(it.level)}</td>
-      <td style="vertical-align:top;">${esc(it.reasonings)}</td>
-    </tr>
-  `).join("");
+				// suggestedValue: ambil level dari item skor tertinggi
+				let suggestedValue = 1; // default
+				if (bestIdx >= 0) {
+					const lvl = String(relevant[bestIdx].level || "").toLowerCase().trim();
+					suggestedValue = levelToValue[lvl] || 1;
+				}
+
+				// ---- build rows sesuai kolom baru
+				const rows = relevant.map((it, idx) => {
+					const scoreStr =
+						it.percentage_score_str != null && it.percentage_score_str !== ""
+							? String(it.percentage_score_str)
+							: (getScore(it) * 100).toFixed(0) + "%"; // fallback kalau _str tidak ada
+
+					return `
+      <tr>
+        <td style="vertical-align:top;">${idx + 1}</td>
+        <td style="vertical-align:top;">${esc(it.skill)}</td>
+        <td style="vertical-align:top;">${esc(it.sub_skill_set)}</td>
+        <td style="vertical-align:top;">${esc(it.level)}</td>
+        <td style="vertical-align:top;">${esc(it.reasonings)}</td>
+        <td style="vertical-align:top;">${esc(scoreStr)}</td>
+        <td style="vertical-align:top;">${esc(it.specialized)}</td>
+        <td style="vertical-align:top;">${esc(it.reasoning_specialized)}</td>
+      </tr>
+    `;
+				}).join("");
 
 				const tableHTML = `
     <div style="max-height:240px; overflow:auto; border:1px solid #e5e7eb; border-radius:6px;">
@@ -248,29 +150,34 @@ frappe.ui.form.on("SubTask", {
             <th>Sub Skill</th>
             <th>Level</th>
             <th>Reasoning</th>
+            <th>Score</th>
+            <th>Specialized</th>
+            <th>Reasoning (Specialized)</th>
           </tr>
         </thead>
-        <tbody>${rows || `<tr><td colspan="5" style="text-align:center;color:#888;">No relevant skills detected</td></tr>`
+        <tbody>${rows || `<tr><td colspan="8" style="text-align:center;color:#888;">No relevant skills detected</td></tr>`
 					}</tbody>
       </table>
     </div>
   `;
 
 				return {
-					raw: result,               // simpan raw kalau perlu
+					raw: result,
 					relevant_skillset: relevant,
-					suggestedValue,
-					tableHTML
+					suggestedValue,    // ← sekarang diambil dari level milik skor tertinggi
+					tableHTML,
+					bestIndex: bestIdx,
+					bestScore: bestScore
 				};
 			}
 
-			function show_ai_dialog(frm, cache) {
+			function show_agent_subtask_value(frm, cache) {
 				const d = new frappe.ui.Dialog({
-					title: 'Agent Suggestion',
+					title: 'Agent SubTask Value Suggestion',
 					fields: [
 						{ fieldtype: 'Section Break', label: 'Result' },
 						{
-							fieldtype: 'HTML', fieldname: 'ai_preview', options: `
+							fieldtype: 'HTML', fieldname: 'agent_preview', options: `
         <div style="margin:12px 0 6px; font-weight:600;">Relevant Skillset</div>
         ${cache.tableHTML}
       `},
@@ -294,7 +201,7 @@ frappe.ui.form.on("SubTask", {
 							frm.set_value('value', values2.picked_value);
 						}
 						d.hide();
-						frappe.show_alert({ message: __('Agent suggestion applied'), indicator: 'green' });
+						frappe.show_alert({ message: __('Subtask value suggestion applied'), indicator: 'green' });
 					},
 					secondary_action_label: 'Close',
 					secondary_action() { d.hide(); }
@@ -302,6 +209,305 @@ frappe.ui.form.on("SubTask", {
 
 				d.show();
 			}
+
+			function ensure_pic_subtask_agent_button(frm) {
+				// Hapus tombol lama jika ada (biar gak dobel binding)
+				if (frm._agent_pic_subtask_btn && frm._agent_pic_subtask_btn.remove) {
+					frm._agent_pic_subtask_btn.remove();
+					frm._agent_pic_subtask_btn = null;
+				}
+
+				const hasCache = !!frm._agent_pic_subtask_cache;
+
+				if (!hasCache) {
+					// Mode awal: Generate Suggestion
+					frm._agent_pic_subtask_btn = frm.add_custom_button('Agent Suggestion for PIC SubTask', async function () {
+						if (!frm.doc.subtask_name || !frm.doc.description) {
+							frappe.msgprint(__('Please fill Title and Description.'));
+							return;
+						}
+
+						// Prompt user edit judul/desc
+						frappe.prompt([
+							{ fieldtype: 'Data', label: 'Title', fieldname: 'subtask_name', default: frm.doc.subtask_name, reqd: 1 },
+							{ fieldtype: 'Text Editor', label: 'Description', fieldname: 'description', default: frm.doc.description, reqd: 1 }
+						], async (values) => {
+							try {
+								frappe.dom.freeze(__('Contacting Agent PIC Subtask Suggestion...'));
+								const response = await frappe.call({
+									method: "hrms.hr.doctype.subtask.subtask.pic_subtask_agent_suggestion",
+									args: { title: values.subtask_name, description: values.description }
+								});
+								frappe.dom.unfreeze();
+
+								const result = response.message || {};
+								if (result.error) throw result.error;
+
+								// ---- hitung suggestedValue & build HTML
+								const cache = build_agent_pic_subtask_cache(result);
+								// taruh di memori form
+								frm._agent_pic_subtask_cache = cache;
+
+								// tampilkan dialog hasil
+								show_agent_pic_subtask(frm, cache);
+
+								// ubah tombol jadi "Show Last Agent Suggestion"
+								show_last_pic_subtask(frm);
+
+							} catch (err) {
+								frappe.dom.unfreeze();
+								console.error(err);
+								frappe.msgprint(__('Failed to contact Agent PIC Subtask (server).'));
+							}
+						});
+					});
+				} else {
+					// Sudah ada cache: langsung tombol “Show Last Agent Suggestion”
+					show_last_pic_subtask(frm);
+				}
+			}
+
+			function show_last_pic_subtask(frm) {
+				if (frm._agent_pic_subtask_btn && frm._agent_pic_subtask_btn.text) {
+					frm._agent_pic_subtask_btn.text('Show Last PIC Subtask Suggestion');
+					// bersihkan handler lama lalu pasang baru
+					$(frm._agent_pic_subtask_btn).off('click').on('click', function () {
+						if (frm._agent_pic_subtask_cache) {
+							show_agent_pic_subtask(frm, frm._agent_pic_subtask_cache);
+						} else {
+							frappe.show_alert({ message: __('No cached suggestion found'), indicator: 'orange' });
+						}
+					});
+				}
+			}
+
+			function build_agent_pic_subtask_cache(result) {
+				const esc = (s) => frappe.utils.escape_html(s == null ? "" : String(s));
+
+				const title = result.task || '';
+				const description = result.description || '';
+				const specialized_required = Array.isArray(result.specialized_required) ? result.specialized_required : [];
+				const candidates = Array.isArray(result.candidates) ? result.candidates : [];
+
+				// sort kandidat dari score tertinggi
+				candidates.sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0));
+
+				// kandidat terbaik (suggested PIC)
+				const best = candidates[0] || null;
+				const suggestedPIC = best ? String(best.name || '') : '';
+
+				// build baris tabel kandidat
+				const rows = candidates.map((it, idx) => {
+					const scoreStr = (it.score_str && String(it.score_str).trim())
+						? String(it.score_str).trim()
+						: `${Math.round((Number(it.score) || 0) * 100)}%`;
+
+					const matched = Array.isArray(it.matched_specialized) ? it.matched_specialized.join(', ') : '';
+					return `
+      <tr>
+        <td style="vertical-align:top;">${idx + 1}</td>
+        <td style="vertical-align:top;font-weight:600;">${esc(it.name)}</td>
+        <td style="vertical-align:top;">${esc(scoreStr)}</td>
+        <td style="vertical-align:top;">${esc(matched)}</td>
+        <td style="vertical-align:top; white-space:pre-wrap;">${esc(it.pro || '')}</td>
+        <td style="vertical-align:top; white-space:pre-wrap;">${esc(it.cons || '')}</td>
+      </tr>
+    `;
+				}).join("");
+
+				// header “Specialized Required”
+				const titleHtml = `<div style="margin:8px 0 6px;"><span style="font-weight:600;">Title: </span>${title}</div>`;
+				const descHtml = `<div style="margin:0 0 6px;"><span style="font-weight:600;">Description: </span>${description}</div>`;
+				// gabungkan
+				const specReqHtml = specialized_required.length
+					? `<div style="margin:8px 0 6px;"><span style="font-weight:600;">Specialized Required:</span> ${specialized_required.map(esc).join(', ')}</div>`
+					: '';
+				const candidatesHtml = `<div style="margin:8px 0 6px;"><span style="font-weight:600;">Candidates:</span></div>`;
+
+				const tableHTML = `
+						${titleHtml}
+						${descHtml}
+						${specReqHtml}
+						${candidatesHtml}
+						<div style="max-height:300px; overflow:auto; border:1px solid #e5e7eb; border-radius:6px;">
+						<table class="table table-bordered" style="margin:0;">
+							<thead>
+							<tr>
+								<th style="width:40px;">#</th>
+								<th>Name</th>
+								<th>Score</th>
+								<th>Matched Specialized</th>
+								<th>Pros</th>
+								<th>Cons</th>
+							</tr>
+							</thead>
+							<tbody>${rows || `<tr><td colspan="6" style="text-align:center;color:#888;">No candidates</td></tr>`
+					}</tbody>
+						</table>
+						</div>
+					`;
+
+				return {
+					raw: result,
+					specialized_required,
+					candidates,
+					suggestedPIC,   // ← nama kandidat score tertinggi
+					tableHTML
+				};
+			}
+
+			function show_agent_pic_subtask(frm, cache) {
+				const candidateOptions = (cache.candidates || []).map(c => ({ label: c.name, value: c.name }));
+
+				const d = new frappe.ui.Dialog({
+					title: 'Agent PIC Subtask Suggestion',
+					fields: [
+						{ fieldtype: 'Section Break', label: 'Result Details' },
+						{
+							fieldtype: 'HTML', fieldname: 'agent_preview', options: `
+        ${cache.tableHTML}
+      `},
+						{ fieldtype: 'Section Break' },
+						{
+							fieldtype: 'Select',
+							fieldname: 'picked_pic',
+							label: 'PIC Candidate',
+							options: candidateOptions,
+							default: cache.suggestedPIC || (candidateOptions[0]?.value || ''),
+							description: __('Pick one of the suggested candidates.')
+						}
+					],
+					primary_action_label: 'Apply to Form',
+					primary_action: async function (values) {
+						const pickedName = values.picked_pic;
+						if (!pickedName) return;
+
+						try {
+							frappe.dom.freeze(__('Resolving Employee...'));
+							const resp = await frappe.call({
+								method: "hrms.hr.doctype.subtask.subtask.get_employee_from_agent_data",
+								args: { name: pickedName, status: "Active", limit: 10 }
+							});
+							frappe.dom.unfreeze();
+
+							const matches = resp.message || [];
+
+							if (matches.length === 1) {
+								await frm.set_value('pic_subtask', matches[0].name);
+								await frm.set_value('pic_subtask_name', matches[0].employee_name);
+								frappe.show_alert({ message: __('PIC applied: ') + matches[0].employee_name, indicator: 'green' });
+								d.hide();
+								return;
+							}
+
+							if (matches.length > 1) {
+								const opts = matches.map(m => ({
+									label: `${m.employee_name}  •  ${m.name}` + (m.department ? `  •  ${m.department}` : ''),
+									value: m.name
+								}));
+
+								const pickDlg = new frappe.ui.Dialog({
+									title: __('Select Employee for ') + pickedName,
+									fields: [
+										{
+											fieldtype: 'HTML', fieldname: 'hint', options: `
+            <div style="margin:6px 0 10px; color:#6b7280;">
+              Agent suggested name: <b>${frappe.utils.escape_html(pickedName)}</b>
+            </div>` },
+										{ fieldtype: 'Select', fieldname: 'emp', label: 'Employee', options: opts, reqd: 1 }
+									],
+									primary_action_label: 'Apply',
+									primary_action: async (vals) => {
+										const chosenId = vals.emp;
+										try {
+											const { message } = await frappe.db.get_value('Employee', chosenId, ['employee_name']);
+											await frm.set_value('pic_subtask', chosenId);
+											await frm.set_value('pic_subtask_name', (message && message.employee_name) || chosenId);
+											frappe.show_alert({ message: __('PIC applied'), indicator: 'green' });
+											pickDlg.hide();
+											d.hide();
+										} catch (e) {
+											console.error(e);
+											frappe.msgprint(__('Failed to fetch Employee name'));
+										}
+									}
+								});
+								pickDlg.show();
+								return;
+							}
+
+							return open_manual_employee_picker(frm, pickedName, d);
+
+						} catch (e) {
+							frappe.dom.unfreeze();
+							console.error(e);
+							frappe.msgprint(__('Failed to resolve Employee'));
+						}
+					},
+					secondary_action_label: 'Close',
+					secondary_action() { d.hide(); }
+				});
+
+				d.show();
+			}
+
+			function open_manual_employee_picker(frm, agentName, parentDialog) {
+				const dlg = new frappe.ui.Dialog({
+					title: __('Pick Employee Manually'),
+					fields: [
+						{
+							fieldtype: 'HTML',
+							fieldname: 'agent_hint',
+							options: `
+          <div style="margin:6px 0 10px; color:#6b7280;">
+            Agent suggested name: <b>${frappe.utils.escape_html(agentName || '')}</b>
+          </div>
+        `
+						},
+						{
+							fieldtype: 'Link',
+							fieldname: 'emp',
+							label: 'Employee',
+							options: 'Employee',
+							reqd: 1,
+							get_query() {
+								return { filters: { status: 'Active' } };
+							},
+							// ← fetch nama tiap kali user memilih/ubah employee
+							change: async () => {
+								const emp = dlg.get_value('emp');
+								if (!emp) return dlg.set_value('emp_name', '');
+								const { message } = await frappe.db.get_value('Employee', emp, ['employee_name']);
+								dlg.set_value('emp_name', message?.employee_name || '');
+							}
+						},
+						{
+							fieldtype: 'Data',
+							fieldname: 'emp_name',
+							label: 'Employee Name',
+							read_only: 1
+						}
+					],
+					primary_action_label: 'Apply',
+					primary_action: async (vals) => {
+						if (!vals.emp) return;
+						try {
+							const { message } = await frappe.db.get_value('Employee', vals.emp, ['employee_name']);
+							await frm.set_value('pic_subtask', vals.emp);
+							await frm.set_value('pic_subtask_name', (message && message.employee_name) || vals.emp);
+							frappe.show_alert({ message: __('PIC applied manually'), indicator: 'green' });
+							dlg.hide();
+							if (parentDialog) parentDialog.hide();
+						} catch (err) {
+							console.error(err);
+							frappe.msgprint(__('Failed to fetch Employee name'));
+						}
+					}
+				});
+
+				dlg.show();
+			}
+
 
 		}
 		if (!frm.is_new()) {
