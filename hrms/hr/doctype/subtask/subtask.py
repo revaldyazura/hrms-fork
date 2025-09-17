@@ -52,20 +52,38 @@ class SubTask(Document):
 					self.status = "Open"
 					
 	def track_time_status_change(self):
-		if not self.get('__islocal') and self.has_value_changed('status'):
-			previous_doc = self.get_doc_before_save()
-			previous_status = previous_doc.status if previous_doc else None
-			now = now_datetime()
+      # hanya proses jika bukan dokumen baru & status benar2 berubah
+		if self.get('__islocal') or not self.has_value_changed('status'):
+			return
+		# if not self.get('__islocal') and self.has_value_changed('status'):
+		previous_doc = self.get_doc_before_save()
+		previous_status = previous_doc.status if previous_doc else None
+		now = now_datetime()
 
-			if self.status == "In Progress":
-				self.last_in_progress_timestamp = now
+		# --- override: jika perubahan datang dari Tasks (propagation)
+		from_parent = bool(self.flags.get('from_parent_propagation'))
+  
+		if self.status == "In Progress":
+			self.last_in_progress_timestamp = now
 
-			elif self.status in ("Pause", "Done"):
-				if not self.last_in_progress_timestamp:
-					frappe.throw(f"Can't change status to '{self.status}', you have to change it to 'In Progress' first.",)
-				duration = int((now - get_datetime(self.last_in_progress_timestamp)).total_seconds() / 60)  
-				self.total_time = (self.total_time or 0) + duration
-				self.last_in_progress_timestamp = None
+		elif self.status in ("Pause", "Done"):
+			if not self.last_in_progress_timestamp:
+       			# jika datang dari Tasks dan sebelumnya bukan In Progress,
+                # izinkan skip tanpa menambah waktu & tanpa error
+				if from_parent and previous_status in ("Open", "Cancel", None):
+					# tidak ada waktu yang ditambahkan; langsung lolos
+					# (opsional) kalau mau set 0 menit eksplisit, biarkan total_time apa adanya
+					self.last_in_progress_timestamp = 0
+					self.total_time = 0
+					return
+
+				# selain itu, tetap enforce aturan normal
+				frappe.throw(
+					f"Can't change status to '{self.status}', you have to change it to 'In Progress' first."
+				)
+			duration = int((now - get_datetime(self.last_in_progress_timestamp)).total_seconds() / 60)  
+			self.total_time = (self.total_time or 0) + duration
+			self.last_in_progress_timestamp = None
 
 def update_fields(doc, method):
 	if frappe.flags.in_update:
@@ -77,7 +95,9 @@ def update_fields(doc, method):
 	maintask = frappe.get_doc("MainTask", task.maintask)
 	doc.maintask = maintask.name
 	if doc.status == 'Open':
-		frappe.db.set_value("SubTask", doc.name, "subtask_done_date", None)
+		doc.subtask_done_date = None
+		doc.save()
+		# frappe.db.set_value("SubTask", doc.name, "subtask_done_date", None)
 
 	frappe.flags.in_update = False
 

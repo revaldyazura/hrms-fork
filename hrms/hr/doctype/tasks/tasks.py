@@ -48,11 +48,16 @@ def update_fields(doc, method):
     now_status = doc.status
     if previous_status != now_status:
         subtasks = frappe.get_all("SubTask", filters={"tasks": doc.name}, pluck="name")
-        for subtask_name in subtasks:
-            subtask = frappe.get_doc("SubTask", subtask_name)
+        for name in subtasks:
+            subtask = frappe.get_doc("SubTask", name)
             if subtask.status not in ("Done", "Close", "In Progress", "Pause"):
-                frappe.db.set_value("SubTask", subtask_name, "status", now_status)
-                frappe.msgprint(f"Updated SubTask status to {now_status}")
+                # beri tanda sumbernya dari Tasks
+                subtask.flags.from_parent_propagation = True
+                subtask.status = now_status
+
+                # biar hooks & validate jalan => track_time aman
+                subtask.save()
+                frappe.msgprint(f"Updated SubTask {subtask.subtask_name} status to {now_status}")
 
     frappe.flags.in_update = False
 
