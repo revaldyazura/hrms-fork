@@ -373,7 +373,7 @@ def button_evaluation_subtask(subtask):
 		return "maintask_owner_done"
 	if subtask.tasks in parent_task_pic and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles) and subtask.status == "Done":
 		return "pic_task_done"
-	if "System Manager" in roles:
+	if "System Manager" in roles and subtask.status == "Done":
 		return "system_manager_done"
 	if subtask.status == "Close" and evaluation_subtask:
 		return {
