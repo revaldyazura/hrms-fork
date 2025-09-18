@@ -3,6 +3,15 @@
 
 frappe.ui.form.on("Tasks", {
   refresh(frm) {
+    let workspace = 'Task Management';
+            
+        frappe.breadcrumbs.all[frappe.get_route_str()] = {
+            workspace: workspace,
+            doctype: frm.doctype,
+            type: 'Form'
+        };
+        frappe.breadcrumbs.update();
+        
     if (!frm.is_new()) {
       frappe.call({
         method: "hrms.hr.doctype.tasks.tasks.user_edit_tasks",

@@ -3,6 +3,15 @@
 
 frappe.ui.form.on("SubTask", {
 	refresh(frm) {
+		let workspace = 'Task Management';
+            
+        frappe.breadcrumbs.all[frappe.get_route_str()] = {
+            workspace: workspace,
+            doctype: frm.doctype,
+            type: 'Form'
+        };
+        frappe.breadcrumbs.update();
+
 		if (frm.is_new()) {
 			frm.set_df_property("status", "options", ["Open"]);
 			frm.set_value("status", "Open");

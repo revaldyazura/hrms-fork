@@ -71,6 +71,15 @@ frappe.ui.form.on("Evaluation", {
 		}
 	},
 	refresh(frm) {
-
+		
+		let workspace = 'Task Management';
+            
+        frappe.breadcrumbs.all[frappe.get_route_str()] = {
+            workspace: workspace,
+            doctype: frm.doctype,
+            type: 'Form'
+        };
+        frappe.breadcrumbs.update();
+		
 	},
 });
