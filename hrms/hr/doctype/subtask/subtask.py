@@ -374,8 +374,10 @@ def button_evaluation_subtask(subtask):
 	if subtask.tasks in parent_task_pic and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles) and subtask.status == "Done":
 		return "pic_task_done"
 	if "System Manager" in roles and subtask.status == "Done":
+		print("System Manager and subtask done")
 		return "system_manager_done"
 	if subtask.status == "Close" and evaluation_subtask:
+		print(f"Subtask {subtask.name} already evaluated")
 		return {
 			"status": "Close",
 			"evaluation_name": evaluation_subtask
