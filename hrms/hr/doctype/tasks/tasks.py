@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import json
 import frappe
 from frappe import _, scrub, throw
 from frappe.model.document import Document
@@ -234,20 +235,40 @@ def get_open_maintask_as_the_owner(doctype, txt, searchfield, start, page_len, f
 
     employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
 
-    conditions = ""
+    conditions = []
     if user != "Administrator":
-        conditions = """WHERE (mt.owner = %(user)s) 
-        OR mt.name IN ( SELECT mt2.name FROM `tabMainTask` mt2 LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent  WHERE m_assign_by2.employee = %(employee_id)s ) AND mt.status = 'Open'"""
+        conditions.append("""(
+            mt.owner = %(user)s
+            OR mt.name IN (
+                SELECT mt2.name
+                FROM `tabMainTask` mt2
+                LEFT JOIN `tabMainTask Assign By` m2 ON mt2.name = m2.parent
+                WHERE m2.employee = %(employee_id)s
+            )
+        )""")
 
+    conditions.append("mt.status = 'Open'")
+    
+    conditions.append("(mt.name LIKE %(txt)s OR mt.maintask_name LIKE %(txt)s)")
+
+    where_sql = "WHERE " + " AND ".join(conditions)
+    
+    params = {
+        "user": user,
+        "employee_id": employee_id,
+        "txt": f"%{txt}%" if txt else "%",
+        "start": start,
+        "page_len": page_len,
+    }
+    
     maintasks = frappe.db.sql(f"""
-        SELECT mt.name, mt.maintask_name
+        SELECT DISTINCT mt.name, mt.maintask_name
         FROM `tabMainTask` mt
-       {conditions}
-        GROUP BY mt.name
-    """, {
-        "user": f"{user}",
-        "employee_id": f"{employee_id}"
-    })
+        {where_sql}
+        ORDER BY mt.modified DESC, mt.name
+        LIMIT %(page_len)s OFFSET %(start)s
+    """, params)
+    
     return maintasks
 
 @frappe.whitelist()
@@ -260,7 +281,6 @@ def get_template_details(template_name):
 
 @frappe.whitelist()
 def create_subtask_from_template(tasks, values, count):
-    import json
     print(f"create_subtask_from_template called with values: {values} and count: {count}")
     # values = frappe._dict(values)
     if isinstance(values, str):
