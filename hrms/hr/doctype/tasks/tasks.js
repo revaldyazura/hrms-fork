@@ -20,7 +20,7 @@ frappe.ui.form.on("Tasks", {
         },
         callback: function (r) {
           const readonly_fields = ['target_time', 'maintask', "pic_task"];
-          if (r.message === "pic_task" || r.message === "task_pics") {
+          if (r.message === "pic_task" || r.message === "task_pics" || r.message === "owner_tasks") {
             readonly_fields.forEach(field => {
               frm.set_df_property(field, "read_only", 1);
             });
