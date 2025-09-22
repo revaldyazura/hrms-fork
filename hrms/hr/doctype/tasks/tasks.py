@@ -184,6 +184,9 @@ def user_edit_tasks(task_name):
         filters={"employee": employee_id},
         pluck="parent"
     )
+    
+    if doc.owner == frappe.session.user:
+        return "owner_tasks"
 
     print(f'{type(parent_task_pic)} type, parent_task_pic value {parent_task_pic}')
     if doc.name in parent_task_pic:
