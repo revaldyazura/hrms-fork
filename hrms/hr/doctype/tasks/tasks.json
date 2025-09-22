@@ -12,6 +12,7 @@
   "maintask_name",
   "section_break_yaue",
   "task_name",
+  "description",
   "column_break_oaqq",
   "status",
   "section_break_esmb",
@@ -135,12 +136,17 @@
   {
    "fieldname": "column_break_oaqq",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-07 16:02:13.597680",
+ "modified": "2025-09-22 11:45:28.465958",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tasks",

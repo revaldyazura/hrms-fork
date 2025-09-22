@@ -8,18 +8,20 @@
  "field_order": [
   "data_section",
   "maintask_name",
-  "assign_date",
-  "due_date",
+  "description",
   "column_break_iomx",
   "status",
   "priority",
+  "dates_section",
+  "assign_date",
+  "column_break_svkn",
+  "due_date",
   "assign_by_section",
   "assign_by",
   "section_break_wtby",
   "team",
   "additional_section",
-  "created_by",
-  "total_time"
+  "created_by"
  ],
  "fields": [
   {
@@ -52,14 +54,6 @@
    "in_list_view": 1,
    "label": "Due Date",
    "reqd": 1
-  },
-  {
-   "description": "Calculated time from assign date to due date, per 8 hours of works (in minutes)",
-   "fieldname": "total_time",
-   "fieldtype": "Int",
-   "hidden": 1,
-   "label": "Total Time (in minutes)",
-   "permlevel": 1
   },
   {
    "description": "The owner of this maintask",
@@ -97,6 +91,7 @@
    "label": "Assign By"
   },
   {
+   "description": "The priority of this maintask",
    "fieldname": "priority",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -117,12 +112,26 @@
    "fieldtype": "Table",
    "options": "MainTask Assign By",
    "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "column_break_svkn",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-23 20:49:32.925358",
+ "modified": "2025-09-22 11:41:51.064429",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",
