@@ -335,7 +335,7 @@ def get_task_with_same_pic(doctype, txt, searchfield, start, page_len, filters):
 
 	conditions = ""
 	if user != "Administrator":
-		conditions = "WHERE tp.employee = %(employee_id)s AND t.status = 'Open' AND (t.name LIKE %(txt)s OR t.task_name LIKE %(txt)s)"
+		conditions = "WHERE tp.employee = %(employee_id)s AND (t.status = 'Open' OR t.status = 'In Progress') AND (t.name LIKE %(txt)s OR t.task_name LIKE %(txt)s)"
 
 	tasks = frappe.db.sql(f"""
 		SELECT t.name, t.task_name
