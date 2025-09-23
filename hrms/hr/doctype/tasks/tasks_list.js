@@ -19,5 +19,16 @@ frappe.listview_settings['Tasks'] = {
 		}, pic_task(val, df, doc) {
 			return doc.pic_task_name || val;
 		}
-	}
+	},
+
+	refresh(listview) {
+		let workspace = 'Task Management';
+
+		frappe.breadcrumbs.all[frappe.get_route_str()] = {
+			workspace: workspace,
+			type: 'List'
+		};
+		frappe.breadcrumbs.update();
+	},
+	
 }

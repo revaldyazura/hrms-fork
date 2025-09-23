@@ -12,4 +12,13 @@ frappe.listview_settings['MainTask'] = {
 		return [__(doc.status), color_map[doc.status] || "grey", "status,=," + doc.status];
 	},
 
+	refresh(listview) {
+		let workspace = 'Task Management';
+
+		frappe.breadcrumbs.all[frappe.get_route_str()] = {
+			workspace: workspace,
+			type: 'List'
+		};
+		frappe.breadcrumbs.update();
+	},
 }
