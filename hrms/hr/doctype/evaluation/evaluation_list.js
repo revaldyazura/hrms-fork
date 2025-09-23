@@ -7,5 +7,15 @@ frappe.listview_settings['Evaluation'] = {
 		}, pic_subtask(val, df, doc) {
 			return doc.pic_subtask_name || val;
 		}
-	}
+	},
+
+	refresh(listview) {
+		let workspace = 'Task Management';
+
+		frappe.breadcrumbs.all[frappe.get_route_str()] = {
+			workspace: workspace,
+			type: 'List'
+		};
+		frappe.breadcrumbs.update();
+	},
 };

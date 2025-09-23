@@ -8,7 +8,7 @@ frappe.listview_settings['SubTask'] = {
 			"Close": "purple",
 			"In Progress": "blue" // pakai string key dan warna valid CSS
 		};
-		
+
 		return [__(doc.status), color_map[doc.status] || "gray", "status,=," + doc.status];
 	},
 	add_fields: ['maintask', 'maintask_name', 'tasks', 'tasks_name', 'pic_subtask', 'pic_subtask_name'],
@@ -23,9 +23,38 @@ frappe.listview_settings['SubTask'] = {
 			return doc.pic_subtask_name || val;
 		},
 	},
-	get_bulk_edit_fields: function() {
-        return [
-            'pic_subtask', 'value', 'target_time'
-        ];
-    },
+	refresh(listview) {
+		let workspace = 'Task Management';
+
+		frappe.breadcrumbs.all[frappe.get_route_str()] = {
+			workspace: workspace,
+			type: 'List'
+		};
+		frappe.breadcrumbs.update();
+	},
+	onload(listview) {
+		// hindari loop set_route berulang
+		if (window.__subtask_pic_filter_applied) return;
+
+		frappe.call({
+			method: 'frappe.client.get_value',
+			args: {
+				doctype: 'Employee',
+				filters: { user_id: frappe.session.user },
+				fieldname: 'name'
+			},
+			callback: (r) => {
+				const employee_id = r?.message?.name;
+				if (!employee_id) return;
+
+				window.__subtask_pic_filter_applied = true;
+
+				if (frappe.boot?.versions?.frappe?.startsWith?.('15')) {
+					frappe.set_route('List', 'SubTask', 'List', { 'pic_subtask': ['=', employee_id] });
+				} else {
+					frappe.set_route('List', 'SubTask', { 'pic_subtask': ['=', employee_id] });
+				}
+			}
+		});
+	}
 };
