@@ -12,6 +12,54 @@ frappe.query_reports["Report Task Management"] = {
 	// ],
 	onload: function (report) {
 		frappe.query_report._prev_row = {}; // reset tiap reload
+
+		report.page.add_inner_button("Export Team Task", function () {
+			let dialog = new frappe.ui.Dialog({
+				title: "Export Team Task",
+				fields: [
+					{
+						label: "Team Name",
+						fieldname: "team",
+						fieldtype: "Link",
+						options: "Team",
+						reqd: 1
+					},
+					{
+						label: "From Date",
+						fieldname: "from_date",
+						fieldtype: "Date",
+						reqd: 1
+					},
+					{
+						label: "To Date",
+						fieldname: "to_date",
+						fieldtype: "Date",
+						reqd: 1
+					}
+				],
+				primary_action_label: "Generate",
+				primary_action(values) {
+					// Validasi tanggal
+					if (values.from_date > values.to_date) {
+						frappe.msgprint({
+							title: __("Invalid Date Range"),
+							message: __("The <b>From Date</b> cannot be later than the <b>To Date</b>."),
+							indicator: 'red'
+						});
+						return;
+					}
+
+					const encoded_filters = encodeURIComponent(JSON.stringify(values));
+					window.open(
+						`/api/method/hrms.hr.report.report_task_management.custom_export_task_management.export_team_task_management?filters=${encoded_filters}`
+					);
+
+					dialog.hide();
+				}
+			});
+
+			dialog.show();
+		});
 	},
 	filters: [
 		{
