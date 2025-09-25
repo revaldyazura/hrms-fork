@@ -3,15 +3,15 @@
 
 frappe.ui.form.on("MainTask", {
   refresh: function (frm) {
-     let workspace = 'Task Management';
-            
-        frappe.breadcrumbs.all[frappe.get_route_str()] = {
-            workspace: workspace,
-            doctype: frm.doctype,
-            type: 'Form'
-        };
-        frappe.breadcrumbs.update();
-        
+    let workspace = 'Task Management';
+
+    frappe.breadcrumbs.all[frappe.get_route_str()] = {
+      workspace: workspace,
+      doctype: frm.doctype,
+      type: 'Form'
+    };
+    frappe.breadcrumbs.update();
+
     if (!frm.is_new()) {
       frappe.call(
         {
@@ -20,9 +20,14 @@ frappe.ui.form.on("MainTask", {
             maintask_name: frm.doc.name
           },
           callback: function (r) {
+            const readonly_fields = ['maintask_name', 'description', "status", "assign_date", "due_date", "assign_by", "priority"];
             if (r.message === "none") {
               frm.set_read_only(true);
               frm.disable_save();
+            } else if (r.message === "assign_by_maintask_leader" ) {
+              readonly_fields.forEach(field => {
+                frm.set_df_property(field, "read_only", 1);
+              });
             }
           }
         }
@@ -110,15 +115,15 @@ function show_task_dialog(frm, tasks) {
           ignore_user_permissions: 1,
           in_list_view: 1,
           reqd: 1,
-      get_query: () => {
-        // Ambil daftar employee dari child table team di MainTask
-        let allowed_employees = (frm.doc.team || []).map(row => row.employee);
-        return {
-          filters: [
-            ['name', 'in', allowed_employees]
-          ]
-        };
-      }
+          get_query: () => {
+            // Ambil daftar employee dari child table team di MainTask
+            let allowed_employees = (frm.doc.team || []).map(row => row.employee);
+            return {
+              filters: [
+                ['name', 'in', allowed_employees]
+              ]
+            };
+          }
         }
       ]
     });
