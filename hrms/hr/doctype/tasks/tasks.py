@@ -186,10 +186,12 @@ def user_edit_tasks(task_name):
     )
     
     if doc.owner == frappe.session.user:
+        print('owner_tasks')
         return "owner_tasks"
 
     print(f'{type(parent_task_pic)} type, parent_task_pic value {parent_task_pic}')
     if doc.name in parent_task_pic:
+        print('task_pics')
         return "task_pics"
 
     if doc.maintask:

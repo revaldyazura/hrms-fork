@@ -26,6 +26,10 @@ class SubTask(Document):
 		if self.status == "Open":
 			self.subtask_open_date = datetime.strptime(self.creation, "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
 				self.creation, str) else self.creation.date()
+			self.submission_text = None
+			self.attachment = None
+			self.total_time = None
+			self.last_in_progress_timestamp = None
 		if self.status == "In Progress":
 			self.subtask_start_date = datetime.strptime(now_datetime(), "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
 				now_datetime(), str) else now_datetime().date()
@@ -48,6 +52,10 @@ class SubTask(Document):
 				self.owner = ref_doc.owner
 				self.attachment = None
 				self.submission_text = None
+				self.total_time = None
+				self.last_in_progress_timestamp = None
+				self.subtask_start_date = None
+				self.subtask_done_date = None
 				if self.status != "Open":
 					self.status = "Open"
 					
@@ -96,6 +104,9 @@ def update_fields(doc, method):
 	doc.maintask = maintask.name
 	if doc.status == 'Open':
 		doc.subtask_done_date = None
+		doc.subtask_start_date = None
+		doc.subtask_done_date = None
+		doc.subtask_close_date = None
 		doc.save()
 		# frappe.db.set_value("SubTask", doc.name, "subtask_done_date", None)
 
@@ -335,7 +346,7 @@ def get_task_with_same_pic(doctype, txt, searchfield, start, page_len, filters):
 
 	conditions = ""
 	if user != "Administrator":
-		conditions = "WHERE tp.employee = %(employee_id)s AND t.status = 'Open' AND (t.name LIKE %(txt)s OR t.task_name LIKE %(txt)s)"
+		conditions = "WHERE tp.employee = %(employee_id)s AND (t.status = 'Open' OR t.status = 'In Progress') AND (t.name LIKE %(txt)s OR t.task_name LIKE %(txt)s)"
 
 	tasks = frappe.db.sql(f"""
 		SELECT t.name, t.task_name

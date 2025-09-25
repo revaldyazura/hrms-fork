@@ -127,7 +127,7 @@ def has_permission(doc, ptype, user):
 
     if ptype == "delete":
         if doc.owner != user:
-            frappe.throw(f"{employee.employee_name} is not allowed to deleting {doc.maintask_name} maintask.",
+            frappe.throw(f"{employee.employee_name} is not the owner & not allowed to deleting {doc.maintask_name} maintask.",
                          frappe.PermissionError)
             return False
         elif doc.owner == user:
@@ -160,6 +160,15 @@ def user_edit_maintask(maintask_name):
     if doc.owner == frappe.session.user:
         return "owner_maintask"
 
+    parent_assign_by = frappe.get_all(
+		"MainTask Assign By",
+		filters={"employee": employee_id},
+		pluck="parent"
+	)
+    
+    if doc.name in parent_assign_by:
+        return "assign_by_maintask_leader"
+    
     return "none"
 
 @frappe.whitelist()
