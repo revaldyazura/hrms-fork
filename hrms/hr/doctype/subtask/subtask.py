@@ -24,18 +24,23 @@ class SubTask(Document):
 		self.pic_subtask_name = frappe.db.get_value("Employee", {"name": self.pic_subtask}, "employee_name")
 		self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
 		if self.status == "Open":
-			self.subtask_open_date = datetime.strptime(self.creation, "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
-				self.creation, str) else self.creation.date()
+			self.subtask_open_date = get_datetime(self.creation)
 			self.submission_text = None
 			self.attachment = None
 			self.total_time = None
 			self.last_in_progress_timestamp = None
+			self.subtask_start_date = None
+			self.subtask_done_date = None
+			self.subtask_pause_date = None
+			self.subtask_close_date = None
 		if self.status == "In Progress":
-			self.subtask_start_date = datetime.strptime(now_datetime(), "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
-				now_datetime(), str) else now_datetime().date()
+			self.subtask_start_date =  now_datetime()
 		if self.status == "Done":
-			self.subtask_done_date = datetime.strptime(now_datetime(), "%Y-%m-%d %H:%M:%S.%f").date() if isinstance(
-				now_datetime(), str) else now_datetime().date()
+			self.subtask_done_date = now_datetime()
+		if self.status == "Pause":
+			self.subtask_pause_date = now_datetime()
+		if self.status == "Close":
+			self.subtask_close_date = now_datetime()
 		if self.unit_target_time == "Hours":
 			self.target_time_minutes = self.target_time * 60
 		else:
@@ -56,6 +61,8 @@ class SubTask(Document):
 				self.last_in_progress_timestamp = None
 				self.subtask_start_date = None
 				self.subtask_done_date = None
+				self.subtask_pause_date = None
+				self.subtask_close_date = None
 				if self.status != "Open":
 					self.status = "Open"
 					
@@ -103,12 +110,11 @@ def update_fields(doc, method):
 	maintask = frappe.get_doc("MainTask", task.maintask)
 	doc.maintask = maintask.name
 	if doc.status == 'Open':
-		doc.subtask_done_date = None
+		doc.subtask_pause_date = None
 		doc.subtask_start_date = None
 		doc.subtask_done_date = None
 		doc.subtask_close_date = None
 		doc.save()
-		# frappe.db.set_value("SubTask", doc.name, "subtask_done_date", None)
 
 	frappe.flags.in_update = False
 
