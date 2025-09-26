@@ -64,6 +64,7 @@ def export_team_task_management(filters=None):
                       st.name AS subtask,
                       st.subtask_name,
                       st.value AS value_subtask,
+                      st.target_time_minutes,
                       emp.team
                FROM `tabSubTask` st
                         LEFT JOIN `tabEmployee` emp ON emp.name = st.pic_subtask \
@@ -120,7 +121,7 @@ def export_team_task_management(filters=None):
     format_cache = {}
     sheet.set_column("A:J", 20)
 
-    headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value"]
+    headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "SubTask Target Time (Minutes)"]
     for col, h in enumerate(headers):
         sheet.write(0, col, h, header_format)
 
@@ -159,6 +160,7 @@ def export_team_task_management(filters=None):
                         sheet.write(row, 4, tr["subtask_name"], colored_format)
                         sheet.write(row, 5, tr["subtask_types"], colored_format)
                         sheet.write_number(row, 6, int(tr["value_subtask"]), colored_format)
+                        sheet.write_number(row, 7, int(tr["target_time_minutes"]), colored_format)
                         row += 1
 
                     # Merge Task
@@ -207,7 +209,9 @@ def export_team_task_management(filters=None):
     sheet.write(row, 2, "SubTask", header_format)
     sheet.write(row, 3, "SubTask Type", header_format)
     sheet.write(row, 4, "SubTask Value", header_format)
-    sheet.write(row, 5, "Average SubTask Value", header_format)
+    sheet.write(row, 5, "SubTask Target Time (Minutes)", header_format)
+    sheet.write(row, 6, "Average SubTask Value", header_format)
+    sheet.write(row, 7, "Total SubTask Target Time (Minutes)", header_format)
     row += 1
     # Buat set untuk menyaring kombinasi unik
     unique_subtasks = set()
@@ -247,6 +251,7 @@ def export_team_task_management(filters=None):
                 sheet.write(row, 2, tr["subtask_name"], colored_format)
                 sheet.write(row, 3, tr["subtask_types"], colored_format)
                 sheet.write_number(row, 4, int(tr["value_subtask"]), colored_format)
+                sheet.write_number(row, 5, int(tr["target_time_minutes"]), colored_format)
                 row += 1
 
             if row - t_row_start > 1:
@@ -256,13 +261,15 @@ def export_team_task_management(filters=None):
 
         if row - mt_row_start > 1:
             sheet.merge_range(mt_row_start, 0, row - 1, 0, mt_rows[0].get("maintask_name", mt_key), colored_format)
-            sheet.merge_range(mt_row_start, 5, row - 1, 5, f'=AVERAGE(E{mt_row_start+1}:E{row})', colored_format)
+            sheet.merge_range(mt_row_start, 6, row - 1, 6, f'=AVERAGE(E{mt_row_start+1}:E{row})', colored_format)
+            sheet.merge_range(mt_row_start, 7, row - 1, 7, f'=SUM(F{mt_row_start+1}:F{row})', colored_format)
             # sheet.merge_range(mt_row_start, 7, row - 1, 7, f'=SUM(F{mt_row_start+1}:F{row})', colored_format)
             # sheet.merge_range(mt_row_start, 8, row - 1, 8, f'=H{mt_row_start+1}/E{additional_data_row+1}', colored_format)
             # sheet.merge_range(mt_row_start, 9, row - 1, 9, f'=G{mt_row_start+1}*I{mt_row_start+1}', colored_format)
         else:
             sheet.write(mt_row_start, 0, mt_rows[0].get("maintask_name", mt_key), colored_format)
-            sheet.write_formula(mt_row_start, 5, f'=AVERAGE(E{row}:E{row})', colored_format)
+            sheet.write_formula(mt_row_start, 6, f'=AVERAGE(E{row}:E{row})', colored_format)
+            sheet.write_formula(mt_row_start, 7, f'=SUM(F{row}:F{row})', colored_format)
             # sheet.write_formula(mt_row_start, 7, f'=SUM(F{row}:F{row})', colored_format)
             # sheet.write_formula(mt_row_start, 8, f'=H{row}/E{additional_data_row+1}', colored_format)
             # sheet.write_formula(mt_row_start, 9, f'=G{row}*I{row}', colored_format)
