@@ -138,7 +138,7 @@ def has_permission(doc, ptype, user):
                     frappe.PermissionError)
                 return False
             return True
-    elif doc.owner == user:
+    elif doc.owner == user or (ptype == "write" and doc.name in parent_assign_by):
         return True
 
     frappe.throw(f"{employee.employee_name} is not allowed to acessing {doc.maintask_name} maintask.",
