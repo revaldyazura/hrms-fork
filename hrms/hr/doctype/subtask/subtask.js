@@ -4,13 +4,13 @@
 frappe.ui.form.on("SubTask", {
 	refresh(frm) {
 		let workspace = 'Task Management';
-            
-        frappe.breadcrumbs.all[frappe.get_route_str()] = {
-            workspace: workspace,
-            doctype: frm.doctype,
-            type: 'Form'
-        };
-        frappe.breadcrumbs.update();
+
+		frappe.breadcrumbs.all[frappe.get_route_str()] = {
+			workspace: workspace,
+			doctype: frm.doctype,
+			type: 'Form'
+		};
+		frappe.breadcrumbs.update();
 
 		if (frm.is_new()) {
 			frm.set_df_property("status", "options", ["Open"]);
@@ -134,41 +134,40 @@ frappe.ui.form.on("SubTask", {
 						it.percentage_score_str != null && it.percentage_score_str !== ""
 							? String(it.percentage_score_str)
 							: (getScore(it) * 100).toFixed(0) + "%"; // fallback kalau _str tidak ada
-
 					return `
-      <tr>
-        <td style="vertical-align:top;">${idx + 1}</td>
-        <td style="vertical-align:top;">${esc(it.skill)}</td>
-        <td style="vertical-align:top;">${esc(it.sub_skill_set)}</td>
-        <td style="vertical-align:top;">${esc(it.level)}</td>
-        <td style="vertical-align:top;">${esc(it.reasonings)}</td>
-        <td style="vertical-align:top;">${esc(scoreStr)}</td>
-        <td style="vertical-align:top;">${esc(it.specialized)}</td>
-        <td style="vertical-align:top;">${esc(it.reasoning_specialized)}</td>
-      </tr>
-    `;
+								<tr>
+									<td style="vertical-align:top;">${idx + 1}</td>
+									<td style="vertical-align:top;">${esc(it.skill)}</td>
+									<td style="vertical-align:top;">${esc(it.sub_skill_set)}</td>
+									<td style="vertical-align:top;">${esc(it.level)}</td>
+									<td style="vertical-align:top;">${esc(it.reasonings)}</td>
+									<td style="vertical-align:top;">${esc(scoreStr)}</td>
+									<td style="vertical-align:top;">${esc(it.specialized)}</td>
+									<td style="vertical-align:top;">${esc(it.reasoning_specialized)}</td>
+								</tr>
+							`;
 				}).join("");
 
 				const tableHTML = `
-    <div style="max-height:240px; overflow:auto; border:1px solid #e5e7eb; border-radius:6px;">
-      <table class="table table-bordered" style="margin:0;">
-        <thead>
-          <tr>
-            <th style="width:40px;">#</th>
-            <th>Skill</th>
-            <th>Sub Skill</th>
-            <th>Level</th>
-            <th>Reasoning</th>
-            <th>Score</th>
-            <th>Specialized</th>
-            <th>Reasoning (Specialized)</th>
-          </tr>
-        </thead>
-        <tbody>${rows || `<tr><td colspan="8" style="text-align:center;color:#888;">No relevant skills detected</td></tr>`
+					<div style="max-height:240px; overflow:auto; border:1px solid #e5e7eb; border-radius:6px;">
+					<table class="table table-bordered" style="margin:0;">
+						<thead>
+						<tr>
+							<th style="width:40px;">#</th>
+							<th>Skill</th>
+							<th>Sub Skill</th>
+							<th>Level</th>
+							<th>Reasoning</th>
+							<th>Score</th>
+							<th>Specialized</th>
+							<th>Reasoning (Specialized)</th>
+						</tr>
+						</thead>
+						<tbody>${rows || `<tr><td colspan="8" style="text-align:center;color:#888;">No relevant skills detected</td></tr>`
 					}</tbody>
-      </table>
-    </div>
-  `;
+					</table>
+					</div>
+				`;
 
 				return {
 					raw: result,
@@ -187,9 +186,9 @@ frappe.ui.form.on("SubTask", {
 						{ fieldtype: 'Section Break', label: 'Result' },
 						{
 							fieldtype: 'HTML', fieldname: 'agent_preview', options: `
-        <div style="margin:12px 0 6px; font-weight:600;">Relevant Skillset</div>
-        ${cache.tableHTML}
-      `},
+							<div style="margin:12px 0 6px; font-weight:600;">Relevant Skillset</div>
+							${cache.tableHTML}`
+						},
 						{ fieldtype: 'Section Break' },
 						{
 							fieldtype: 'Select',
@@ -313,15 +312,15 @@ frappe.ui.form.on("SubTask", {
 
 					const matched = Array.isArray(it.matched_specialized) ? it.matched_specialized.join(', ') : '';
 					return `
-      <tr>
-        <td style="vertical-align:top;">${idx + 1}</td>
-        <td style="vertical-align:top;font-weight:600;">${esc(it.name)}</td>
-        <td style="vertical-align:top;">${esc(scoreStr)}</td>
-        <td style="vertical-align:top;">${esc(matched)}</td>
-        <td style="vertical-align:top; white-space:pre-wrap;">${esc(it.pro || '')}</td>
-        <td style="vertical-align:top; white-space:pre-wrap;">${esc(it.cons || '')}</td>
-      </tr>
-    `;
+						<tr>
+							<td style="vertical-align:top;">${idx + 1}</td>
+							<td style="vertical-align:top;font-weight:600;">${esc(it.name)}</td>
+							<td style="vertical-align:top;">${esc(scoreStr)}</td>
+							<td style="vertical-align:top;">${esc(matched)}</td>
+							<td style="vertical-align:top; white-space:pre-wrap;">${esc(it.pro || '')}</td>
+							<td style="vertical-align:top; white-space:pre-wrap;">${esc(it.cons || '')}</td>
+						</tr>
+					`;
 				}).join("");
 
 				// header “Specialized Required”
@@ -373,9 +372,10 @@ frappe.ui.form.on("SubTask", {
 					fields: [
 						{ fieldtype: 'Section Break', label: 'Result Details' },
 						{
-							fieldtype: 'HTML', fieldname: 'agent_preview', options: `
-        ${cache.tableHTML}
-      `},
+							fieldtype: 'HTML',
+							fieldname: 'agent_preview',
+							options: `${cache.tableHTML}`
+						},
 						{ fieldtype: 'Section Break' },
 						{
 							fieldtype: 'Select',
@@ -419,11 +419,19 @@ frappe.ui.form.on("SubTask", {
 									title: __('Select Employee for ') + pickedName,
 									fields: [
 										{
-											fieldtype: 'HTML', fieldname: 'hint', options: `
-            <div style="margin:6px 0 10px; color:#6b7280;">
-              Agent suggested name: <b>${frappe.utils.escape_html(pickedName)}</b>
-            </div>` },
-										{ fieldtype: 'Select', fieldname: 'emp', label: 'Employee', options: opts, reqd: 1 }
+											fieldtype: 'HTML',
+											fieldname: 'hint',
+											options: `<div style="margin:6px 0 10px; color:#6b7280;">
+											Agent suggested name: <b>${frappe.utils.escape_html(pickedName)}</b>
+											</div>`
+										},
+										{
+											fieldtype: 'Select',
+											fieldname: 'emp',
+											label: 'Employee',
+											options: opts,
+											reqd: 1
+										}
 									],
 									primary_action_label: 'Apply',
 									primary_action: async (vals) => {
@@ -467,11 +475,9 @@ frappe.ui.form.on("SubTask", {
 						{
 							fieldtype: 'HTML',
 							fieldname: 'agent_hint',
-							options: `
-          <div style="margin:6px 0 10px; color:#6b7280;">
-            Agent suggested name: <b>${frappe.utils.escape_html(agentName || '')}</b>
-          </div>
-        `
+							options: `<div style="margin:6px 0 10px; color:#6b7280;">
+								Agent suggested name: <b>${frappe.utils.escape_html(agentName || '')}</b>
+							</div>`
 						},
 						{
 							fieldtype: 'Link',
@@ -663,9 +669,28 @@ frappe.ui.form.on("SubTask", {
 							frm.set_df_property(field, "read_only", 1);
 							// frm.set_value("status", "Open");
 						});
-						frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done"]);
+						if (frm.doc.status === "In Progress") {
+							frm.set_df_property("status", "options", ["In Progress", "Pause", "Done"]);
+						} else if (frm.doc.status === "Pause") {
+							frm.set_df_property("status", "options", ["In Progress", "Pause"]);
+						} else if (frm.doc.status === "Done") {
+							frm.set_df_property("status", "options", ["In Progress", "Done"]);
+						} else {
+							frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done"]);
+						}
+						// frm.page.remove_inner_button('Duplicate')
+						// frm.page.remove_inner_button('Duplicate', 'Menu')
+						// frm.page.clear_menu()
 					} else if (r.message == "task_pics" || r.message == "owner_task") {
-						frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done", "Cancel"]);
+						if (frm.doc.status === "In Progress") {
+							frm.set_df_property("status", "options", ["In Progress", "Pause", "Done"]);
+						} else if (frm.doc.status === "Pause") {
+							frm.set_df_property("status", "options", ["In Progress", "Pause"]);
+						} else if (frm.doc.status === "Done") {
+							frm.set_df_property("status", "options", ["In Progress", "Done"]);
+						} else {
+							frm.set_df_property("status", "options", ["In Progress", "Pause", "Done", "Cancel"]);
+						}
 					} else if (r.message === "none") {
 						frm.set_read_only(true);
 						frm.disable_save();

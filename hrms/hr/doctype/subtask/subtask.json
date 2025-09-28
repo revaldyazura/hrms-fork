@@ -146,13 +146,13 @@
   },
   {
    "fieldname": "subtask_open_date",
-   "fieldtype": "Date",
+   "fieldtype": "Datetime",
    "label": "Sub Task Open Date",
    "permlevel": 2
   },
   {
    "fieldname": "subtask_done_date",
-   "fieldtype": "Date",
+   "fieldtype": "Datetime",
    "label": "Sub Task Done Date",
    "permlevel": 2
   },
@@ -259,19 +259,19 @@
   },
   {
    "fieldname": "subtask_start_date",
-   "fieldtype": "Date",
+   "fieldtype": "Datetime",
    "label": "Sub Task Start Date",
    "permlevel": 2
   },
   {
    "fieldname": "subtask_pause_date",
-   "fieldtype": "Date",
+   "fieldtype": "Datetime",
    "label": "Sub Task Pause Date",
    "permlevel": 2
   },
   {
    "fieldname": "subtask_close_date",
-   "fieldtype": "Date",
+   "fieldtype": "Datetime",
    "label": "Sub Task Close Date",
    "permlevel": 2
   }
@@ -279,7 +279,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-25 19:42:57.580127",
+ "modified": "2025-09-26 11:06:53.084605",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",
@@ -304,5 +304,6 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "title_field": "subtask_name"
+ "title_field": "subtask_name",
+ "track_changes": 1
 }
