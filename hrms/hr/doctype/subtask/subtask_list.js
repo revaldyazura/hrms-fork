@@ -31,6 +31,11 @@ frappe.listview_settings['SubTask'] = {
 			type: 'List'
 		};
 		frappe.breadcrumbs.update();
+
+		document.querySelectorAll('.list-subject').forEach(function(col){
+			col.style.maxWidth = "500px";
+			col.style.minWidth = "500px";
+		})
 	},
 	onload(listview) {
 		// hindari loop set_route berulang

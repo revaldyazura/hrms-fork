@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 1,
  "autoname": "ST-.YYYY.MM.-.#######",
  "creation": "2025-05-04 13:35:13.779936",
  "doctype": "DocType",
@@ -279,7 +278,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-26 11:06:53.084605",
+ "modified": "2025-09-29 16:00:58.105526",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

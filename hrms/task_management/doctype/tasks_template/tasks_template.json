@@ -1,7 +1,6 @@
 {
  "actions": [],
  "allow_import": 1,
- "allow_rename": 1,
  "autoname": "T-TMP-.YYYY.MM.-.#######",
  "creation": "2025-08-01 10:36:48.550225",
  "doctype": "DocType",
@@ -26,7 +25,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-04 14:36:02.012512",
+ "modified": "2025-09-29 16:01:20.677696",
  "modified_by": "Administrator",
  "module": "Task Management",
  "name": "Tasks Template",

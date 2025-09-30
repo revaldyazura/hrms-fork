@@ -17,5 +17,10 @@ frappe.listview_settings['Evaluation'] = {
 			type: 'List'
 		};
 		frappe.breadcrumbs.update();
+
+		document.querySelectorAll('.list-subject').forEach(function(col){
+			col.style.maxWidth = "500px";
+			col.style.minWidth = "500px";
+		})
 	},
 };

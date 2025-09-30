@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 1,
  "autoname": "EVL-.YYYY.MM.-.#######",
  "creation": "2025-05-04 13:52:24.897427",
  "doctype": "DocType",
@@ -34,7 +33,6 @@
    "description": "The finished subtask that wants to reviewed",
    "fieldname": "subtask",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "SubTask",
    "options": "SubTask",
    "reqd": 1
@@ -190,7 +188,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-05 10:43:51.882948",
+ "modified": "2025-09-30 14:27:42.315439",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Evaluation",
