@@ -201,3 +201,73 @@ def create_tasks_from_template(maintask, values, count):
 
         print(f"Task values: {task.as_dict()}")
         task.insert()
+
+
+@frappe.whitelist()
+def get_tasks(maintask_id: str):
+    """Fetch Tasks linked to a MainTask doc with pagination.
+
+    Returns structure:
+    {
+        rows: [ { name, task_name, ..., task_pic_names } ],
+        total: int,
+        page: int,
+        page_size: int
+    }
+
+    Added field:
+    - task_pic_names: comma separated list of employee_name (or employee id fallback) from child table Task PIC
+
+    Minimal change approach: keep existing return shape & field names; just append one new key per row.
+    """
+    if not maintask_id:
+        frappe.throw("maintask_id is required")
+
+    page = frappe.form_dict.get('page') or 1
+    page_size = frappe.form_dict.get('page_size') or 50
+    try:
+        page = int(page)
+        page_size = int(page_size)
+    except ValueError:
+        page = 1
+        page_size = 50
+    page = max(page, 1)
+    page_size = max(1, min(page_size, 200))
+
+    filters = {'maintask': maintask_id}
+
+    fields = [
+        'name', 'maintask', 'task_name', 'description', 'target_time', 'unit_target_time', 'status', 'created_by'
+    ]
+
+    total = frappe.db.count('Tasks', filters=filters)
+    offset = (page - 1) * page_size
+    rows = frappe.get_all(
+        'Tasks',
+        filters=filters,
+        fields=fields,
+        order_by='creation desc',
+        limit=page_size,
+        start=offset
+    )
+
+    if rows:
+        parent_names = [r['name'] for r in rows]
+        pic_entries = frappe.get_all(
+            'Task PIC',
+            filters={'parent': ('in', parent_names)},
+            fields=['parent', 'employee', 'employee_name']
+        )
+        pic_map = {}
+        for pe in pic_entries:
+            pic_map.setdefault(pe['parent'], []).append(pe.get('employee_name') or pe.get('employee'))
+        for r in rows:
+            pics = pic_map.get(r['name'], [])
+            r['task_pic_names'] = ", ".join(pics) if pics else ""
+
+    return {
+        'rows': rows,
+        'total': total,
+        'page': page,
+        'page_size': page_size
+    }

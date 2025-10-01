@@ -130,7 +130,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-29 16:00:12.287317",
+ "modified": "2025-10-01 11:33:15.430161",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",
@@ -166,5 +166,6 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],
- "title_field": "maintask_name"
+ "title_field": "maintask_name",
+ "track_changes": 1
 }

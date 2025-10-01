@@ -308,3 +308,62 @@ def create_subtask_from_template(tasks, values, count):
 
         print(f"SubTask values: {subtask.as_dict()}")
         subtask.insert()
+        
+
+@frappe.whitelist()
+def get_subtask(task_id: str):
+    """Fetch SubTask linked to a Tasks doc with pagination.
+
+    """
+    if not task_id:
+        frappe.throw("task_id is required")
+
+    page = frappe.form_dict.get('page') or 1
+    page_size = frappe.form_dict.get('page_size') or 50
+    try:
+        page = int(page)
+        page_size = int(page_size)
+    except ValueError:
+        page = 1
+        page_size = 50
+    page = max(page, 1)
+    page_size = max(1, min(page_size, 200))
+
+    filters = {'tasks': task_id}
+
+    fields = [
+        'name', 'tasks', 'subtask_name', 'description', 'priority', 'value', 'pic_subtask_name',
+       'target_time', 'unit_target_time', 'status', 'created_by'
+    ]
+
+    total = frappe.db.count('SubTask', filters=filters)
+    offset = (page - 1) * page_size
+    rows = frappe.get_all(
+        'SubTask',
+        filters=filters,
+        fields=fields,
+        order_by='creation desc',
+        limit=page_size,
+        start=offset
+    )
+
+    if rows:
+        parent_names = [r['name'] for r in rows]
+        type_entries = frappe.get_all(
+            'SubTask Type',
+            filters={'parent': ('in', parent_names)},
+            fields=['parent', 'subtask_type']
+        )
+        type_map = {}
+        for pe in type_entries:
+            type_map.setdefault(pe['parent'], []).append(pe.get('subtask_type'))
+        for r in rows:
+            types = type_map.get(r['name'], [])
+            r['type'] = ", ".join(types) if types else ""
+
+    return {
+        'rows': rows,
+        'total': total,
+        'page': page,
+        'page_size': page_size
+    }

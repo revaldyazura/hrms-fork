@@ -667,33 +667,25 @@ frappe.ui.form.on("SubTask", {
 					if (r.message === "pic_subtask") {
 						readonly_fields.forEach(field => {
 							frm.set_df_property(field, "read_only", 1);
-							// frm.set_value("status", "Open");
 						});
-						if (frm.doc.status === "In Progress") {
-							frm.set_df_property("status", "options", ["In Progress", "Pause", "Done"]);
-						} else if (frm.doc.status === "Pause") {
-							frm.set_df_property("status", "options", ["In Progress", "Pause"]);
-						} else if (frm.doc.status === "Done") {
-							frm.set_df_property("status", "options", ["In Progress", "Done"]);
-						} else {
-							frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done"]);
-						}
 						// frm.page.remove_inner_button('Duplicate')
 						// frm.page.remove_inner_button('Duplicate', 'Menu')
 						// frm.page.clear_menu()
-					} else if (r.message == "task_pics" || r.message == "owner_task") {
-						if (frm.doc.status === "In Progress") {
-							frm.set_df_property("status", "options", ["In Progress", "Pause", "Done"]);
-						} else if (frm.doc.status === "Pause") {
-							frm.set_df_property("status", "options", ["In Progress", "Pause"]);
-						} else if (frm.doc.status === "Done") {
-							frm.set_df_property("status", "options", ["In Progress", "Done"]);
-						} else {
-							frm.set_df_property("status", "options", ["In Progress", "Pause", "Done", "Cancel"]);
-						}
-					} else if (r.message === "none") {
+					}
+					else if (r.message === "none") {
 						frm.set_read_only(true);
 						frm.disable_save();
+					}
+					if (frm.doc.status === "In Progress") {
+						frm.set_df_property("status", "options", ["In Progress", "Pause", "Done"]);
+					} else if (frm.doc.status === "Pause") {
+						frm.set_df_property("status", "options", ["In Progress", "Pause"]);
+					} else if (frm.doc.status === "Done") {
+						frm.set_df_property("status", "options", ["In Progress", "Done"]);
+					} else if ((frm.doc.status === "Cancel" || frm.doc.status === "Open") && (r.message === "pic_subtask")) {
+						frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done"]);
+					} else if ((frm.doc.status === "Cancel" || frm.doc.status === "Open") && (r.message === "owner_task" || r.message === "task_pics")) {
+						frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done", "Cancel"]);
 					}
 				}
 			});

@@ -4,14 +4,14 @@
 frappe.ui.form.on("Tasks", {
   refresh(frm) {
     let workspace = 'Task Management';
-            
-        frappe.breadcrumbs.all[frappe.get_route_str()] = {
-            workspace: workspace,
-            doctype: frm.doctype,
-            type: 'Form'
-        };
-        frappe.breadcrumbs.update();
-        
+
+    frappe.breadcrumbs.all[frappe.get_route_str()] = {
+      workspace: workspace,
+      doctype: frm.doctype,
+      type: 'Form'
+    };
+    frappe.breadcrumbs.update();
+
     if (!frm.is_new()) {
       frappe.call({
         method: "hrms.hr.doctype.tasks.tasks.user_edit_tasks",
@@ -56,6 +56,196 @@ frappe.ui.form.on("Tasks", {
           }
         });
       });
+      frm.add_custom_button('Show SubTask of This Tasks', function () {
+        if (!frm.doc.name) return;
+
+        const make_dialog = () => {
+          const dlg = new frappe.ui.Dialog({
+            title: __('SubTask of {0}', [frm.doc.task_name || '']),
+            size: 'large', // baseline; we'll override with custom CSS to reach ~85% viewport
+            fields: [
+              { fieldname: 'results_section', fieldtype: 'Section Break' },
+              { fieldname: 'subtask_html', fieldtype: 'HTML' },
+              { fieldname: 'pagination_html', fieldtype: 'HTML' },
+              { fieldname: 'bottom_actions', fieldtype: 'HTML' }
+            ],
+            primary_action_label: __('Close'),
+            primary_action() { dlg.hide(); }
+          });
+
+          // Tag wrapper & inject improved styling for full-width table
+          dlg.$wrapper.addClass('wide-subtask-dialog');
+          if (!document.getElementById('req-dialog-style-fixed')) {
+            const style = document.createElement('style');
+            style.id = 'req-dialog-style-fixed';
+            style.textContent = `
+                        .wide-subtask-dialog .modal-dialog { max-width:85vw; width:85vw; }
+                        .wide-subtask-dialog .modal-content { width:100%; }
+                        .wide-subtask-dialog .modal-body { max-height:72vh; overflow:auto; padding: 8px 14px 12px; }
+                        .wide-subtask-dialog .form-layout, 
+                        .wide-subtask-dialog .form-page, 
+                        .wide-subtask-dialog .form-section, 
+                        .wide-subtask-dialog .section-body { width:100% !important; max-width:100% !important; margin:0; padding:0; }
+                        .wide-subtask-dialog .form-column { width:100% !important; max-width:100% !important; flex:0 0 100%; padding:0; }
+                        .wide-subtask-dialog .frappe-control { margin-bottom:6px; }
+                        .wide-subtask-dialog .frappe-control[data-fieldname="subtask_html"],
+                        .wide-subtask-dialog .frappe-control[data-fieldname="pagination_html"],
+                        .wide-subtask-dialog .frappe-control[data-fieldname="bottom_actions"] { width:100% !important; margin:0; padding:0; }
+                        .wide-subtask-dialog .req-table-wrapper { width:100%; }
+                        .wide-subtask-dialog .req-table { width:100%; table-layout:auto; }
+                        .wide-subtask-dialog .req-table th { white-space:nowrap; text-align:center; vertical-align:middle; }
+                        .wide-subtask-dialog .req-table td { white-space:nowrap; }
+                        .wide-subtask-dialog .req-table td.desc-cell { white-space:normal; line-height:1.3; }
+                        .wide-subtask-dialog .req-table td.wrap-cell { white-space:normal; line-height:1.3; word-break:break-word; }
+                        .wide-subtask-dialog .req-table td.text-center { text-align:center; }
+                        .wide-subtask-dialog .tech-val-icon { display:inline-block; width:18px; font-weight:600; color: var(--green, #2e7d32); }
+                        .wide-subtask-dialog .tech-val-icon.off { color:#bbb; }
+                        @media (max-width: 1200px) {
+                            .wide-subtask-dialog .req-table th, .wide-subtask-dialog .req-table td { white-space:normal; }
+                        }
+                    `;
+            document.head.appendChild(style);
+          }
+          // Force any existing form columns (after render) to 100%
+          setTimeout(() => {
+            dlg.$wrapper.find('.form-column').css({ width: '100%', maxWidth: '100%', flex: '0 0 100%' });
+          }, 0);
+
+          const state = { page: 1, page_size: 20 };
+
+          const columns = [
+            { key: 'name', label: 'ID' },
+            { key: 'subtask_name', label: 'SubTask Title' },
+            { key: 'description', label: 'Description' },
+            { key: 'pic_subtask_name', label: 'PIC SubTask Name' },
+            { key: 'priority', label: 'Priority' },
+            { key: 'value', label: 'Value' },
+            { key: 'target_time', label: 'Target Time' },
+            { key: 'unit_target_time', label: 'Unit Target Time' },
+            { key: 'type', label: 'SubTask Type' },
+            { key: 'created_by', label: 'Created By' },
+            { key: 'status', label: 'Status' },
+            { key: 'actions', label: 'Actions' }
+          ];
+
+          function esc(v) {
+            if (v == null) return '';
+            return String(v)
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;');
+          }
+
+          function strip_html(html) {
+            if (!html) return '';
+            // Fast path: if no tag markers, return as-is
+            if (!/[<>&]/.test(html)) return html;
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            const text = tmp.textContent || tmp.innerText || '';
+            return text.trim();
+          }
+
+          function fetch_and_render() {
+            frappe.call({
+              method: 'hrms.hr.doctype.tasks.tasks.get_subtask',
+              args: {
+                task_id: frm.doc.name,
+                page: state.page,
+                page_size: state.page_size
+              },
+              callback: r => {
+                const payload = r.message || { rows: [], total: 0 };
+                render_table(payload.rows, payload.total);
+                render_pagination(payload.total);
+              }
+            });
+          }
+
+          function truncate(str, n = 60) {
+            if (!str) return '';
+            return str.length > n ? str.slice(0, n) + '…' : str;
+          }
+
+          function row_class(row) {
+            if (row.status === 'Done') return 'success';
+            if (row.status === 'Cancel') return 'danger';
+            return '';
+          }
+
+          function render_table(rows, total) {
+            let html = '';
+            if (!rows.length) {
+              html = `<div class="text-muted" style="padding:12px">${__('No SubTask found.')}</div>`;
+            } else {
+              html += '<div class="req-table-wrapper" style="max-height:420px; overflow:auto;">';
+              html += '<table class="table table-bordered table-compact req-table" style="margin:0">';
+              html += '<thead><tr>' + columns.map(c => `<th>${esc(c.label)}</th>`).join('') + '</tr></thead>';
+              html += '<tbody>';
+              rows.forEach(row => {
+                html += `<tr class="req-row ${row_class(row)}" data-name="${esc(row.name)}"` +
+                  ` data-subtask_name="${esc(row.subtask_name || '')}" data-description="${esc(row.description || '')}"` +
+                  ` data-pic_subtask_name="${esc(row.pic_subtask_name || '')}" data-priority="${esc(row.priority || '')}" data-value="${esc(row.value || '')}"` +
+                  ` data-target_time="${esc(row.target_time || '')}" data-unit_target_time="${esc(row.unit_target_time || '')}"` +
+                  ` data-status="${esc(row.status || '')}" data-created_by="${esc(row.created_by || '')}">`
+                columns.forEach(c => {
+                  if (c.key === 'name') {
+                    // Use a clickable link that triggers frappe.set_route for reliable navigation in desk SPA
+                    // html += `<td><a href="/app/subtask/${esc(row.name)}" class="req-link" data-doctype="SubTask" data-name="${esc(row.name)}">${esc(row.name)}</a></td>`;
+                    html += `<td class="wrap-cell" title="${esc(row.name)}">${esc(row.name)}</td>`;
+                  } else if (c.key === 'description') {
+                    const raw = row.description || '';
+                    const plain = strip_html(raw);
+                    html += `<td class="desc-cell" title="${esc(plain)}">${esc(plain)}</td>`;
+                  } else if (c.key === 'actions') {
+                    html += `<td class="action-cell" style="min-width:70px;">
+                                        <button class="btn btn-xs btn-primary open-req" data-name="${esc(row.name)}">${__('View')}</button>
+                                    </td>`;
+                  } else {
+                    html += `<td>${esc(row[c.key] || '')}</td>`;
+                  }
+                });
+                html += '</tr>';
+              });
+              html += '</tbody></table></div>';
+              html += `<div class="mt-2 small text-muted">${__('Total')}: ${total}</div>`;
+            }
+            dlg.fields_dict.subtask_html.$wrapper.html(html);
+            bind_row_events();
+          }
+
+          function render_pagination(total) {
+            const total_pages = Math.max(1, Math.ceil(total / state.page_size));
+            if (state.page > total_pages) state.page = total_pages;
+            let html = '<div class="d-flex align-items-center gap" style="margin-top:8px;">';
+            html += `<button class="btn btn-xs btn-default pag-btn" data-dir="prev" ${state.page <= 1 ? 'disabled' : ''}>${__('Prev')}</button>`;
+            html += `<span style="padding:0 8px">${__('Page')} ${state.page} / ${total_pages}</span>`;
+            html += `<button class="btn btn-xs btn-default pag-btn" data-dir="next" ${state.page >= total_pages ? 'disabled' : ''}>${__('Next')}</button>`;
+            html += '</div>';
+            dlg.fields_dict.pagination_html.$wrapper.html(html);
+            dlg.fields_dict.pagination_html.$wrapper.find('.pag-btn').on('click', function () {
+              const dir = $(this).data('dir');
+              if (dir === 'prev' && state.page > 1) { state.page -= 1; }
+              if (dir === 'next') { state.page += 1; }
+              fetch_and_render();
+            });
+          }
+
+          function bind_row_events() {
+            // Open button
+            dlg.$wrapper.find('.open-req').off('click').on('click', function () {
+              const docname = $(this).data('name');
+              frappe.set_route('Form', 'SubTask', docname);
+            });
+          }
+
+          dlg.show();
+          fetch_and_render();
+        };
+
+        make_dialog();
+      })
     }
   },
   onload: function (frm) {
@@ -176,7 +366,7 @@ function show_subtask_dialog(frm, subtask) {
             fieldname: `status_template_${i}`, label: 'Status', fieldtype: 'Select', options: ['Open'], default: subtask.status_template
           },
           {
-            fieldname: `priority_template_${i}`, label: 'Priority', fieldtype: 'Select', 
+            fieldname: `priority_template_${i}`, label: 'Priority', fieldtype: 'Select',
             options: ['Low', 'Medium', 'High'], default: subtask.priority_template
           },
           {
