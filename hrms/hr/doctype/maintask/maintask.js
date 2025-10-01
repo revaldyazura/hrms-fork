@@ -186,7 +186,10 @@ frappe.ui.form.on("MainTask", {
                   } else if (c.key === 'description') {
                     const full = row.description || '';
                     html += `<td class="desc-cell" title="${esc(full)}">${esc(full)}</td>`;
-                  } else if (c.key === 'actions') {
+                  } else if (c.key === 'task_pic_names') {
+                    const full_pics = row.task_pic_names || '';
+                    html += `<td class="desc-cell" title="${esc(full_pics)}">${esc(full_pics)}</td>`;
+                  }else if (c.key === 'actions') {
                     html += `<td class="action-cell" style="min-width:70px;">
                                         <button class="btn btn-xs btn-primary open-req" data-name="${esc(row.name)}">${__('View')}</button>
                                     </td>`;
