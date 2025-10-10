@@ -5,100 +5,173 @@ import frappe
 import requests
 from frappe import _, throw
 from frappe.model.document import Document
-from datetime import datetime
+from datetime import datetime, timedelta
 from frappe.utils import now_datetime, get_datetime
 
 
 class SubTask(Document):
 	def validate(self):
 		print("validate subtask called")
-		self.validate_subtask_name()
-		self.track_time_status_change()
+		self._set_derived_fields()
+		self._handle_status_timestamps()	
+		# self.validate_subtask_name()
+		# self.track_time_status_change()
 		ensure_employee_in_maintask_child_table(self)
 
-
-	def validate_subtask_name(self):
-		self.maintask = frappe.db.get_value("Tasks",{"name": self.tasks}, "maintask" )
-		self.maintask_name = frappe.db.get_value("MainTask", {"name": self.maintask}, "maintask_name")
-		self.tasks_name = frappe.db.get_value("Tasks", {"name": self.tasks}, "task_name")
-		self.pic_subtask_name = frappe.db.get_value("Employee", {"name": self.pic_subtask}, "employee_name")
+	def _set_derived_fields(self):
+		self.maintask = frappe.db.get_value("Tasks", self.tasks, "maintask")
+		self.maintask_name = frappe.db.get_value("MainTask", self.maintask, "maintask_name")
+		self.tasks_name = frappe.db.get_value("Tasks", self.tasks, "task_name")
+		self.pic_subtask_name = frappe.db.get_value("Employee", self.pic_subtask, "employee_name")
 		self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
-		if self.status == "Open":
-			self.subtask_open_date = get_datetime(self.creation)
-			self.submission_text = None
-			self.attachment = None
-			self.total_time = None
-			self.last_in_progress_timestamp = None
-			self.subtask_start_date = None
-			self.subtask_done_date = None
-			self.subtask_pause_date = None
-			self.subtask_close_date = None
-		if self.status == "In Progress":
-			self.subtask_start_date =  now_datetime()
-		if self.status == "Done":
-			self.subtask_done_date = now_datetime()
-		if self.status == "Pause":
-			self.subtask_pause_date = now_datetime()
-		if self.status == "Close":
-			self.subtask_close_date = now_datetime()
 		if self.unit_target_time == "Hours":
 			self.target_time_minutes = self.target_time * 60
 		else:
 			self.target_time_minutes = self.target_time
 
-		if self.flags.updater_reference:
-			print('self.flags.updater_reference triggered in validate')
-			if self.flags.updater_reference.get("doctype") == "Auto Repeat":
-				print('doctype auto repeat triggered in validate')
-				reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
-				ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
-				self.created_by = ref_doc.owner
-				self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
-				self.owner = ref_doc.owner
-				self.attachment = None
-				self.submission_text = None
-				self.total_time = None
-				self.last_in_progress_timestamp = None
-				self.subtask_start_date = None
-				self.subtask_done_date = None
-				self.subtask_pause_date = None
-				self.subtask_close_date = None
-				if self.status != "Open":
-					self.status = "Open"
-					
-	def track_time_status_change(self):
-      # hanya proses jika bukan dokumen baru & status benar2 berubah
-		if self.get('__islocal') or not self.has_value_changed('status'):
-			return
-		# if not self.get('__islocal') and self.has_value_changed('status'):
-		previous_doc = self.get_doc_before_save()
-		previous_status = previous_doc.status if previous_doc else None
-		now = now_datetime()
+		# auto repeat case
+		if self.flags.updater_reference and self.flags.updater_reference.get("doctype") == "Auto Repeat":
+			reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+			ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+			self.owner = ref_doc.owner
+			self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+			if self.status != "Open":
+				self.status = "Open"
+				self._reset_for_new_subtask()
 
-		# --- override: jika perubahan datang dari Tasks (propagation)
+	def _reset_for_new_subtask(self):
+		self.subtask_open_date = get_datetime(self.creation)
+		self.submission_text = None
+		self.attachment = None
+		self.total_time = None
+		self.last_in_progress_timestamp = None
+		self.subtask_start_date = None
+		self.subtask_done_date = None
+		self.subtask_pause_date = None
+		self.subtask_close_date = None
+        
+	# def validate_subtask_name(self):
+	# 	self.maintask = frappe.db.get_value("Tasks",{"name": self.tasks}, "maintask" )
+	# 	self.maintask_name = frappe.db.get_value("MainTask", {"name": self.maintask}, "maintask_name")
+	# 	self.tasks_name = frappe.db.get_value("Tasks", {"name": self.tasks}, "task_name")
+	# 	self.pic_subtask_name = frappe.db.get_value("Employee", {"name": self.pic_subtask}, "employee_name")
+	# 	self.created_by = frappe.db.get_value("Employee", {"user_id": self.owner}, "employee_name")
+	# 	if self.status == "Open":
+	# 		self.set_for_new_subtask()
+	# 	if previous_doc := self.get_doc_before_save():
+	# 		print('in validate subtask previous doc triggered')
+	# 		if previous_doc.status != self.status:	
+	# 			print('in validate subtask status different triggered')
+	# 			if self.status == "Open":
+	# 				self.set_for_new_subtask()
+	# 			if self.status == "In Progress":
+	# 				self.subtask_start_date =  now_datetime()
+	# 			if self.status == "Done":
+	# 				self.subtask_done_date = now_datetime()
+	# 			if self.status == "Pause":
+	# 				self.subtask_pause_date = now_datetime()
+	# 			if self.status == "Close":
+	# 				self.subtask_close_date = now_datetime()
+	# 	if self.unit_target_time == "Hours":
+	# 		self.target_time_minutes = self.target_time * 60
+	# 	else:
+	# 		self.target_time_minutes = self.target_time
+
+	# 	if self.flags.updater_reference:
+	# 		print('self.flags.updater_reference triggered in validate')
+	# 		if self.flags.updater_reference.get("doctype") == "Auto Repeat":
+	# 			print('doctype auto repeat triggered in validate')
+	# 			reference = frappe.get_doc("Auto Repeat", self.auto_repeat)
+	# 			ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
+	# 			self.created_by = ref_doc.owner
+	# 			self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
+	# 			self.owner = ref_doc.owner
+	# 			if self.status != "Open":
+	# 				self.status = "Open"
+	# 				self.set_for_new_subtask()
+	# def set_for_new_subtask(self):
+	# 	self.subtask_open_date = get_datetime(self.creation)
+	# 	self.submission_text = None
+	# 	self.attachment = None
+	# 	self.total_time = None
+	# 	self.last_in_progress_timestamp = None
+	# 	self.subtask_start_date = None
+	# 	self.subtask_done_date = None
+	# 	self.subtask_pause_date = None
+	# 	self.subtask_close_date = None
+     	
+	def _handle_status_timestamps(self):
+		prev = self.get_doc_before_save()
+		if not prev:
+			# dokumen baru
+			if self.status == "Open":
+				self._reset_for_new_subtask()
+			return
+
+		if prev.status == self.status:
+			return
+
+		now = now_datetime()
 		from_parent = bool(self.flags.get('from_parent_propagation'))
-  
-		if self.status == "In Progress":
+
+		if self.status == "Open":
+			self._reset_for_new_subtask()
+
+		elif self.status == "In Progress":
+			self.subtask_start_date = now
 			self.last_in_progress_timestamp = now
 
 		elif self.status in ("Pause", "Done"):
 			if not self.last_in_progress_timestamp:
-       			# jika datang dari Tasks dan sebelumnya bukan In Progress,
-                # izinkan skip tanpa menambah waktu & tanpa error
-				if from_parent and previous_status in ("Open", "Cancel", None):
-					# tidak ada waktu yang ditambahkan; langsung lolos
-					# (opsional) kalau mau set 0 menit eksplisit, biarkan total_time apa adanya
+				if from_parent and prev.status in ("Open", "Cancel", None):
 					self.last_in_progress_timestamp = 0
 					self.total_time = 0
 					return
-
-				# selain itu, tetap enforce aturan normal
-				frappe.throw(
-					f"Can't change status to '{self.status}', you have to change it to 'In Progress' first."
-				)
-			duration = int((now - get_datetime(self.last_in_progress_timestamp)).total_seconds() / 60)  
+				frappe.throw(f"Can't change status to '{self.status}', change to 'In Progress' first.")
+			duration = int((now - get_datetime(self.last_in_progress_timestamp)).total_seconds() / 60)
 			self.total_time = (self.total_time or 0) + duration
 			self.last_in_progress_timestamp = None
+			if self.status == "Done":
+				self.subtask_done_date = now
+			else:
+				self.subtask_pause_date = now
+
+		elif self.status == "Close":
+			self.subtask_close_date = now	
+   		
+	# def track_time_status_change(self):
+    #   # hanya proses jika bukan dokumen baru & status benar2 berubah
+	# 	if self.get('__islocal') or not self.has_value_changed('status'):
+	# 		return
+	# 	# if not self.get('__islocal') and self.has_value_changed('status'):
+	# 	previous_doc = self.get_doc_before_save()
+	# 	previous_status = previous_doc.status if previous_doc else None
+	# 	now = now_datetime()
+
+	# 	# --- override: jika perubahan datang dari Tasks (propagation)
+	# 	from_parent = bool(self.flags.get('from_parent_propagation'))
+  
+	# 	if self.status == "In Progress":
+	# 		self.last_in_progress_timestamp = now
+
+	# 	elif self.status in ("Pause", "Done"):
+	# 		if not self.last_in_progress_timestamp:
+    #    			# jika datang dari Tasks dan sebelumnya bukan In Progress,
+    #             # izinkan skip tanpa menambah waktu & tanpa error
+	# 			if from_parent and previous_status in ("Open", "Cancel", None):
+	# 				# tidak ada waktu yang ditambahkan; langsung lolos
+	# 				# (opsional) kalau mau set 0 menit eksplisit, biarkan total_time apa adanya
+	# 				self.last_in_progress_timestamp = 0
+	# 				self.total_time = 0
+	# 				return
+
+	# 			# selain itu, tetap enforce aturan normal
+	# 			frappe.throw(
+	# 				f"Can't change status to '{self.status}', you have to change it to 'In Progress' first."
+	# 			)
+	# 		duration = int((now - get_datetime(self.last_in_progress_timestamp)).total_seconds() / 60)  
+	# 		self.total_time = (self.total_time or 0) + duration
+	# 		self.last_in_progress_timestamp = None
 
 def update_fields(doc, method):
 	if frappe.flags.in_update:
@@ -106,15 +179,15 @@ def update_fields(doc, method):
 		return
 	frappe.flags.in_update = True
 	print("update fields subtask called")
-	task = frappe.get_doc("Tasks", doc.tasks)
-	maintask = frappe.get_doc("MainTask", task.maintask)
-	doc.maintask = maintask.name
-	if doc.status == 'Open':
-		doc.subtask_pause_date = None
-		doc.subtask_start_date = None
-		doc.subtask_done_date = None
-		doc.subtask_close_date = None
-		doc.save()
+	# task = frappe.get_doc("Tasks", doc.tasks)
+	# maintask = frappe.get_doc("MainTask", task.maintask)
+	# doc.maintask = maintask.name
+	# if doc.status == 'Open':
+	# 	doc.subtask_pause_date = None
+	# 	doc.subtask_start_date = None
+	# 	doc.subtask_done_date = None
+	# 	doc.subtask_close_date = None
+	# doc.save()
 
 	frappe.flags.in_update = False
 
@@ -165,7 +238,7 @@ def has_permission(doc, ptype, user):
 	employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
 	if not employee_id:
 		return False
-
+ 
 	parent_assign_by = frappe.get_all(
 		"MainTask Assign By",
 		filters={"employee": employee_id},
@@ -177,38 +250,55 @@ def has_permission(doc, ptype, user):
 		filters={"employee": employee_id},
 		pluck="parent"
 	)
-    
-	if ptype in ("read", None) and (doc.maintask in parent_mteam or doc.maintask in parent_assign_by):
-		return True
 
 	employee = frappe.get_doc("Employee", employee_id)
 	tasks = frappe.get_doc("Tasks", doc.tasks)
+	maintask = frappe.get_doc("MainTask", doc.maintask)
 	
 	parent_task_pic = frappe.get_all(
 		"Task PIC",
 		filters={"employee": employee_id},
 		pluck="parent"
 	)
+ 
+	is_owner = doc.owner == user
+	is_maintask_owner = maintask.owner == user
+	is_tasks_owner = tasks.owner == user
+	is_task_pic = doc.name in parent_task_pic
+	in_team = doc.maintask in parent_mteam
+	in_assign_by_list = doc.maintask in parent_assign_by
+
+	if is_owner or is_maintask_owner or is_tasks_owner:
+		return True
+    
+	if ptype in ("read", None) and (in_team or in_assign_by_list):
+		return True
 
 	if ptype == "delete":
 		maintask = frappe.get_doc("MainTask", doc.maintask)
-		if doc.pic_subtask == employee_id and doc.tasks not in parent_task_pic and maintask.owner != user and doc.maintask not in parent_assign_by:
+		if doc.pic_subtask == employee_id and  is_task_pic and  is_owner and in_assign_by_list:
 			frappe.throw(f"{employee.employee_name} is pic subtask only and not allowed to deleting {doc.subtask_name} subtask.",
 							frappe.PermissionError)
 			return False
 		check_evaluated = frappe.get_value("Evaluation", {"subtask": doc.name}, "subtask")
 		if check_evaluated:
-			frappe.throw(_(f"Sorry {employee.employee_name} this subtask is evaluated, you can't delete it.",
+			frappe.throw(_(f"Sorry {employee.employee_name} {doc.subtask_name} subtask is evaluated, you can't delete it.",
 							frappe.PermissionError))
 			return False
-	elif doc.pic_subtask == employee_id and ptype != "delete":
-		return True
-
-	if doc.tasks:
-		owner_task = tasks.owner
-		print(f'doc tasks {doc.tasks}, parent_task_pic {parent_task_pic}')
-		if owner_task == frappe.session.user or doc.tasks in parent_task_pic:
+	elif ptype == "write":
+		if is_task_pic or is_maintask_owner or in_assign_by_list or is_owner or in_team or is_tasks_owner:
 			return True
+		else:
+			frappe.throw(f"{employee.employee_name} is not allowed to editing {doc.subtask_name} subtask, because not part of maintask or tasks.",
+							frappe.PermissionError)
+			return False
+	elif ptype == "create":
+		if in_team or in_assign_by_list or is_task_pic or is_maintask_owner or is_tasks_owner:
+			return True
+		else:
+			frappe.throw(f"{employee.employee_name} is not allowed to create {doc.subtask_name} subtask, because not part of maintask or tasks.",
+							frappe.PermissionError)
+			return False
 
 	frappe.throw(f"{employee.employee_name} is not allowed to accessing {doc.subtask_name} subtask.",
 					frappe.PermissionError)
@@ -293,6 +383,8 @@ def user_edit_subtask(subtask_name):
 	if not employee_id:
 		return "none"
 
+	privileges = list()
+ 
 	if doc.tasks:
 		tasks = frappe.get_doc("Tasks", doc.tasks)
 		owner_task = tasks.owner
@@ -303,16 +395,23 @@ def user_edit_subtask(subtask_name):
 			pluck="parent"
 		)
 
+		if doc.owner == frappe.session.user:
+			privileges.append("owner_subtask")
+
 		print(f'{type(parent_task_pic)} type, parent_task_pic value {parent_task_pic}')
 		if tasks.name in parent_task_pic:
-			return "task_pics"
+			privileges.append("task_pics")
+			# return "task_pics"
+
+		if owner_task == frappe.session.user:
+			privileges.append("owner_task")
+			# return "owner_task"
 
 		if doc.pic_subtask == employee_id:
-			return "pic_subtask"
-		if owner_task == frappe.session.user:
-			return "owner_task"
+			privileges.append("pic_subtask")
+			# return "pic_subtask"
 
-	return "none"
+	return privileges if privileges else ["none"]
 
 
 @frappe.whitelist()
@@ -352,7 +451,7 @@ def get_task_with_same_pic(doctype, txt, searchfield, start, page_len, filters):
 
 	conditions = ""
 	if user != "Administrator":
-		conditions = "WHERE tp.employee = %(employee_id)s AND (t.status = 'Open' OR t.status = 'In Progress') AND (t.name LIKE %(txt)s OR t.task_name LIKE %(txt)s)"
+		conditions = "WHERE (tp.employee = %(employee_id)s) AND (t.status = 'Open' OR t.status = 'In Progress') AND (t.name LIKE %(txt)s OR t.task_name LIKE %(txt)s)"
 
 	tasks = frappe.db.sql(f"""
 		SELECT t.name, t.task_name
@@ -360,9 +459,10 @@ def get_task_with_same_pic(doctype, txt, searchfield, start, page_len, filters):
 		JOIN `tabTask PIC` tp ON tp.parent = t.name
 		{conditions}
 		GROUP BY t.name
-		ORDER BY t.name
+		ORDER BY t.creation DESC, t.name
 		LIMIT %(page_len)s OFFSET %(start)s
 	""", {
+		"user_id": user,
 		"employee_id": employee_id,
 		"txt": f"%{txt}%",
 		"start": start,
@@ -376,7 +476,7 @@ def button_evaluation_subtask(subtask):
 	employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
 	subtask = frappe.get_doc("SubTask", subtask)
 	evaluation_subtask = frappe.get_value("Evaluation", {"subtask": subtask.name}, "name")
-	# task = frappe.get_doc("Tasks", subtask.tasks)
+	tasks = frappe.get_doc("Tasks", subtask.tasks)
 	maintask = frappe.get_doc("MainTask", subtask.maintask)
 	roles = frappe.get_all("Has Role", filters={"parent": user}, pluck="role")
 	parent_task_pic = frappe.get_all(
@@ -388,11 +488,15 @@ def button_evaluation_subtask(subtask):
  
 	if maintask.owner == user and subtask.status == "Done":
 		return "maintask_owner_done"
+	if tasks.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
+		return "task_owner_done"
+	if subtask.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
+		return "subtask_owner_done"
 	if subtask.tasks in parent_task_pic and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles) and subtask.status == "Done":
 		return "pic_task_done"
-	if "System Manager" in roles and subtask.status == "Done":
-		print("System Manager and subtask done")
-		return "system_manager_done"
+	if user == 'Administrator' and subtask.status == "Done":
+		print("Administrator and subtask done")
+		return "administrator_done"
 	if subtask.status == "Close" and evaluation_subtask:
 		print(f"Subtask {subtask.name} already evaluated")
 		return {

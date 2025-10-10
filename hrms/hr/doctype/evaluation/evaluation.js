@@ -58,11 +58,11 @@ frappe.ui.form.on("Evaluation", {
 				},
 				callback: function (r) {
 					const readonly_fields = ["subtask", "performance"];
-					if (r.message === "pic_subtask") {
+					if (r.message.includes("pic_subtask") && !r.message.includes("owner_subtask") && !r.message.includes("task_pics") && !r.message.includes("owner_task")) {
 						readonly_fields.forEach(field => {
 							frm.set_df_property(field, "read_only", 1);
 						});
-					} else if (r.message === "none") {
+					} else if (r.message.includes("none")) {
 						frm.set_read_only(true);
 						frm.disable_save();
 					}

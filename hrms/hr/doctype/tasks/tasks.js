@@ -12,6 +12,11 @@ frappe.ui.form.on("Tasks", {
     };
     frappe.breadcrumbs.update();
 
+    if (frm.is_new()) {
+      frm.set_df_property("status", "options", ["Open"]);
+      frm.set_value("status", "Open");
+    }
+
     if (!frm.is_new()) {
       frappe.call({
         method: "hrms.hr.doctype.tasks.tasks.user_edit_tasks",
@@ -19,7 +24,7 @@ frappe.ui.form.on("Tasks", {
           task_name: frm.doc.name
         },
         callback: function (r) {
-          const readonly_fields = ['target_time', 'maintask', "pic_task", "unit_target_time"];
+          const readonly_fields = ['target_time', 'maintask', "task_pic", "unit_target_time"];
           if (r.message === "pic_task" || r.message === "task_pics") {
             readonly_fields.forEach(field => {
               frm.set_df_property(field, "read_only", 1);
@@ -28,33 +33,49 @@ frappe.ui.form.on("Tasks", {
             frm.set_read_only(true);
             frm.disable_save();
           }
-        }
-      });
-      frm.add_custom_button('Generate SubTask from Template', () => {
-        frappe.call({
-          method: 'hrms.hr.doctype.tasks.tasks.get_subtask_template_list',
-          callback: (r) => {
-            let options = r.message.map(d => ({ label: d.template_name, value: d.name }));
-            frappe.prompt([
-              {
-                fieldtype: 'Select',
-                label: 'Choose Template',
-                fieldname: 'template',
-                options: options,
-                reqd: 1
-              }
-            ], values => {
+
+          if (["owner_tasks", "task_pics", "pic_maintask", "admin"].includes(r.message)) {
+            frm.add_custom_button('Generate SubTask from Template', () => {
               frappe.call({
-                method: 'hrms.hr.doctype.tasks.tasks.get_template_details',
-                args: { template_name: values.template },
-                callback: (res) => {
-                  let subtask = res.message;
-                  show_subtask_dialog(frm, subtask);
+                method: 'hrms.hr.doctype.tasks.tasks.get_subtask_template_list',
+                callback: (r) => {
+                  let options = r.message.map(d => ({ label: d.template_name, value: d.name }));
+                  frappe.prompt([
+                    {
+                      fieldtype: 'Select',
+                      label: 'Choose Template',
+                      fieldname: 'template',
+                      options: options,
+                      reqd: 1
+                    }
+                  ], values => {
+                    frappe.call({
+                      method: 'hrms.hr.doctype.tasks.tasks.get_template_details',
+                      args: { template_name: values.template },
+                      callback: (res) => {
+                        let subtask = res.message;
+                        show_subtask_dialog(frm, subtask);
+                      }
+                    });
+                  }, 'Select Template');
                 }
               });
-            }, 'Select Template');
+            }, __('Actions'));
+            frm.add_custom_button(
+							"Create SubTask for This Task",
+							function () {
+								if (!frm.doc || !frm.doc.name) return;
+								// Prefill the new Tasks document with this MainTask as parent
+								frappe.route_options = {
+                  maintask: frm.doc.maintask,
+									tasks: frm.doc.name
+								};
+								frappe.new_doc("SubTask");
+							},
+							__("Actions")
+						);
           }
-        });
+        }
       });
       frm.add_custom_button('Show SubTask of This Tasks', function () {
         if (!frm.doc.name) return;
@@ -95,7 +116,9 @@ frappe.ui.form.on("Tasks", {
                         .wide-subtask-dialog .req-table { width:100%; table-layout:auto; }
                         .wide-subtask-dialog .req-table th { white-space:nowrap; text-align:center; vertical-align:middle; }
                         .wide-subtask-dialog .req-table td { white-space:nowrap; }
-                        .wide-subtask-dialog .req-table td.desc-cell { white-space:normal; line-height:1.3; }
+                        .wide-subtask-dialog .req-table td.id-cell { white-space:normal; word-break:normal; font-family:inherit; }
+                        .wide-subtask-dialog .req-table td.title-cell { white-space:normal; word-break:normal; overflow-wrap:break-word; hyphens:auto; min-width:150px; line-height:1.3; }
+                        .wide-subtask-dialog .req-table td.desc-cell { white-space:normal; line-height:1.3; max-width:460px; width:35%; overflow:hidden; }
                         .wide-subtask-dialog .req-table td.wrap-cell { white-space:normal; line-height:1.3; word-break:break-word; }
                         .wide-subtask-dialog .req-table td.text-center { text-align:center; }
                         .wide-subtask-dialog .tech-val-icon { display:inline-block; width:18px; font-weight:600; color: var(--green, #2e7d32); }
@@ -111,7 +134,7 @@ frappe.ui.form.on("Tasks", {
             dlg.$wrapper.find('.form-column').css({ width: '100%', maxWidth: '100%', flex: '0 0 100%' });
           }, 0);
 
-          const state = { page: 1, page_size: 20 };
+          const state = { page: 1, page_size: 5 };
 
           const columns = [
             { key: 'name', label: 'ID' },
@@ -183,6 +206,22 @@ frappe.ui.form.on("Tasks", {
               html += '<table class="table table-bordered table-compact req-table" style="margin:0">';
               html += '<thead><tr>' + columns.map(c => `<th>${esc(c.label)}</th>`).join('') + '</tr></thead>';
               html += '<tbody>';
+
+
+
+              // Helper: truncate text to 140 chars with ellipsis
+              function truncate_140(txt) {
+                if (!txt) return '';
+                return txt.length > 140 ? txt.slice(0, 140) + '...' : txt;
+              }
+              // Hyphen wrap for ID
+              function hyphen_wrap(id) {
+                if (!id) return '';
+                // Escape first then insert <wbr> after '-'
+                let safe = esc(id);
+                return safe.replace(/-/g, '-<wbr>');
+              }
+
               rows.forEach(row => {
                 html += `<tr class="req-row ${row_class(row)}" data-name="${esc(row.name)}"` +
                   ` data-subtask_name="${esc(row.subtask_name || '')}" data-description="${esc(row.description || '')}"` +
@@ -191,17 +230,20 @@ frappe.ui.form.on("Tasks", {
                   ` data-status="${esc(row.status || '')}" data-created_by="${esc(row.created_by || '')}">`
                 columns.forEach(c => {
                   if (c.key === 'name') {
-                    // Use a clickable link that triggers frappe.set_route for reliable navigation in desk SPA
-                    // html += `<td><a href="/app/subtask/${esc(row.name)}" class="req-link" data-doctype="SubTask" data-name="${esc(row.name)}">${esc(row.name)}</a></td>`;
-                    html += `<td class="wrap-cell" title="${esc(row.name)}">${esc(row.name)}</td>`;
+                    // Hyphen-based wrapping for ID
+                    const id_display = hyphen_wrap(row.name || '');
+                    html += `<td class="id-cell" title="${esc(row.name || '')}">${id_display}</td>`;
+                  } else if (c.key === 'subtask_name') {
+                    html += `<td class="title-cell" title="${esc(row.subtask_name || '')}">${esc(row.subtask_name || '')}</td>`;
                   } else if (c.key === 'description') {
                     const raw = row.description || '';
                     const plain = strip_html(raw);
-                    html += `<td class="desc-cell" title="${esc(plain)}">${esc(plain)}</td>`;
+                    const truncated = truncate_140(plain);
+                    html += `<td class="desc-cell" title="${esc(plain)}">${esc(truncated)}</td>`;
                   } else if (c.key === 'type') {
                     const full_types = row.type || '';
                     html += `<td class="desc-cell" title="${esc(full_types)}">${esc(full_types)}</td>`;
-                  }else if (c.key === 'actions') {
+                  } else if (c.key === 'actions') {
                     html += `<td class="action-cell" style="min-width:70px;">
                                         <button class="btn btn-xs btn-primary open-req" data-name="${esc(row.name)}">${__('View')}</button>
                                     </td>`;
@@ -248,7 +290,7 @@ frappe.ui.form.on("Tasks", {
         };
 
         make_dialog();
-      })
+      }, __('Actions'))
     }
   },
   onload: function (frm) {

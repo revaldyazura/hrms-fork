@@ -13,7 +13,9 @@
   {
    "fieldname": "template_name",
    "fieldtype": "Data",
-   "label": "Template Name"
+   "in_list_view": 1,
+   "label": "Template Name",
+   "reqd": 1
   },
   {
    "fieldname": "detail_tasks",
@@ -25,7 +27,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-29 16:01:20.677696",
+ "modified": "2025-10-07 16:33:52.464970",
  "modified_by": "Administrator",
  "module": "Task Management",
  "name": "Tasks Template",

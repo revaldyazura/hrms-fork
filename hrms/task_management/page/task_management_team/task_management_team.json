@@ -3,14 +3,24 @@
  "creation": "2025-08-12 13:58:57.983606",
  "docstatus": 0,
  "doctype": "Page",
- "idx": 0,
- "modified": "2025-08-14 11:46:32.799691",
+ "idx": 2,
+ "modified": "2025-10-09 18:01:27.112643",
  "modified_by": "Administrator",
  "module": "Task Management",
  "name": "task-management-team",
  "owner": "Administrator",
  "page_name": "task-management-team",
- "roles": [],
+ "roles": [
+  {
+   "role": "Supervisor"
+  },
+  {
+   "role": "Manager"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,

@@ -48,17 +48,16 @@ def update_fields(doc, method):
     if previous_status != now_status:
         tasks = frappe.get_all("Tasks", filters={"maintask": doc.name}, pluck="name")
         for task_name in tasks:
-            frappe.db.set_value("Tasks", task_name, "status", now_status)
-            frappe.msgprint(f"Updated Tasks status to {now_status}")
-            # task.save(ignore_permissions=True)
+            task = frappe.get_doc("Tasks", task_name)
+            if task.status not in ("Done", "Close", "In Progress", "Pause"):
+                task.flags.from_parent_propagation = True
+                task.status = now_status
 
-            subtasks = frappe.get_all("SubTask", filters={"tasks": task_name}, pluck="name")
-            for subtask_name in subtasks:
-                subtask_status = frappe.db.get_value("SubTask", subtask_name, "status")
-                if subtask_status not in ("Done", "Close", "In Progress", "Pause"):
-                    frappe.db.set_value("SubTask", subtask_name, "status", now_status)
-                    frappe.msgprint(f"Updated SubTask status to {now_status}")
-                    # subtask.save(ignore_permissions=True)
+                # biar hooks & validate jalan => track_time aman
+                task.save()
+                frappe.msgprint(f"Updated Tasks {task.task_name} status to {now_status}")
+            else:
+                frappe.msgprint(f"Tasks {task.task_name} status is {task.status}, not updated.")
 
     frappe.flags.in_update = False
 
@@ -107,7 +106,12 @@ def has_permission(doc, ptype, user):
     employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
     if not employee_id:
         return False
+    
+    roles = frappe.get_all("Has Role", filters={"parent": user}, pluck="role")
 
+    if doc.owner == user:
+        return True
+    
     parent_assign_by = frappe.get_all(
 		"MainTask Assign By",
 		filters={"employee": employee_id},
@@ -138,8 +142,21 @@ def has_permission(doc, ptype, user):
                     frappe.PermissionError)
                 return False
             return True
-    elif doc.owner == user or (ptype == "write" and doc.name in parent_assign_by):
-        return True
+    elif ptype == "write":
+        if doc.name in parent_assign_by:
+            return True
+        else:
+            frappe.throw(f"{employee.employee_name} is not allowed to edit {doc.maintask_name} maintask.",
+                         frappe.PermissionError)
+            return False
+    elif ptype == "create":
+        if 'Supervisor' or 'Manager' or 'HR Manager' or 'Leader' in roles:
+            return True
+        else:
+            frappe.throw(f"{employee.employee_name} is not allowed to create maintask.",
+                         frappe.PermissionError)
+            return False
+
 
     frappe.throw(f"{employee.employee_name} is not allowed to acessing {doc.maintask_name} maintask.",
                  frappe.PermissionError)
@@ -258,11 +275,27 @@ def get_tasks(maintask_id: str):
             filters={'parent': ('in', parent_names)},
             fields=['parent', 'employee', 'employee_name']
         )
+        # Build a map of parent -> list[str] for PIC display names, filtering out empty values
         pic_map = {}
         for pe in pic_entries:
-            pic_map.setdefault(pe['parent'], []).append(pe.get('employee_name') or pe.get('employee'))
-        for r in rows:
-            pics = pic_map.get(r['name'], [])
+            # Prefer employee_name, fallback to employee id; skip if both are empty/None
+            display = pe.get('employee_name') or pe.get('employee')
+            if display:
+                pic_map.setdefault(pe.get('parent'), []).append(str(display))
+
+        # Safely enrich each row with a comma-separated PIC names string
+        for r in rows or []:
+            # Ensure we can access like a dict and the row has a name
+            name = r.get('name') if hasattr(r, 'get') else (r['name'] if isinstance(r, dict) and 'name' in r else None)
+            if not name:
+                # No valid identifier; set empty string defensively
+                try:
+                    r['task_pic_names'] = ""
+                except Exception:
+                    pass
+                continue
+            pics = pic_map.get(name, []) or []
+            # pics is guaranteed a list of strings from above; join safely
             r['task_pic_names'] = ", ".join(pics) if pics else ""
 
     return {

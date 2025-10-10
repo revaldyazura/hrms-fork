@@ -147,7 +147,8 @@ has_permission = {
     # "Event": "frappe.desk.doctype.event.event.has_permission",
     "SubTask": "hrms.hr.doctype.subtask.subtask.has_permission",
     "Tasks": "hrms.hr.doctype.tasks.tasks.has_permission",
-    "MainTask": "hrms.hr.doctype.maintask.maintask.has_permission"
+    "MainTask": "hrms.hr.doctype.maintask.maintask.has_permission",
+    "Evaluation": "hrms.hr.doctype.evaluation.evaluation.has_permission",
 }
 
 has_upload_permission = {"Employee": "erpnext.setup.doctype.employee.employee.has_upload_permission"}

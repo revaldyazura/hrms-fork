@@ -68,7 +68,7 @@ frappe.ui.form.on("SubTask", {
 								frappe.msgprint(__('Failed to contact Agent Subtask Value (server).'));
 							}
 						});
-					});
+					}, __('Actions'));
 				} else {
 					// Sudah ada cache: langsung tombol “Show Last Agent Suggestion”
 					show_last_subtask_value(frm);
@@ -268,7 +268,7 @@ frappe.ui.form.on("SubTask", {
 								frappe.msgprint(__('Failed to contact Agent PIC Subtask (server).'));
 							}
 						});
-					});
+					}, __('Actions'));
 				} else {
 					// Sudah ada cache: langsung tombol “Show Last Agent Suggestion”
 					show_last_pic_subtask(frm);
@@ -526,13 +526,14 @@ frappe.ui.form.on("SubTask", {
 
 		}
 		if (!frm.is_new()) {
+			
 			frappe.call({
 				method: "hrms.hr.doctype.subtask.subtask.button_evaluation_subtask",
 				args: {
 					subtask: frm.doc.name
 				},
 				callback: function (r) {
-					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'system_manager_done') {
+					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'administrator_done' || r.message == 'task_owner_done' || r.message == 'subtask_owner_done') {
 						frm.add_custom_button("Evaluate This SubTask", () => {
 							const dialog = new frappe.ui.Dialog({
 								title: "Evaluate SubTask",
@@ -602,6 +603,7 @@ frappe.ui.form.on("SubTask", {
 												frappe.msgprint("Evaluation submitted successfully.");
 												dialog.hide();
 											}
+											frm.reload_doc()
 										}
 									});
 								}
@@ -644,51 +646,175 @@ frappe.ui.form.on("SubTask", {
 									}
 								});
 							}, 100);
-						});
+						}, __('Actions'));
 					} else if (r.message?.status == "Close") {
 						frm.add_custom_button("View Evaluation", () => {
 							frappe.set_route("Form", "Evaluation", r.message.evaluation_name);
-						});
+						}, __('Actions'));
 					}
 				}
 			})
 			frappe.call({
 				method: "hrms.hr.doctype.subtask.subtask.user_edit_subtask",
-				args: {
-					subtask_name: frm.doc.name
-				},
+				args: { subtask_name: frm.doc.name },
 				callback: function (r) {
-					const readonly_fields = ['subtask_name', 'target_time', 'unit_target_time', 'maintask', 'tasks', "pic_subtask", "value", "priority", 'type', 'description'];
-					if (frm.doc.status === "Close") {
-						frm.set_value("status", "Close");
-						frm.set_read_only(true);
-						frm.disable_save();
-					}
-					if (r.message === "pic_subtask") {
-						readonly_fields.forEach(field => {
-							frm.set_df_property(field, "read_only", 1);
-						});
-						// frm.page.remove_inner_button('Duplicate')
-						// frm.page.remove_inner_button('Duplicate', 'Menu')
-						// frm.page.clear_menu()
-					}
-					else if (r.message === "none") {
-						frm.set_read_only(true);
-						frm.disable_save();
-					}
-					if (frm.doc.status === "In Progress") {
-						frm.set_df_property("status", "options", ["In Progress", "Pause", "Done"]);
-					} else if (frm.doc.status === "Pause") {
-						frm.set_df_property("status", "options", ["In Progress", "Pause"]);
-					} else if (frm.doc.status === "Done") {
-						frm.set_df_property("status", "options", ["In Progress", "Done"]);
-					} else if ((frm.doc.status === "Cancel" || frm.doc.status === "Open") && (r.message === "pic_subtask")) {
-						frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done"]);
-					} else if ((frm.doc.status === "Cancel" || frm.doc.status === "Open") && (r.message === "owner_task" || r.message === "task_pics")) {
-						frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done", "Cancel"]);
-					}
+					apply_subtask_access_and_status(frm, r.message || "");
 				}
 			});
+			// ================= Refactored Permission & Status Logic =================
+			function apply_subtask_access_and_status(frm, flagString) {
+				const flags = parse_role_flags(flagString);
+				const status = frm.doc.status;
+
+				// 4. Global override: status Close
+				if (status === 'Close') {
+					frm.set_value('status', 'Close'); // ensure consistent
+					frm.set_read_only(true);
+					frm.disable_save();
+					return;
+				}
+
+				// NONE scenario
+				if (flags.none) {
+					frm.set_read_only(true);
+					frm.disable_save();
+					return;
+				}
+
+				const scenario = derive_scenario(flags); // 'PIC_ONLY' | 'PIC_PLUS' | 'OWNER_ONLY'
+
+				// Apply field-level rules
+				apply_field_rules(frm, scenario, status);
+
+				// Compute status options
+				const opts = compute_status_options(scenario, status);
+
+				// Safety: include current status if missing
+				const finalOpts = ensure_includes(opts, status);
+				frm.set_df_property('status', 'options', finalOpts);
+			}
+
+			// Parse server flags
+			function parse_role_flags(str) {
+				const s = str || "";
+				const has = (k) => s.includes(k);
+				return {
+					pic_subtask: has("pic_subtask"),
+					owner_subtask: has("owner_subtask"),
+					task_pics: has("task_pics"),
+					owner_task: has("owner_task"),
+					none: has("none")
+				};
+			}
+
+			// Derive scenario
+			function derive_scenario(f) {
+				const ownerGroup = f.owner_subtask || f.task_pics || f.owner_task;
+				if (f.pic_subtask && !ownerGroup) return 'PIC_ONLY';
+				if (f.pic_subtask && ownerGroup) return 'PIC_PLUS';
+				if (!f.pic_subtask && ownerGroup) return 'OWNER_ONLY';
+				return 'NONE';
+			}
+
+			// Apply field locks
+			function apply_field_rules(frm, scenario, status) {
+				const readonlyPicOnlyFields = [
+					'subtask_name', 'target_time', 'unit_target_time', 'maintask',
+					'tasks', 'pic_subtask', 'value', 'priority', 'type', 'description'
+				];
+
+				if (scenario === 'PIC_ONLY') {
+					readonlyPicOnlyFields.forEach(f => frm.set_df_property(f, 'read_only', 1));
+				} else if (scenario === 'PIC_PLUS') {
+					// pic_subtask hanya editable saat Open
+					frm.set_df_property('pic_subtask', 'read_only', status !== 'Open');
+				} else if (scenario === 'OWNER_ONLY') {
+					// pic_subtask hanya editable saat Open
+					frm.set_df_property('pic_subtask', 'read_only', status !== 'Open');
+					// Jika sudah bukan Open/Cancel dan status ke In Progress / Pause / Done -> nanti kita lock di compute (status read_only)
+				}
+			}
+
+			// Build status options per scenario & current status
+			function compute_status_options(scenario, status) {
+				if (scenario === 'PIC_ONLY') {
+					switch (status) {
+						case 'Open': return ['Open', 'In Progress'];
+						case 'In Progress': return ['In Progress', 'Pause', 'Done'];
+						case 'Pause': return ['Pause', 'In Progress'];
+						case 'Done': return ['Done', 'In Progress'];
+						case 'Cancel': return ['Cancel']; // fallback
+						default: return [status];
+					}
+				}
+
+				if (scenario === 'PIC_PLUS') {
+					if (status === 'Open') return ['Open', 'In Progress', 'Cancel'];
+					if (status === 'Cancel') return ['Cancel', 'Open'];
+					// reuse PIC_ONLY mapping for the rest:
+					return compute_status_options('PIC_ONLY', status);
+				}
+
+				if (scenario === 'OWNER_ONLY') {
+					if (status === 'Open') return ['Open', 'Cancel'];
+					if (status === 'Cancel') return ['Cancel', 'Open'];
+					if (['In Progress', 'Pause', 'Done'].includes(status)) {
+						// Lock—only current
+						frm.set_df_property('status', 'read_only', 1);
+						return [status];
+					}
+					return [status];
+				}
+
+				// NONE / fallback
+				return [status];
+			}
+
+			// Ensure current status always inside options
+			function ensure_includes(list, value) {
+				if (!value) return list;
+				return list.includes(value) ? list : [value, ...list];
+			}
+			// frappe.call({
+			// 	method: "hrms.hr.doctype.subtask.subtask.user_edit_subtask",
+			// 	args: {
+			// 		subtask_name: frm.doc.name
+			// 	},
+			// 	callback: function (r) {
+			// 		const readonly_fields = ['subtask_name', 'target_time', 'unit_target_time', 'maintask', 'tasks', "pic_subtask", "value", "priority", 'type', 'description'];
+			// 		if (frm.doc.status === "Close") {
+			// 			frm.set_value("status", "Close");
+			// 			frm.set_read_only(true);
+			// 			frm.disable_save();
+			// 		}
+			// 		if (r.message.includes("pic_subtask") && (!r.message.includes("owner_subtask") || !r.message.includes("task_pics") || !r.message.includes("owner_task"))) {
+			// 			readonly_fields.forEach(field => {
+			// 				frm.set_df_property(field, "read_only", 1);
+			// 			});
+			// 		} else if (r.message.includes("none")) {
+			// 			frm.set_read_only(true);
+			// 			frm.disable_save();
+			// 		} else if ((r.message.includes("owner_subtask") || r.message.includes("task_pics") || r.message.includes("owner_task")) && !r.message.includes("pic_subtask")) {
+			// 			frm.set_df_property("status", "read_only", 1);
+			// 		}
+			// 		if (frm.doc.status === "In Progress") {
+			// 			frm.set_df_property("pic_subtask", "read_only", 1);
+			// 			frm.set_df_property("status", "options", ["In Progress", "Pause", "Done"]);
+			// 		} else if (frm.doc.status === "Pause") {
+			// 			frm.set_df_property("pic_subtask", "read_only", 1);
+			// 			frm.set_df_property("status", "options", ["In Progress", "Pause"]);
+			// 		} else if (frm.doc.status === "Done") {
+			// 			frm.set_df_property("pic_subtask", "read_only", 1);
+			// 			frm.set_df_property("status", "options", ["In Progress", "Done"]);
+			// 		} else if ((frm.doc.status === "Cancel" || frm.doc.status === "Open")
+			// 			&& (r.message.includes("pic_subtask") &&
+			// 				(!r.message.includes("owner_subtask") || !r.message.includes("task_pics") || !r.message.includes("owner_task")))) {
+			// 			frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done"]);
+			// 		} else if ((frm.doc.status === "Cancel" || frm.doc.status === "Open") && ((r.message.includes("owner_subtask") || r.message.includes("task_pics") || r.message.includes("owner_task")) && !r.message.includes("pic_subtask"))) {
+			// 			frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done", "Cancel"]);
+			// 		}
+			// 	}
+			// });
 		}
 	},
 	onload: function (frm) {
