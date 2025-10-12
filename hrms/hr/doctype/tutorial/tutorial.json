@@ -13,7 +13,9 @@
   "attach_bfdx",
   "column_break_fsxg",
   "data_oedk",
-  "attach_outp"
+  "attach_outp",
+  "section_break_rwji",
+  "text_editor_hytj"
  ],
  "fields": [
   {
@@ -47,12 +49,20 @@
   {
    "fieldname": "column_break_fsxg",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_rwji",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "text_editor_hytj",
+   "fieldtype": "Text Editor"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-12 11:08:08.672731",
+ "modified": "2025-10-09 11:30:45.496210",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tutorial",
@@ -84,5 +94,8 @@
  "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1,
+ "track_views": 1
 }
