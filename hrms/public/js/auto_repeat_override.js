@@ -169,22 +169,37 @@
             }
 
             let currentMin = null;
-            function setEndMin(startVal) {
+            function setEndMin(startValUser) {
                 if (!$end) return;
-                if (startVal) {
-                    const minDate = frappe.datetime.add_days(startVal, 1); // YYYY-MM-DD
-                    if (currentMin !== minDate) { // update only if changed to reduce churn
-                        currentMin = minDate;
-                        $end.attr('min', minDate);
+                if (startValUser) {
+                    // Normalize user input to system format to avoid locale issues
+                    let startSys;
+                    try {
+                        startSys = frappe.datetime.user_to_str(startValUser);
+                    } catch(e) {
+                        startSys = startValUser; // fallback if already sys format
+                    }
+                    const minDateStr = frappe.datetime.add_days(startSys, 1); // YYYY-MM-DD
+                    if (currentMin !== minDateStr) { // update only if changed to reduce churn
+                        currentMin = minDateStr;
+                        // For native date inputs (if any)
+                        $end.attr('min', minDateStr);
+                        // For Flatpickr/Pickadate used by Frappe, pass a Date object for robustness
                         try {
                             if (endField.datepicker && endField.datepicker.config) {
-                                endField.datepicker.set('minDate', minDate);
+                                const minDateObj = frappe.datetime.str_to_obj(minDateStr);
+                                endField.datepicker.set('minDate', minDateObj);
                             }
                         } catch(e) { /* ignore */ }
                     }
                 } else {
                     currentMin = null;
                     $end.removeAttr('min');
+                    try {
+                        if (endField.datepicker && endField.datepicker.config) {
+                            endField.datepicker.set('minDate', null);
+                        }
+                    } catch(e) { /* ignore */ }
                 }
             }
 
@@ -194,24 +209,27 @@
                 if (validating) return;
                 validating = true;
                 try {
-                    const startVal = $start.val();
-                    const endVal = $end.val();
-                    setEndMin(startVal);
+                    const startValUser = $start.val();
+                    const endValUser = $end.val();
+                    setEndMin(startValUser);
 
                     // Jika belum ada start date, bersihkan pesan tapi jangan paksa apapun
-                    if (!startVal) {
+                    if (!startValUser) {
                         if (invalidActive) { $msg.hide(); $end.removeClass('is-invalid'); invalidActive = false; }
                         return;
                     }
 
                     // Open ended (end kosong) = valid; sembunyikan pesan kalau sebelumnya invalid
-                    if (!endVal) {
+                    if (!endValUser) {
                         if (invalidActive) { $msg.hide(); $end.removeClass('is-invalid'); invalidActive = false; }
                         return;
                     }
 
-                    // Normalisasi format: asumsikan input date control sudah dalam format user; gunakan util date_diff langsung.
-                    const diffOk = frappe.datetime.get_diff(endVal, startVal) > 0;
+                    // Normalize both dates to system format (YYYY-MM-DD) before comparing
+                    let startSys, endSys;
+                    try { startSys = frappe.datetime.user_to_str(startValUser); } catch(e) { startSys = startValUser; }
+                    try { endSys = frappe.datetime.user_to_str(endValUser); } catch(e) { endSys = endValUser; }
+                    const diffOk = frappe.datetime.get_diff(endSys, startSys) > 0;
                     if (!diffOk) {
                         // Tunjukkan pesan persisten, JANGAN restore ke value lama (menghindari parse loop)
                         if (!invalidActive) {
