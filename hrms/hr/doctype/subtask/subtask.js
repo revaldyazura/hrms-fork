@@ -681,6 +681,31 @@ frappe.ui.form.on("SubTask", {
 					return;
 				}
 
+				// Additional permission: when status is Done -> only allow editing the status field
+				if (status === 'Done') {
+					try {
+						const fields = frm.fields_dict || {};
+						Object.keys(fields).forEach((fn) => {
+							if (fn !== 'status') {
+								frm.set_df_property(fn, 'read_only', 1);
+							}
+						});
+						// make sure status stays editable
+						frm.set_df_property('status', 'read_only', 0);
+					} catch (e) {
+						// noop
+					}
+
+					// compute and set status options as per scenario
+					const scenarioForDone = derive_scenario(flags);
+					const optsForDone = compute_status_options(scenarioForDone, status);
+					const finalOptsForDone = ensure_includes(optsForDone, status);
+					frm.set_df_property('status', 'options', finalOptsForDone);
+					// re-ensure status stays editable (compute_status_options may toggle it)
+					frm.set_df_property('status', 'read_only', 0);
+					return;
+				}
+
 				const scenario = derive_scenario(flags); // 'PIC_ONLY' | 'PIC_PLUS' | 'OWNER_ONLY'
 
 				// Apply field-level rules
