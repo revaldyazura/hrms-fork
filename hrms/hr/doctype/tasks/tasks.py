@@ -268,7 +268,7 @@ def get_open_maintask_as_the_owner(doctype, txt, searchfield, start, page_len, f
 			)
 		)""")
 
-	conditions.append("mt.status = 'Open'")
+	conditions.append("mt.status = 'Open' OR mt.status = 'In Progress'")
 	
 	conditions.append("(mt.name LIKE %(txt)s OR mt.maintask_name LIKE %(txt)s)")
 
