@@ -264,7 +264,7 @@ def has_permission(doc, ptype, user):
 	is_owner = doc.owner == user
 	is_maintask_owner = maintask.owner == user
 	is_tasks_owner = tasks.owner == user
-	is_task_pic = doc.name in parent_task_pic
+	is_task_pic = doc.tasks in parent_task_pic
 	in_team = doc.maintask in parent_mteam
 	in_assign_by_list = doc.maintask in parent_assign_by
 

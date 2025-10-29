@@ -15,8 +15,6 @@ def get_subtask_type_map():
                               """, as_dict=True)
     
     data = {row["subtask"]: row["type"] for row in types_data}
-    print("Subtask Types:", types_data)  # Debugging line to check the output
-    print("Subtask Types Map:", data)  # Debugging line to check the output
 
     return data
 
@@ -267,7 +265,6 @@ def export_team_evaluation(filters=None):
     data = frappe.db.sql(query, values, as_dict=True)
     for row in data:
         row["subtask_types"] = get_subtask_type_map().get(row["subtask"], "")
-    print('data team eval', data)
     team_filename = data[0].get('team') if data else filters.get('team')
 
     total_working_hours, total_holiday = calculate_working_hours(from_date, to_date,
