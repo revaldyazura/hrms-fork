@@ -6,8 +6,11 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "data_section",
   "skill_name",
-  "description"
+  "description",
+  "levelling_section",
+  "skillset"
  ],
  "fields": [
   {
@@ -22,13 +25,31 @@
    "fieldname": "description",
    "fieldtype": "Text",
    "label": "Description"
+  },
+  {
+   "fieldname": "data_section",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "levelling_section",
+   "fieldtype": "Section Break",
+   "label": "Level"
+  },
+  {
+   "columns": 2,
+   "fieldname": "skillset",
+   "fieldtype": "Table",
+   "label": "Skill Set",
+   "options": "Skill Set"
   }
  ],
  "links": [],
- "modified": "2024-03-27 13:10:42.663583",
+ "modified": "2025-11-06 17:36:05.286636",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Skill",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
@@ -54,9 +75,22 @@
    "role": "HR Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
+   "share": 1,
+   "write": 1
   }
  ],
  "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "ASC",
  "states": [],

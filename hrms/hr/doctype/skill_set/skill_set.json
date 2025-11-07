@@ -1,0 +1,44 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-06 17:27:58.579133",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "level",
+  "skill_set"
+ ],
+ "fields": [
+  {
+   "fieldname": "level",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Level",
+   "reqd": 1,
+   "width": "2"
+  },
+  {
+   "fieldname": "skill_set",
+   "fieldtype": "Text Editor",
+   "in_list_view": 1,
+   "label": "Skill Set",
+   "reqd": 1,
+   "width": "5"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-11-06 17:40:47.400416",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "Skill Set",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

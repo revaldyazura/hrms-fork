@@ -25,6 +25,7 @@
  "fields": [
   {
    "description": "The title of maintask",
+   "documentation_url": "/app/tutorial/Filling%20MainTask%20-%20Tasks",
    "fieldname": "maintask_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -84,7 +85,7 @@
    "label": "Additional"
   },
   {
-   "description": "The employee who assign this task, or the project manager",
+   "description": "The employee who assign this task, leaders of team or the project manager.\nMembers of this table can create tasks from this maintask",
    "fieldname": "assign_by_section",
    "fieldtype": "Section Break",
    "label": "Assign By"
@@ -130,7 +131,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-02 14:39:26.891260",
+ "modified": "2025-11-07 14:30:36.775061",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",

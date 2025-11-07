@@ -129,8 +129,48 @@ frappe.pages["task-management-individual"].on_page_load = async function (wrappe
 			}
 			const displayName = await getEmployeeName(value);
 			setPersonTitle(displayName);
-			load_data(value);
+			const { start, end } = getDateFilters();
+			load_data(value, start, end);
 		},
+	});
+
+	// Date range filters
+	const startDateField = page.add_field({
+		label: "Start Date",
+		fieldtype: "Date",
+		fieldname: "start_date",
+		reqd: 0,
+		onchange: () => {
+			const emp = personField.get_value();
+			if (!emp) return; // wait for employee selection
+			const { start, end } = getDateFilters(true);
+			load_data(emp, start, end);
+		},
+	});
+
+	const endDateField = page.add_field({
+		label: "End Date",
+		fieldtype: "Date",
+		fieldname: "end_date",
+		reqd: 0,
+		onchange: () => {
+			const emp = personField.get_value();
+			if (!emp) return; // wait for employee selection
+			const { start, end } = getDateFilters(true);
+			load_data(emp, start, end);
+		},
+	});
+
+	// Clear dates button (one-click reset)
+	page.add_inner_button("Clear Dates", () => {
+		// Reset field values
+		startDateField?.set_value?.(null);
+		endDateField?.set_value?.(null);
+		// If employee is selected, refresh without date filters
+		const emp = personField.get_value();
+		if (emp) {
+			load_data(emp, null, null);
+		}
 	});
 
 	// start with empty state
@@ -150,6 +190,25 @@ frappe.pages["task-management-individual"].on_page_load = async function (wrappe
 		const el = document.getElementById("person_title");
 		if (!el) return;
 		el.textContent = name ? `🧩 ${name} Overview` : "🧩 Personal Overview";
+	}
+
+	function getDateFilters(shouldValidate = false) {
+		const rawStart = startDateField?.get_value?.() || null;
+		const rawEnd = endDateField?.get_value?.() || null;
+		// Only apply when both dates are provided
+		if (rawStart && rawEnd) {
+			if (shouldValidate && rawEnd < rawStart) {
+				frappe.msgprint({
+					message: "End Date must be on or after Start Date.",
+					indicator: "red",
+					title: "Invalid Date Range",
+				});
+				return { start: null, end: null };
+			}
+			return { start: rawStart, end: rawEnd };
+		}
+		// If only one is set or none, remove date filter
+		return { start: null, end: null };
 	}
 
 	function drawBar(canvasId, src, opts = {}) {
@@ -206,12 +265,16 @@ frappe.pages["task-management-individual"].on_page_load = async function (wrappe
 		});
 	}
 
-	function load_data(employee_docname) {
+	function load_data(employee_docname, start_date = null, end_date = null) {
 		console.log("load_data for employee:", employee_docname);
 
 		frappe.call({
 			method: "hrms.task_management.page.task_management_individual.task_management_individual.get_employee_overview",
-			args: { employee: employee_docname || null },
+			args: {
+				employee: employee_docname || null,
+				start_date: start_date || null,
+				end_date: end_date || null,
+			},
 			callback: (r) => {
 				if (!r.message) return;
 				const d = r.message;

@@ -42,7 +42,8 @@ frappe.ui.form.on("MainTask", {
 					if (
 						["owner_maintask", "assign_by_maintask_leader", "admin"].includes(
 							r.message
-						)
+						) &&
+						["Open", "In Progress"].includes(frm.doc.status)
 					) {
 						frm.add_custom_button(
 							"Generate Tasks from Template",
@@ -296,8 +297,8 @@ frappe.ui.form.on("MainTask", {
 										} else if (c.key === "actions") {
 											html += `<td class="action-cell" style="min-width:70px;">
                                         <button class="btn btn-xs btn-primary open-req" data-name="${esc(
-											row.name
-										)}">${__("View")}</button>
+												row.name
+											)}">${__("View")}</button>
                                     </td>`;
 										} else {
 											html += `<td>${esc(row[c.key] || "")}</td>`;
@@ -319,15 +320,12 @@ frappe.ui.form.on("MainTask", {
 							if (state.page > total_pages) state.page = total_pages;
 							let html =
 								'<div class="d-flex align-items-center gap" style="margin-top:8px;">';
-							html += `<button class="btn btn-xs btn-default pag-btn" data-dir="prev" ${
-								state.page <= 1 ? "disabled" : ""
-							}>${__("Prev")}</button>`;
-							html += `<span style="padding:0 8px">${__("Page")} ${
-								state.page
-							} / ${total_pages}</span>`;
-							html += `<button class="btn btn-xs btn-default pag-btn" data-dir="next" ${
-								state.page >= total_pages ? "disabled" : ""
-							}>${__("Next")}</button>`;
+							html += `<button class="btn btn-xs btn-default pag-btn" data-dir="prev" ${state.page <= 1 ? "disabled" : ""
+								}>${__("Prev")}</button>`;
+							html += `<span style="padding:0 8px">${__("Page")} ${state.page
+								} / ${total_pages}</span>`;
+							html += `<button class="btn btn-xs btn-default pag-btn" data-dir="next" ${state.page >= total_pages ? "disabled" : ""
+								}>${__("Next")}</button>`;
 							html += "</div>";
 							dlg.fields_dict.pagination_html.$wrapper.html(html);
 							dlg.fields_dict.pagination_html.$wrapper
@@ -461,7 +459,14 @@ function show_task_dialog(frm, tasks) {
 					count: tasks.length,
 				},
 				callback: () => {
-					frappe.msgprint("Tasks generated successfully");
+					tasks_route = "/app/tasks?maintask=" + frm.doc.name
+					open_tasks_btn =
+						`<div style='margin-top:12px; display:flex; justify-content:flex-end;'>
+						<a class='btn btn-primary' href='${tasks_route}' style='min-width:170px; text-align:center;'>Open Tasks</a></div>`
+					msg_html =
+						`Tasks for ${frm.doc.maintask_name} generated successfully from template.`
+						+ open_tasks_btn
+					frappe.msgprint(msg_html, title = 'Tasks generated successfully');
 					frm.reload_doc();
 					dialog.hide();
 				},

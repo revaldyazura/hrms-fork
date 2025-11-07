@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "T-.YYYY.MM.-.#######",
  "creation": "2025-05-04 13:22:22.446626",
  "doctype": "DocType",
@@ -27,6 +28,7 @@
  "fields": [
   {
    "description": "The parent of this task, filtered by status = 'open' or 'in progress'",
+   "documentation_url": "/app/tutorial/Filling%20MainTask%20-%20Tasks",
    "fieldname": "maintask",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -145,7 +147,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-16 18:01:31.163612",
+ "modified": "2025-11-07 14:31:42.629465",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tasks",
@@ -157,6 +159,7 @@
    "delete": 1,
    "email": 1,
    "export": 1,
+   "import": 1,
    "print": 1,
    "read": 1,
    "report": 1,
@@ -193,6 +196,8 @@
   },
   {
    "create": 1,
+   "export": 1,
+   "import": 1,
    "read": 1,
    "role": "Employee",
    "write": 1

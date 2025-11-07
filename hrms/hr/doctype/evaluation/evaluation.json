@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "EVL-.YYYY.MM.-.#######",
  "creation": "2025-05-04 13:52:24.897427",
  "doctype": "DocType",
@@ -188,7 +189,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-01 11:33:37.622020",
+ "modified": "2025-10-22 13:41:40.008495",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Evaluation",
@@ -211,6 +212,7 @@
    "create": 1,
    "delete": 1,
    "export": 1,
+   "import": 1,
    "read": 1,
    "report": 1,
    "role": "Manager",
@@ -218,15 +220,19 @@
    "write": 1
   },
   {
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "import": 1,
    "read": 1,
    "role": "Leader",
-   "write": 1,
-   "create": 1,
-   "delete": 1
+   "write": 1
   },
   {
    "create": 1,
+   "delete": 1,
    "export": 1,
+   "import": 1,
    "read": 1,
    "report": 1,
    "role": "Supervisor",

@@ -150,7 +150,7 @@ def has_permission(doc, ptype, user):
                          frappe.PermissionError)
             return False
     elif ptype == "create":
-        if 'Supervisor' or 'Manager' or 'HR Manager' or 'Leader' in roles:
+        if 'Supervisor' or 'Manager' in roles:
             return True
         else:
             frappe.throw(f"{employee.employee_name} is not allowed to create maintask.",
