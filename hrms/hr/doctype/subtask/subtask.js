@@ -15,6 +15,7 @@ frappe.ui.form.on("SubTask", {
 		if (frm.is_new()) {
 			frm.set_df_property("status", "options", ["Open"]);
 			frm.set_value("status", "Open");
+			frm.set_df_property("total_time", "read_only", 1);
 			ensure_subtask_value_agent_button(frm);
 			ensure_pic_subtask_agent_button(frm);
 
@@ -93,6 +94,8 @@ frappe.ui.form.on("SubTask", {
 				const esc = (s) => frappe.utils.escape_html(s == null ? "" : String(s));
 				const levelToValue = { "basic": 1, "intermediate": 2, "advanced": 3 };
 
+				const title = result.task || '';
+				const description = result.description || '';
 				const relevant = Array.isArray(result.relevant_skillset) ? result.relevant_skillset : [];
 
 				// ---- helper: normalisasi skor
@@ -148,7 +151,13 @@ frappe.ui.form.on("SubTask", {
 							`;
 				}).join("");
 
+				const titleHtml = `<div style="margin:8px 0 6px;"><span style="font-weight:600;">Title: </span>${title}</div>`;
+				const descHtml = `<div style="margin:0 0 6px;"><span style="font-weight:600;">Description: </span>${description}</div>`;
+
 				const tableHTML = `
+						${titleHtml}
+						${descHtml}
+					<div style="margin:12px 0 6px; font-weight:600;">Relevant Skillset</div>
 					<div style="max-height:240px; overflow:auto; border:1px solid #e5e7eb; border-radius:6px;">
 					<table class="table table-bordered" style="margin:0;">
 						<thead>
@@ -182,12 +191,10 @@ frappe.ui.form.on("SubTask", {
 			function show_agent_subtask_value(frm, cache) {
 				const d = new frappe.ui.Dialog({
 					title: 'Agent SubTask Value Suggestion',
+					size: 'large',
 					fields: [
-						{ fieldtype: 'Section Break', label: 'Result' },
 						{
-							fieldtype: 'HTML', fieldname: 'agent_preview', options: `
-							<div style="margin:12px 0 6px; font-weight:600;">Relevant Skillset</div>
-							${cache.tableHTML}`
+							fieldtype: 'HTML', fieldname: 'agent_preview', options: `${cache.tableHTML}`
 						},
 						{ fieldtype: 'Section Break' },
 						{
@@ -369,8 +376,8 @@ frappe.ui.form.on("SubTask", {
 
 				const d = new frappe.ui.Dialog({
 					title: 'Agent PIC Subtask Suggestion',
+					size: 'large',
 					fields: [
-						{ fieldtype: 'Section Break', label: 'Result Details' },
 						{
 							fieldtype: 'HTML',
 							fieldname: 'agent_preview',
@@ -526,14 +533,14 @@ frappe.ui.form.on("SubTask", {
 
 		}
 		if (!frm.is_new()) {
-			
+
 			frappe.call({
 				method: "hrms.hr.doctype.subtask.subtask.button_evaluation_subtask",
 				args: {
 					subtask: frm.doc.name
 				},
 				callback: function (r) {
-					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'administrator_done' || r.message == 'task_owner_done' || r.message == 'subtask_owner_done') {
+					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'administrator_done' || r.message == 'task_owner_done') {
 						frm.add_custom_button("Evaluate This SubTask", () => {
 							const dialog = new frappe.ui.Dialog({
 								title: "Evaluate SubTask",
@@ -665,6 +672,7 @@ frappe.ui.form.on("SubTask", {
 			function apply_subtask_access_and_status(frm, flagString) {
 				const flags = parse_role_flags(flagString);
 				const status = frm.doc.status;
+				frm.set_df_property('total_time', 'read_only', 1); 
 
 				// 4. Global override: status Close
 				if (status === 'Close') {
@@ -682,7 +690,7 @@ frappe.ui.form.on("SubTask", {
 				}
 
 				// Additional permission: when status is Done -> only allow editing the status field
-				if (status === 'Done') {
+				if (status === 'Done' || status === 'Cancel') {
 					try {
 						const fields = frm.fields_dict || {};
 						Object.keys(fields).forEach((fn) => {
@@ -692,6 +700,15 @@ frappe.ui.form.on("SubTask", {
 						});
 						// make sure status stays editable
 						frm.set_df_property('status', 'read_only', 0);
+						// allow editing total_time when server indicates the current user
+						// has any of the assign_by_maintask privileges that permit it.
+						if (
+							(flagString.includes("assign_by_maintask") ||
+							flagString.includes("assign_by_maintask_supervisor") ||
+							flagString.includes("assign_by_maintask_manager"))
+						) {
+							frm.set_df_property('total_time', 'read_only', 0);
+						}
 					} catch (e) {
 						// noop
 					}
