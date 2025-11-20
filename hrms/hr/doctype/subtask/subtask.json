@@ -25,6 +25,7 @@
   "description",
   "type_section",
   "type",
+  "issues_type",
   "section_break_ddaa",
   "target_time",
   "target_time_minutes",
@@ -52,6 +53,7 @@
    "fetch_from": "tasks.maintask",
    "fieldname": "maintask",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "MainTask",
    "options": "MainTask",
    "show_on_timeline": 1
@@ -217,6 +219,7 @@
   {
    "fieldname": "type",
    "fieldtype": "Table",
+   "label": "SubTask Type",
    "options": "SubTask Type"
   },
   {
@@ -276,12 +279,19 @@
    "fieldtype": "Datetime",
    "label": "Sub Task Close Date",
    "permlevel": 2
+  },
+  {
+   "description": "for fusion issues type",
+   "fieldname": "issues_type",
+   "fieldtype": "Table",
+   "label": "Issues Type",
+   "options": "SubTask Issues"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-07 14:32:39.804626",
+ "modified": "2025-11-20 17:08:46.286448",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

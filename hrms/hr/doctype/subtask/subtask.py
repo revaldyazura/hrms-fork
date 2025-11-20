@@ -11,7 +11,7 @@ from frappe.utils import now_datetime, get_datetime
 
 class SubTask(Document):
 	def validate(self):
-		print(f"validate subtask {self.subtask_name} owner {self.owner}")
+		print(f"validate subtask {self.name} owner {self.owner}")
 		self._set_derived_fields()
 		self._handle_status_timestamps()	
 		ensure_employee_in_maintask_child_table(self)
@@ -98,7 +98,6 @@ def update_fields(doc, method):
 		# frappe.msgprint(f"In update SubTask")
 		return
 	frappe.flags.in_update = True
-	print(f"update fields subtask {doc.subtask_name} owner {doc.owner}")
 
 	frappe.flags.in_update = False
 
@@ -359,7 +358,8 @@ def user_edit_subtask(subtask_name):
 
 		if doc.pic_subtask == employee_id:
 			privileges.append("pic_subtask")
-
+   
+	print(f"privileges: {privileges}")
 	return privileges if privileges else ["none"]
 
 
@@ -433,7 +433,8 @@ def button_evaluation_subtask(subtask):
 			filters={"employee": employee_id},
 			pluck="parent"
 		)
-	print(f"User: {user}, Maintask Owner: {maintask.owner}, parent_task_pic: {parent_task_pic}, Roles: {roles}")
+	is_pic = subtask.tasks in parent_task_pic
+	print(f"User: {user}, Maintask Owner: {maintask.owner}, is PIC? {is_pic}, Roles: {roles}")
  
 	if maintask.owner == user and subtask.status == "Done":
 		return "maintask_owner_done"
@@ -505,3 +506,27 @@ def get_employee_from_agent_data(name: str, status: str = "Active", limit: int =
 		limit_page_length=limit,
 	)
 	return rows
+
+@frappe.whitelist()
+def get_issues_by_maintask(doctype, txt, searchfield, start, page_len, filters):
+    maintask = filters.get("maintask")
+    if not maintask:
+        return []
+
+    txt = txt or ""
+    issues = frappe.db.sql("""
+							  SELECT i.name, i.issue
+							  FROM `tabFusion Issue Types` i
+							  WHERE i.maintask = %(maintask)s
+								AND (i.name LIKE %(txt)s OR i.issue LIKE %(txt)s)
+							  GROUP BY i.name
+							  ORDER BY i.issue
+								  LIMIT %(page_len)s
+							  OFFSET %(start)s
+							  """, {
+		"maintask": maintask,
+		"txt": f"%{txt}%",
+		"start": start,
+		"page_len": page_len
+	})
+    return [(issue[0], issue[1]) for issue in issues]

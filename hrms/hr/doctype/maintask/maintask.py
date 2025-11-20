@@ -93,13 +93,13 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
         if parent_assign_by:
             assign_by_maintask_ids = "', '".join(parent_assign_by)
             conditions.append(f"tabMainTask.name IN ('{assign_by_maintask_ids}')")
-            
-    print("maintask query conditions:", conditions)
+    
+    print("conditions maintask called for user:", user_id)
     return " OR ".join(conditions)
 
 
 def has_permission(doc, ptype, user):
-    print("permission maintask called")
+    print("permission maintask called for user:", user, "ptype:", ptype, "doc:", doc.name)
     if user == "Administrator":
         return True
 

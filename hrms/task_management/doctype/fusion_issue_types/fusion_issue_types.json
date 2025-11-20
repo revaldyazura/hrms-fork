@@ -1,0 +1,90 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:issue",
+ "creation": "2025-11-20 10:32:59.760256",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "parent1_section",
+  "maintask",
+  "column_break_cjse",
+  "maintask_title",
+  "data_section",
+  "issue"
+ ],
+ "fields": [
+  {
+   "fieldname": "parent1_section",
+   "fieldtype": "Section Break",
+   "label": "Parent"
+  },
+  {
+   "fieldname": "maintask",
+   "fieldtype": "Link",
+   "label": "MainTask",
+   "options": "MainTask"
+  },
+  {
+   "fieldname": "data_section",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "issue",
+   "fieldtype": "Data",
+   "label": "Issue",
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_cjse",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "maintask.maintask_name",
+   "fieldname": "maintask_title",
+   "fieldtype": "Data",
+   "label": "MainTask Title"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-11-20 17:38:38.426360",
+ "modified_by": "Administrator",
+ "module": "Task Management",
+ "name": "Fusion Issue Types",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "issue"
+}

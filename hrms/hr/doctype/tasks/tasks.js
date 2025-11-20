@@ -371,18 +371,18 @@ frappe.ui.form.on("Tasks", {
 				query: "hrms.hr.doctype.tasks.tasks.get_open_maintask_as_the_owner",
 			};
 		});
-		frm.set_query("pic_task", function () {
-			if (!frm.doc.maintask) {
-				frappe.msgprint("Choose the main task field first.");
-				return {};
-			}
-			return {
-				query: "hrms.hr.doctype.tasks.tasks.get_employees_by_role_and_team",
-				filters: {
-					maintask: frm.doc.maintask,
-				},
-			};
-		});
+		// frm.set_query("pic_task", function () {
+		// 	if (!frm.doc.maintask) {
+		// 		frappe.msgprint("Choose the main task field first.");
+		// 		return {};
+		// 	}
+		// 	return {
+		// 		query: "hrms.hr.doctype.tasks.tasks.get_employees_by_role_and_team",
+		// 		filters: {
+		// 			maintask: frm.doc.maintask,
+		// 		},
+		// 	};
+		// });
 		frappe.after_ajax(() => {
 			// Tunggu hingga field tersedia di DOM
 			setTimeout(() => {

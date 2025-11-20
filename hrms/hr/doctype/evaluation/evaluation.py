@@ -162,7 +162,7 @@ def update_fields(doc, method):
 
 
 def has_permission(doc, ptype, user):
-	print("has permission evaluation called")
+	print("has permission evaluation doc:", doc.name, "called for user:", user, "ptype:", ptype)
 
 	if frappe.session.user == "Administrator":
 		return True
@@ -304,7 +304,6 @@ def user_edit_evaluation(subtask):
 		if doc.owner == frappe.session.user:
 			privileges.append("owner_subtask")
 
-		print(f"{type(parent_task_pic)} type, parent_task_pic value {parent_task_pic}")
 		if tasks.name in parent_task_pic:
 			privileges.append("task_pics")
 
@@ -317,6 +316,7 @@ def user_edit_evaluation(subtask):
 		if maintask.owner == frappe.session.user:
 			privileges.append("owner_maintask")
 
+		print(f"privileges: {privileges}")
 		return privileges if privileges else ["none"]
 
 
@@ -333,11 +333,11 @@ def get_done_subtask_as_owner(doctype, txt, searchfield, start, page_len, filter
 		JOIN `tabTasks` t ON st.tasks = t.name
 		JOIN `tabMainTask` mt ON st.maintask = mt.name
   		JOIN `tabTask PIC` tp ON tp.parent = st.tasks
-		WHERE ( mt.owner = %(user_id)s OR t.owner = %(user_id)s OR tp.employee = %(employee_id)s) AND st.status = 'Done'
+		WHERE ( mt.owner = %(user_id)s OR t.owner = %(user_id)s OR tp.employee = %(employee_id)s) AND st.status = 'Done' AND (st.name LIKE %(txt)s OR st.subtask_name LIKE %(txt)s)
 		GROUP BY st.name
 		  ORDER BY st.creation DESC, st.name
 	""",
-		{"user_id": f"{user_id}", "employee_id": f"{employee_id}"},
+		{"user_id": f"{user_id}", "txt": f"%{txt}%", "employee_id": f"{employee_id}"},
 	)
 	print(f"done subtasks {subtasks}")
 	return subtasks

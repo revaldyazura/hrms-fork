@@ -49,8 +49,6 @@ def update_fields(doc, method):
         return
     frappe.flags.in_update = True
 
-    print(f"update tasks {doc.name} owner {doc.owner}")
-
     previous_status = doc.flags.get("_previous_status")
     now_status = doc.status
     if previous_status != now_status:
@@ -230,6 +228,7 @@ def user_edit_tasks(task_name):
     if is_task_pic:
         privileges.append("task_pics")
 
+    print(f"privileges: {privileges}")
     return privileges if privileges else ["none"]
 
 

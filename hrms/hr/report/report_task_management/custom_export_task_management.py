@@ -63,6 +63,7 @@ def export_team_task_management(filters=None):
                       st.subtask_name,
                       st.value AS value_subtask,
                       st.target_time_minutes,
+                      st.status AS subtask_status,
                       emp.team
                FROM `tabSubTask` st
                         LEFT JOIN `tabEmployee` emp ON emp.name = st.pic_subtask \
@@ -118,7 +119,7 @@ def export_team_task_management(filters=None):
     format_cache = {}
     sheet.set_column("A:J", 20)
 
-    headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "SubTask Target Time (Minutes)"]
+    headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status"]
     for col, h in enumerate(headers):
         sheet.write(0, col, h, header_format)
 
@@ -158,6 +159,7 @@ def export_team_task_management(filters=None):
                         sheet.write(row, 5, tr["subtask_types"], colored_format)
                         sheet.write_number(row, 6, int(tr["value_subtask"]), colored_format)
                         sheet.write_number(row, 7, int(tr["target_time_minutes"]), colored_format)
+                        sheet.write(row, 8, tr["subtask_status"], colored_format)
                         row += 1
 
                     # Merge Task
