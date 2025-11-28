@@ -157,7 +157,7 @@ def has_permission(doc, ptype, user):
             )
             return False
     elif ptype == "write":
-        if is_owner or is_task_pic or is_maintask_owner:
+        if is_owner or is_task_pic or is_maintask_owner or in_assign_by_list:
             return True
         else:
             frappe.throw(
@@ -227,6 +227,9 @@ def user_edit_tasks(task_name):
 
     if is_task_pic:
         privileges.append("task_pics")
+        
+    if in_assign_by_list:
+        privileges.append("assign_by_maintask")
 
     print(f"privileges: {privileges}")
     return privileges if privileges else ["none"]

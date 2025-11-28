@@ -30,7 +30,8 @@ frappe.ui.form.on("Tasks", {
 						"task_pic",
 						"unit_target_time",
 					];
-					if (r.message.includes("task_pics") && !r.message.includes("owner_tasks")) {
+					if (r.message.includes("task_pics") && !r.message.includes("owner_tasks") &&
+						!r.message.includes("admin") && !r.message.includes("assign_by_maintask") && !r.message.includes("pic_maintask")) {
 						readonly_fields.forEach((field) => {
 							frm.set_df_property(field, "read_only", 1);
 						});

@@ -213,7 +213,7 @@ def has_permission(doc, ptype, user):
 	is_task_pic = tasks.name in parent_task_pic
 
 	if ptype in ("create", "write", "delete"):
-		if has_privileged_role and (is_task_pic or is_maintask_owner or is_task_owner):
+		if has_privileged_role and (is_task_pic or is_maintask_owner ):
 			print(
 				f"task owner {is_task_owner}, maintask owner {is_maintask_owner}, task pic {is_task_pic}, roles {roles}"
 			)
@@ -333,7 +333,7 @@ def get_done_subtask_as_owner(doctype, txt, searchfield, start, page_len, filter
 		JOIN `tabTasks` t ON st.tasks = t.name
 		JOIN `tabMainTask` mt ON st.maintask = mt.name
   		JOIN `tabTask PIC` tp ON tp.parent = st.tasks
-		WHERE ( mt.owner = %(user_id)s OR t.owner = %(user_id)s OR tp.employee = %(employee_id)s) AND st.status = 'Done' AND (st.name LIKE %(txt)s OR st.subtask_name LIKE %(txt)s)
+		WHERE ( mt.owner = %(user_id)s OR tp.employee = %(employee_id)s) AND st.status = 'Done' AND (st.name LIKE %(txt)s OR st.subtask_name LIKE %(txt)s)
 		GROUP BY st.name
 		  ORDER BY st.creation DESC, st.name
 	""",
@@ -372,7 +372,7 @@ def permission_query_conditions(doc, ptype=None, user=None, debug=False):
 		(`tabEvaluation`.`pic_subtask` = '{employee_id}'
 		OR `tabEvaluation`.`owner` = '{user_id}'
 		OR `tabEvaluation`.`maintask` IN (
-			SELECT `name` FROM `tabMainTask` WHERE `owner` = '{user_id}' OR `assigned_by` = '{employee_id}' OR `name` IN ('{maintask_ids}')
+			SELECT `name` FROM `tabMainTask` WHERE `owner` = '{user_id}' OR `name` IN ('{maintask_ids}')
 		) OR `tabEvaluation`.`tasks` IN (
 			SELECT `name` FROM `tabTasks` WHERE `owner` = '{user_id}'
 		)OR `tabEvaluation`.`maintask` IN (SELECT `name` FROM `tabMainTask` WHERE name IN ('{assign_by_maintask_ids}')))

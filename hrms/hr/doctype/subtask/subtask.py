@@ -438,8 +438,8 @@ def button_evaluation_subtask(subtask):
  
 	if maintask.owner == user and subtask.status == "Done":
 		return "maintask_owner_done"
-	if tasks.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
-		return "task_owner_done"
+	# if tasks.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
+	# 	return "task_owner_done"
 	# if subtask.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
 	# 	return "subtask_owner_done"
 	if subtask.tasks in parent_task_pic and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles) and subtask.status == "Done":

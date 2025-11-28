@@ -119,13 +119,13 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
     // Date range filters (default empty means no date filtering)
     const startDateField = page.add_field({
         label: "Start Date",
-        fieldtype: "Date",
+        fieldtype: "Datetime",
         fieldname: "start_date_filter",
         onchange: () => validateDateAndReload(),
     });
     const endDateField = page.add_field({
         label: "End Date",
-        fieldtype: "Date",
+        fieldtype: "Datetime",
         fieldname: "end_date_filter",
         onchange: () => validateDateAndReload(),
     });
@@ -300,7 +300,7 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
                     subtask_name: '-',
                     priority: '-',
                     status: '-',
-                    open_date: '-',
+                    start_date: '-',
                 });
             }
         });
@@ -351,7 +351,7 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
                             <th>SubTask</th>
                             <th>Priority</th>
                             <th>Status</th>
-                            <th>Open Date</th>
+                            <th>Start Date</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -363,7 +363,7 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
                                 <td>${safe(r.subtask_name || "-")}</td>
                                 <td>${(r.priority && r.priority !== '-') ? `<span class="pill" style="${prioColor(r.priority)}">${safe(r.priority)}</span>` : '-'}</td>
                                 <td>${(r.status && r.status !== '-') ? `<span class="pill" style="${statusColor(r.status)}">${safe(r.status)}</span>` : '-'}</td>
-                                <td>${safe(fmt(r.open_date || "-"))}</td>
+                                <td>${safe(fmt(r.start_date || "-"))}</td>
                             </tr>
                         `).join("")}
                     </tbody>

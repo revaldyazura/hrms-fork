@@ -19,8 +19,8 @@ def get_team_overview(team: str | None = None, status: str | None = None, start_
     Inputs:
     - team: Team docname or None (means all teams)
     - status: SubTask status filter or None (means all statuses)
-    - start_date: (YYYY-MM-DD) lower bound for subtask_open_date (inclusive) or None
-    - end_date: (YYYY-MM-DD) upper bound for subtask_open_date (inclusive) or None
+    - start_date: (YYYY-MM-DD) lower bound for subtask_start_date (inclusive) or None
+    - end_date: (YYYY-MM-DD) upper bound for subtask_start_date (inclusive) or None
 
     Output JSON structure:
     {
@@ -33,7 +33,7 @@ def get_team_overview(team: str | None = None, status: str | None = None, start_
              "subtask_name": str,
              "priority": str,
              "status": str,
-             "open_date": datetime | str | None
+             "start_date": datetime | str | None
            }, ...
       ]
     }
@@ -44,9 +44,9 @@ def get_team_overview(team: str | None = None, status: str | None = None, start_
     - When status is provided, filter SubTask by that status; otherwise include all statuses.
     - SubTask rows are filtered to subtasks whose PIC is in the returned employees list.
     - Date filtering logic:
-        * If both start_date and end_date provided: subtask_open_date BETWEEN start_date AND end_date
-        * If only start_date: subtask_open_date >= start_date
-        * If only end_date: subtask_open_date <= end_date
+        * If both start_date and end_date provided: subtask_start_date BETWEEN start_date AND end_date
+        * If only start_date: subtask_start_date >= start_date
+        * If only end_date: subtask_start_date <= end_date
     """
 
     # 1) Fetch employees by team (or all active employees)
@@ -93,7 +93,7 @@ def get_team_overview(team: str | None = None, status: str | None = None, start_
     if status:
         st_filters_list.append(["status", "=", status])
     st_filters_list.append(["pic_subtask", "in", emp_ids])
-    # Date range filters (subtask_open_date is a Datetime field)
+    # Date range filters (subtask_start_date is a Datetime field)
     # Validate date format lightly; if malformed, ignore that bound.
     def _valid_date(d: str | None) -> str | None:
         if not d:
@@ -112,12 +112,12 @@ def get_team_overview(team: str | None = None, status: str | None = None, start_
             # Drop end_date to keep >= start logic (frontend should prevent this)
             end_date_v = None
     if start_date_v and end_date_v:
-        st_filters_list.append(["subtask_open_date", ">=", start_date_v])
-        st_filters_list.append(["subtask_open_date", "<=", end_date_v])
+        st_filters_list.append(["subtask_start_date", ">=", start_date_v])
+        st_filters_list.append(["subtask_start_date", "<=", end_date_v])
     elif start_date_v:
-        st_filters_list.append(["subtask_open_date", ">=", start_date_v])
+        st_filters_list.append(["subtask_start_date", ">=", start_date_v])
     elif end_date_v:
-        st_filters_list.append(["subtask_open_date", "<=", end_date_v])
+        st_filters_list.append(["subtask_start_date", "<=", end_date_v])
 
     # 3) Fetch subtasks
     subtasks = frappe.get_all(
@@ -132,9 +132,9 @@ def get_team_overview(team: str | None = None, status: str | None = None, start_
             "subtask_name",
             "priority",
             "status",
-            "subtask_open_date",
+            "subtask_start_date",
         ],
-        order_by="pic_subtask_name asc, subtask_open_date asc",
+        order_by="pic_subtask_name asc, subtask_start_date asc",
     )
 
     # 4) Shape rows for UI
@@ -147,7 +147,7 @@ def get_team_overview(team: str | None = None, status: str | None = None, start_
             "subtask_name": r.get("subtask_name") or "-",
             "priority": r.get("priority") or "-",
             "status": r.get("status") or "-",
-            "open_date": r.get("subtask_open_date") or None,
+            "start_date": r.get("subtask_start_date") or None,
         })
 
     return {

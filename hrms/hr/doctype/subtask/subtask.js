@@ -540,7 +540,7 @@ frappe.ui.form.on("SubTask", {
 					subtask: frm.doc.name
 				},
 				callback: function (r) {
-					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'administrator_done' || r.message == 'task_owner_done') {
+					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'administrator_done' ) {
 						frm.add_custom_button("Evaluate This SubTask", () => {
 							const dialog = new frappe.ui.Dialog({
 								title: "Evaluate SubTask",
