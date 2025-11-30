@@ -420,6 +420,34 @@ def get_task_with_same_pic(doctype, txt, searchfield, start, page_len, filters):
 	return tasks
 
 @frappe.whitelist()
+def get_task_with_same_pic_and_maintask(doctype, txt, searchfield, start, page_len, filters):
+	user = frappe.session.user
+	employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
+	if not filters.get("maintask"):
+		return []
+	conditions = ""
+	if user != "Administrator":
+		conditions = "WHERE (tp.employee = %(employee_id)s) AND (t.status = 'Open' OR t.status = 'In Progress') AND (t.name LIKE %(txt)s OR t.task_name LIKE %(txt)s) AND (t.maintask = %(maintask)s)"
+
+	tasks = frappe.db.sql(f"""
+		SELECT t.name, t.task_name
+		FROM `tabTasks` t
+		JOIN `tabTask PIC` tp ON tp.parent = t.name
+		{conditions}
+		GROUP BY t.name
+		ORDER BY t.creation DESC, t.name
+		LIMIT %(page_len)s OFFSET %(start)s
+	""", {
+		"user_id": user,
+		"employee_id": employee_id,
+		"txt": f"%{txt}%",
+		"start": start,
+		"page_len": page_len,
+		"maintask": filters.get("maintask")
+	})
+	return tasks
+
+@frappe.whitelist()
 def button_evaluation_subtask(subtask):
 	user = frappe.session.user
 	employee_id = frappe.get_value("Employee", {"user_id": user}, "name")

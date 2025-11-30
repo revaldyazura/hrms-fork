@@ -16,12 +16,12 @@ frappe.pages["task-management-individual"].on_page_load = async function (wrappe
 	}
 
 	const css = `
-	  .tmto {
+	  .tmit {
 		background: #ffffff;
 		padding: 16px 18px 28px;
 		color: #222;
 	  }
-	  .tmto h3, .tmto h4 {
+	  .tmit h3, .tmit h4 {
 		color: #333;
 		margin: 0 0 10px;
 	  }
@@ -66,20 +66,22 @@ frappe.pages["task-management-individual"].on_page_load = async function (wrappe
 		color: #555;
 	  }
 	  /* table styles */
-	  .tmto table { width: 100%; border-collapse: collapse; font-size: 13px; }
-	  .tmto thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .3px; text-align: center; }
-	  .tmto th, .tmto td { border-bottom: 1px solid #eee; padding: 8px 10px; }
-	  .tmto th { color: #333; font-weight: 700; background: #fafafa; }
-	  .tmto td { text-align: center; }
-	  .tmto .empty { color: #888; padding: 8px 10px; }
-	  .tmto .pill { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 600; line-height: 1.6; }
-	  .tmto .table-pager { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 8px; }
-	  .tmto .page-info { font-size: 12px; color: #666; }
+	  .tmit table { width: 100%; border-collapse: collapse; font-size: 13px; }
+	  .tmit thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .3px; text-align: center; }
+	  .tmit th, .tmit td { border-bottom: 1px solid #eee; padding: 8px 10px; }
+	  .tmit th { color: #333; font-weight: 700; background: #fafafa; }
+	  .tmit td { text-align: center; }
+	  .tmit .empty { color: #888; padding: 8px 10px; }
+	  .tmit .pill { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 600; line-height: 1.6; }
+	  .tmit .table-pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+	  .tmit .page-info { font-size: 12px; color: #666; }
+    .tmit .page-size-control { display: flex; align-items: center; gap: 6px; color: #666; font-size: 13px; }
+    .tmit .page-size-control select { padding: 4px 6px; border-radius: 6px; border: 1px solid #ddd; background: #fff; }
 	`;
 	$("<style>").text(css).appendTo($(wrapper));
 
 	$(page.body).append(`
-		<div class="tmto">
+		<div class="tmit">
 		  <h3 id="person_title">🧩 Personal Overview</h3>
 		  <div class="metrics">
 			${m("Ongoing SubTasks", "ongoing_tasks")}
@@ -137,7 +139,7 @@ frappe.pages["task-management-individual"].on_page_load = async function (wrappe
 	// Date range filters
 	const startDateField = page.add_field({
 		label: "Start Date",
-		fieldtype: "Date",
+		fieldtype: "Datetime",
 		fieldname: "start_date",
 		reqd: 0,
 		onchange: () => {
@@ -150,7 +152,7 @@ frappe.pages["task-management-individual"].on_page_load = async function (wrappe
 
 	const endDateField = page.add_field({
 		label: "End Date",
-		fieldtype: "Date",
+		fieldtype: "Datetime",
 		fieldname: "end_date",
 		reqd: 0,
 		onchange: () => {
@@ -334,13 +336,16 @@ frappe.pages["task-management-individual"].on_page_load = async function (wrappe
 				const d = new Date(v);
 				if (isNaN(d.getTime())) return v;
 				return d.toLocaleString();
-			} catch(e) { return v; }
+			} catch (e) { return v; }
 		};
 
 		// pagination state
-		const pageSize = 5;
+		let pageSize = 5;
 		let currentPage = 1;
-		const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+		function computeTotalPages() {
+			// use `rows` (the data array) length to compute pages
+			return Math.max(1, Math.ceil(rows.length / pageSize));
+		}
 
 		const prioColor = (p) => {
 			const x = (p || '').toLowerCase();
@@ -362,6 +367,7 @@ frappe.pages["task-management-individual"].on_page_load = async function (wrappe
 		};
 
 		const render = () => {
+			const totalPages = computeTotalPages();
 			const start = (currentPage - 1) * pageSize;
 			const end = start + pageSize;
 			const pageRows = rows.slice(start, end);
@@ -393,21 +399,45 @@ frappe.pages["task-management-individual"].on_page_load = async function (wrappe
 					</tbody>
 				</table>
 				<div class="table-pager">
-					<button class="btn btn-default btn-sm" data-act="first" ${currentPage===1? 'disabled': ''}>&laquo;</button>
-					<button class="btn btn-default btn-sm" data-act="prev" ${currentPage===1? 'disabled': ''}>&lsaquo;</button>
+					<div class="page-size-control">
+                        <label>Show
+                          <select id="page_size_select">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                          </select>
+                        per page</label>
+                    </div>
+					<div>
+					<button class="btn btn-default btn-sm" data-act="first" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>
+					<button class="btn btn-default btn-sm" data-act="prev" ${currentPage === 1 ? 'disabled' : ''}>&lsaquo;</button>
 					<span class="page-info">Page ${currentPage} / ${totalPages}</span>
-					<button class="btn btn-default btn-sm" data-act="next" ${currentPage===totalPages? 'disabled': ''}>&rsaquo;</button>
-					<button class="btn btn-default btn-sm" data-act="last" ${currentPage===totalPages? 'disabled': ''}>&raquo;</button>
+					<button class="btn btn-default btn-sm" data-act="next" ${currentPage === totalPages ? 'disabled' : ''}>&rsaquo;</button>
+					<button class="btn btn-default btn-sm" data-act="last" ${currentPage === totalPages ? 'disabled' : ''}>&raquo;</button>
+					</div>
 				</div>
 			`;
 			wrap.innerHTML = html;
+
+			const sizeSel = wrap.querySelector('#page_size_select');
+			if (sizeSel) {
+				sizeSel.value = String(pageSize);
+				sizeSel.onchange = () => {
+					const v = parseInt(sizeSel.value, 10) || 15;
+					pageSize = v;
+					currentPage = 1;
+					render();
+				};
+			}
 			wrap.querySelectorAll('button[data-act]').forEach(btn => {
 				btn.onclick = () => {
 					const act = btn.getAttribute('data-act');
 					if (act === 'first') currentPage = 1;
 					if (act === 'prev' && currentPage > 1) currentPage -= 1;
-					if (act === 'next' && currentPage < totalPages) currentPage += 1;
-					if (act === 'last') currentPage = totalPages;
+					if (act === 'next' && currentPage < computeTotalPages()) currentPage += 1;
+                    if (act === 'last') currentPage = computeTotalPages();
 					render();
 				};
 			});

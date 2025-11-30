@@ -6,12 +6,12 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
     });
 
     const css = `
-  .tmto {
+  .dst {
     background: #ffffff;
     padding: 16px 18px 28px;
     color: #222;
   }
-  .tmto h3, .tmto h4 {
+  .dst h3, .dst h4 {
     color: #333;
     margin: 0 0 10px;
   }
@@ -65,23 +65,25 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
     white-space: nowrap;
   }
   /* table styles */
-  .tmto table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .tmto thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .3px; text-align: center; }
-  .tmto th, .tmto td { border-bottom: 1px solid #eee; padding: 8px 10px; }
-  .tmto th { color: #333; font-weight: 700; background: #fafafa; }
-  .tmto td { text-align: center; }
-  .tmto .empty { color: #888; padding: 8px 10px; }
-  .tmto .pill { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 600; line-height: 1.6; }
-  .tmto .table-pager { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 8px; }
-  .tmto .page-info { font-size: 12px; color: #666; }
+  .dst table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .dst thead th { text-transform: uppercase; font-size: 11px; letter-spacing: .3px; text-align: center; }
+  .dst th, .dst td { border-bottom: 1px solid #eee; padding: 8px 10px; }
+  .dst th { color: #333; font-weight: 700; background: #fafafa; }
+  .dst td { text-align: center; }
+  .dst .empty { color: #888; padding: 8px 10px; }
+  .dst .pill { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 600; line-height: 1.6; }
+    .dst .table-pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+    .dst .page-info { font-size: 12px; color: #666; }
+    .dst .page-size-control { display: flex; align-items: center; gap: 6px; color: #666; font-size: 13px; }
+    .dst .page-size-control select { padding: 4px 6px; border-radius: 6px; border: 1px solid #ddd; background: #fff; }
 `;
     $('<style>').text(css).appendTo($(wrapper));
 
     $(page.body).append(`
-    <div class="tmto">
+    <div class="dst">
       <h3 id="team_title">🧩 TEAM OVERVIEW</h3>
       <div class="card">
-        <div id="current_table_wrapper"></div>
+        <div id="div_table_wrapper"></div>
       </div>
     </div>
   `);
@@ -258,7 +260,7 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
     }
 
     function renderSubtaskTable(rows, employees) {
-        const wrap = document.getElementById("current_table_wrapper");
+        const wrap = document.getElementById("div_table_wrapper");
         if (!wrap) return;
 
         const safe = frappe.utils.escape_html;
@@ -313,9 +315,11 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
         });
 
     // pagination state
-    const pageSize = 15;
-        let currentPage = 1;
-        const totalPages = Math.max(1, Math.ceil(merged.length / pageSize));
+    let pageSize = 15;
+    let currentPage = 1;
+    function computeTotalPages() {
+        return Math.max(1, Math.ceil(merged.length / pageSize));
+    }
 
         const prioColor = (p) => {
             const x = (p || '').toLowerCase();
@@ -337,6 +341,7 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
         };
 
         const render = () => {
+            const totalPages = computeTotalPages();
             const start = (currentPage - 1) * pageSize;
             const end = start + pageSize;
             const pageRows = merged.slice(start, end);
@@ -369,21 +374,46 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
                     </tbody>
                 </table>
                 <div class="table-pager">
-                    <button class="btn btn-default btn-sm" data-act="first" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>
-                    <button class="btn btn-default btn-sm" data-act="prev" ${currentPage === 1 ? 'disabled' : ''}>&lsaquo;</button>
-                    <span class="page-info">Page ${currentPage} / ${totalPages}</span>
-                    <button class="btn btn-default btn-sm" data-act="next" ${currentPage === totalPages ? 'disabled' : ''}>&rsaquo;</button>
-                    <button class="btn btn-default btn-sm" data-act="last" ${currentPage === totalPages ? 'disabled' : ''}>&raquo;</button>
+                    <div class="page-size-control">
+                        <label>Show
+                          <select id="page_size_select">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                          </select>
+                        per page</label>
+                    </div>
+                    <div>
+                      <button class="btn btn-default btn-sm" data-act="first" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>
+                      <button class="btn btn-default btn-sm" data-act="prev" ${currentPage === 1 ? 'disabled' : ''}>&lsaquo;</button>
+                      <span class="page-info">Page ${currentPage} / ${totalPages}</span>
+                      <button class="btn btn-default btn-sm" data-act="next" ${currentPage === totalPages ? 'disabled' : ''}>&rsaquo;</button>
+                      <button class="btn btn-default btn-sm" data-act="last" ${currentPage === totalPages ? 'disabled' : ''}>&raquo;</button>
+                    </div>
                 </div>
             `;
             wrap.innerHTML = html;
+            // wire page-size select
+            const sizeSel = wrap.querySelector('#page_size_select');
+            if (sizeSel) {
+                sizeSel.value = String(pageSize);
+                sizeSel.onchange = () => {
+                    const v = parseInt(sizeSel.value, 10) || 15;
+                    pageSize = v;
+                    currentPage = 1;
+                    render();
+                };
+            }
+
             wrap.querySelectorAll('button[data-act]').forEach(btn => {
                 btn.onclick = () => {
                     const act = btn.getAttribute('data-act');
                     if (act === 'first') currentPage = 1;
                     if (act === 'prev' && currentPage > 1) currentPage -= 1;
-                    if (act === 'next' && currentPage < totalPages) currentPage += 1;
-                    if (act === 'last') currentPage = totalPages;
+                    if (act === 'next' && currentPage < computeTotalPages()) currentPage += 1;
+                    if (act === 'last') currentPage = computeTotalPages();
                     render();
                 };
             });

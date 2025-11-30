@@ -16,6 +16,7 @@ frappe.ui.form.on("SubTask", {
 			frm.set_df_property("status", "options", ["Open"]);
 			frm.set_value("status", "Open");
 			frm.set_df_property("total_time", "read_only", 1);
+
 			ensure_subtask_value_agent_button(frm);
 			ensure_pic_subtask_agent_button(frm);
 
@@ -540,7 +541,7 @@ frappe.ui.form.on("SubTask", {
 					subtask: frm.doc.name
 				},
 				callback: function (r) {
-					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'administrator_done' ) {
+					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'administrator_done') {
 						frm.add_custom_button("Evaluate This SubTask", () => {
 							const dialog = new frappe.ui.Dialog({
 								title: "Evaluate SubTask",
@@ -672,7 +673,7 @@ frappe.ui.form.on("SubTask", {
 			function apply_subtask_access_and_status(frm, flagString) {
 				const flags = parse_role_flags(flagString);
 				const status = frm.doc.status;
-				frm.set_df_property('total_time', 'read_only', 1); 
+				frm.set_df_property('total_time', 'read_only', 1);
 
 				// 4. Global override: status Close
 				if (status === 'Close') {
@@ -704,8 +705,8 @@ frappe.ui.form.on("SubTask", {
 						// has any of the assign_by_maintask privileges that permit it.
 						if (
 							(flagString.includes("assign_by_maintask") ||
-							flagString.includes("assign_by_maintask_supervisor") ||
-							flagString.includes("assign_by_maintask_manager"))
+								flagString.includes("assign_by_maintask_supervisor") ||
+								flagString.includes("assign_by_maintask_manager"))
 						) {
 							frm.set_df_property('total_time', 'read_only', 0);
 						}
@@ -818,25 +819,25 @@ frappe.ui.form.on("SubTask", {
 				return list.includes(value) ? list : [value, ...list];
 			}
 		}
+
 		if (frm.doc.maintask) {
-            sessionStorage.setItem('prefill_fusion_maintask', frm.doc.maintask);
-        } else {
-            // optional: remove jika tidak ada maintask
-            sessionStorage.removeItem('prefill_fusion_maintask');
-        }
+			sessionStorage.setItem('prefill_fusion_maintask', frm.doc.maintask);
+		} else {
+			// optional: remove jika tidak ada maintask
+			sessionStorage.removeItem('prefill_fusion_maintask');
+		}
 	},
 	onload: function (frm) {
 		if (frm.doc.maintask) {
-            sessionStorage.setItem('prefill_fusion_maintask', frm.doc.maintask);
-        }
-		frm.set_query("tasks", function () {
-			return {
-				query: "hrms.hr.doctype.subtask.subtask.get_task_with_same_pic"
-			};
-		});
+			sessionStorage.setItem('prefill_fusion_maintask', frm.doc.maintask);
+		}
 		frm.set_query("pic_subtask", function () {
 			if (!frm.doc.tasks) {
 				frappe.msgprint("Choose the task field first.");
+				return {};
+			}
+			if (!frm.doc.maintask) {
+				frappe.msgprint("Choose the maintask field first.");
 				return {};
 			}
 			return {
@@ -914,12 +915,50 @@ frappe.ui.form.on("SubTask", {
 			};
 		};
 	},
-	maintask: function(frm) {
-        // when maintask field changed in UI, update route_options
-        if (frm.doc.maintask) {
-            sessionStorage.setItem('prefill_fusion_maintask', frm.doc.maintask);
-        } else {
-            sessionStorage.removeItem('prefill_fusion_maintask');
-        }
-    }
+	choose_maintask_manually: function (frm) {
+		if (frm.doc.choose_maintask_manually) {
+			frm.set_df_property("maintask", "fetch_from", 0);
+			frm.set_df_property("maintask", "permlevel", 0);
+			frm.set_df_property("maintask", "read_only", 0);
+			frm.set_df_property("maintask", "hidden", 0);
+			frm.set_df_property("maintask", "reqd", 1);
+			frappe.show_alert({ message: __('Maintask can be selected manually now'), indicator: 'green' });
+			frm.set_query("tasks", function () {
+				return {
+					query: "hrms.hr.doctype.subtask.subtask.get_task_with_same_pic_and_maintask",
+					filters: { maintask: frm.doc.maintask }
+				};
+			});
+		} else {
+			if (frm.doc.maintask) {
+				// jika choose_maintask_manually di-uncheck, kita set maintask ke fetch_from
+				frm.set_value("maintask", "");
+				frm.set_value("tasks", "");
+			}
+			frm.set_df_property("maintask", "fetch_from", "tasks.maintask");
+			frm.set_df_property("maintask", "permlevel", 2);
+			frm.set_df_property("maintask", "read_only", 1);
+			frappe.show_alert({ message: __('Maintask will follow Tasks again'), indicator: 'blue' });
+			frm.set_query("tasks", function () {
+				return {
+					query: "hrms.hr.doctype.subtask.subtask.get_task_with_same_pic"
+				};
+			});
+		}
+	},
+	maintask: function (frm) {
+		// when maintask field changed in UI:
+		// - if user is in manual mode, clear the `tasks` field so it doesn't conflict
+		// - update sessionStorage prefill_fusion_maintask with the new value
+		if (frm.doc.choose_maintask_manually) {
+			// clear related task when maintask manually changed
+			frm.set_value('tasks', '');
+		}
+
+		if (frm.doc.maintask) {
+			sessionStorage.setItem('prefill_fusion_maintask', frm.doc.maintask);
+		} else {
+			sessionStorage.removeItem('prefill_fusion_maintask');
+		}
+	}
 });
