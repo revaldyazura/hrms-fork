@@ -496,6 +496,7 @@ frappe.ui.form.on("MainTask Team", {
 			const reports_to = employee_doc.reports_to;
 			console.log("reports_to", reports_to);
 			if (!reports_to) return;
+			const team_emp = employee_doc.team;
 
 			// Cek apakah sudah ada di child table assign_by
 			frappe.db.get_doc("Employee", reports_to).then((reports_to_doc) => {
@@ -511,6 +512,22 @@ frappe.ui.form.on("MainTask Team", {
 					frm.refresh_field("assign_by");
 				}
 			});
+
+			if (team_emp == 'DS' || team_emp == 'BS' || team_emp == 'AI') {
+				frappe.db.get_doc("Employee", 'HR-EMP-00033').then((adryan_doc) => {
+					const already_exists = frm.doc.assign_by.some(
+						(entry) => entry.employee === 'HR-EMP-00033'
+					);
+					if (!already_exists) {
+						frm.doc.assign_by = frm.doc.assign_by.filter((r) => r.employee);
+						frm.add_child("assign_by", {
+							employee: 'HR-EMP-00033',
+							employee_name: adryan_doc.employee_name,
+						});
+						frm.refresh_field("assign_by");
+					}
+				});
+			}
 		});
 	},
 });
