@@ -39,11 +39,12 @@
   "section_break_tkdb",
   "created_by",
   "subtask_start_date",
-  "subtask_done_date",
+  "subtask_resolved_date",
+  "subtask_close_date",
   "column_break_kemw",
   "subtask_open_date",
   "subtask_pause_date",
-  "subtask_close_date",
+  "subtask_done_date",
   "last_in_progress_timestamp",
   "submission_tab",
   "submission_section",
@@ -151,7 +152,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Open\nIn Progress\nPause\nDone\nClose\nCancel"
+   "options": "Open\nIn Progress\nPause\nResolved\nDone\nClose\nCancel"
   },
   {
    "fieldname": "subtask_open_date",
@@ -229,6 +230,7 @@
   },
   {
    "collapsible": 1,
+   "collapsible_depends_on": "eval:1",
    "fieldname": "type_section",
    "fieldtype": "Section Break",
    "label": "Types"
@@ -248,7 +250,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Priority",
-   "options": "Low\nMedium\nHigh"
+   "options": "Low\nMedium\nHigh\nUrgent"
   },
   {
    "description": "This field shows the total accumulated time spent working on the subtask. It will only appear if the subtask has ever been in 'Pause' or 'Done' status, meaning it has previously been 'In Progress'.",
@@ -313,12 +315,17 @@
    "fieldname": "additional_tab",
    "fieldtype": "Tab Break",
    "label": "Additional"
+  },
+  {
+   "fieldname": "subtask_resolved_date",
+   "fieldtype": "Datetime",
+   "label": "Sub Task Resolved Date"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-29 15:57:09.503265",
+ "modified": "2025-12-07 12:14:35.085478",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

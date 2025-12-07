@@ -753,6 +753,11 @@ frappe.ui.form.on("SubTask", {
 			// Derive scenario
 			function derive_scenario(f) {
 				const ownerGroup = f.owner_subtask || f.task_pics || f.owner_task;
+				if (frm.doc.requestor) {
+					if (f.pic_subtask && !ownerGroup) return 'FUSION_PIC_ONLY';
+					if (f.pic_subtask && ownerGroup) return 'FUSION_PIC_PLUS';
+					if (!f.pic_subtask && ownerGroup) return 'FUSION_OWNER_ONLY';
+				}
 				if (f.pic_subtask && !ownerGroup) return 'PIC_ONLY';
 				if (f.pic_subtask && ownerGroup) return 'PIC_PLUS';
 				if (!f.pic_subtask && ownerGroup) return 'OWNER_ONLY';
@@ -762,16 +767,16 @@ frappe.ui.form.on("SubTask", {
 			// Apply field locks
 			function apply_field_rules(frm, scenario, status) {
 				const readonlyPicOnlyFields = [
-					'subtask_name', 'target_time', 'unit_target_time', 'maintask',
-					'tasks', 'pic_subtask', 'value', 'priority', 'type', 'description'
+					'subtask_name', 'target_time', 'unit_target_time', 'maintask', 'issues_type',
+					'tasks', 'pic_subtask', 'value', 'priority', 'type', 'description', 'requestor'
 				];
 
-				if (scenario === 'PIC_ONLY') {
+				if (scenario === 'PIC_ONLY' || scenario === 'FUSION_PIC_ONLY') {
 					readonlyPicOnlyFields.forEach(f => frm.set_df_property(f, 'read_only', 1));
-				} else if (scenario === 'PIC_PLUS') {
+				} else if (scenario === 'PIC_PLUS' || scenario === 'FUSION_PIC_PLUS') {
 					// pic_subtask hanya editable saat Open
 					frm.set_df_property('pic_subtask', 'read_only', status !== 'Open');
-				} else if (scenario === 'OWNER_ONLY') {
+				} else if (scenario === 'OWNER_ONLY' || scenario === 'FUSION_OWNER_ONLY') {
 					// pic_subtask hanya editable saat Open
 					frm.set_df_property('pic_subtask', 'read_only', status !== 'Open');
 					// Jika sudah bukan Open/Cancel dan status ke In Progress / Pause / Done -> nanti kita lock di compute (status read_only)
@@ -790,6 +795,17 @@ frappe.ui.form.on("SubTask", {
 						default: return [status];
 					}
 				}
+				if (scenario === 'FUSION_PIC_ONLY') {
+					switch (status) {
+						case 'Open': return ['Open', 'In Progress'];
+						case 'In Progress': return ['In Progress', 'Pause', 'Resolved', 'Done'];
+						case 'Pause': return ['Pause', 'In Progress'];
+						case 'Resolved': return ['Resolved', 'Done', 'In Progress'];
+						case 'Done': return ['Done', 'In Progress'];
+						case 'Cancel': return ['Cancel']; // fallback
+						default: return [status];
+					}
+				}
 
 				if (scenario === 'PIC_PLUS') {
 					if (status === 'Open') return ['Open', 'In Progress', 'Cancel'];
@@ -798,10 +814,17 @@ frappe.ui.form.on("SubTask", {
 					return compute_status_options('PIC_ONLY', status);
 				}
 
-				if (scenario === 'OWNER_ONLY') {
+				if (scenario === 'FUSION_PIC_PLUS') {
+					if (status === 'Open') return ['Open', 'In Progress', 'Cancel'];
+					if (status === 'Cancel') return ['Cancel', 'Open'];
+					// reuse PIC_ONLY mapping for the rest:
+					return compute_status_options('FUSION_PIC_ONLY', status);
+				}
+
+				if (scenario === 'OWNER_ONLY' || scenario === 'FUSION_OWNER_ONLY') {
 					if (status === 'Open') return ['Open', 'Cancel'];
 					if (status === 'Cancel') return ['Cancel', 'Open'];
-					if (['In Progress', 'Pause', 'Done'].includes(status)) {
+					if (['In Progress', 'Pause', 'Resolved', 'Done'].includes(status)) {
 						// Lock—only current
 						frm.set_df_property('status', 'read_only', 1);
 						return [status];

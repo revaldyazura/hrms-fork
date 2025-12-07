@@ -11,6 +11,20 @@ frappe.listview_settings['MainTask'] = {
 		
 		return [__(doc.status), color_map[doc.status] || "grey", "status,=," + doc.status];
 	},
+	formatters: {
+		priority(val, df, doc) {
+			const priority_color = {
+				'Low': '#28a745',
+				'Medium': '#ffc107',
+				// 'High': '#fd7e14',
+				'High': '#dc3545'
+			};
+			const pr = doc.priority || val || '';
+			const color = priority_color[pr] || 'grey';
+			// return an inline-styled badge; using translation function for label
+			return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${color};color:#fff;font-size:0.85em;">${__(pr)}</span>`;
+		}
+	},
 
 	refresh(listview) {
 		let workspace = 'Task Management';

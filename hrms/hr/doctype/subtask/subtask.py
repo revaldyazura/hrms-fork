@@ -73,7 +73,7 @@ class SubTask(Document):
 			self.subtask_start_date = now
 			self.last_in_progress_timestamp = now
 
-		elif self.status in ("Pause", "Done"):
+		elif self.status in ("Pause", "Done", "Resolved"):
 			if not self.last_in_progress_timestamp:
 				if from_parent and prev.status in ("Open", "Cancel", None):
 					self.last_in_progress_timestamp = 0
@@ -81,13 +81,17 @@ class SubTask(Document):
 					return
 				if prev.status == "Close":
 					return
+				if prev.status == 'Resolved':
+					return
 				frappe.throw(f"Can't change status to '{self.status}', change to 'In Progress' first.")
 			duration = int((now - get_datetime(self.last_in_progress_timestamp)).total_seconds() / 60)
 			self.total_time = (self.total_time or 0) + duration
 			self.last_in_progress_timestamp = None
 			if self.status == "Done":
 				self.subtask_done_date = now
-			else:
+			elif self.status == 'Resolved':
+				self.subtask_resolved_date = now
+			elif self.status == 'Pause':
 				self.subtask_pause_date = now
 
 		elif self.status == "Close":

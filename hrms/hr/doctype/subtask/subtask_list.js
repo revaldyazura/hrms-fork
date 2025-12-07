@@ -2,6 +2,7 @@ frappe.listview_settings['SubTask'] = {
 	get_indicator: function (doc) {
 		let color_map = {
 			"Done": "green",
+			"Resolved": "yellow",
 			"Cancel": "red",
 			"Pause": "orange",
 			"Open": "grey",
@@ -9,19 +10,31 @@ frappe.listview_settings['SubTask'] = {
 			"In Progress": "blue" // pakai string key dan warna valid CSS
 		};
 
-		return [__(doc.status), color_map[doc.status] || "gray", "status,=," + doc.status];
+		return [__(doc.status), color_map[doc.status] || "grey", "status,=," + doc.status];
 	},
-	add_fields: ['maintask', 'maintask_name', 'tasks', 'tasks_name', 'pic_subtask', 'pic_subtask_name'],
+	add_fields: ['maintask', 'maintask_name', 'tasks', 'tasks_name', 'pic_subtask', 'pic_subtask_name', 'priority'],
 
 	formatters: {
 		// maintask(val, df, doc) {
-		// 	return doc.maintask_name || val;
+		//  return doc.maintask_name || val;
 		// },
 		tasks(val, df, doc) {
 			return doc.tasks_name || val;
 		}, pic_subtask(val, df, doc) {
 			return doc.pic_subtask_name || val;
 		},
+		priority(val, df, doc) {
+			const priority_color = {
+				'Low': '#28a745',
+				'Medium': '#ffc107',
+				'High': '#fd7e14',
+				'Urgent': '#dc3545'
+			};
+			const pr = doc.priority || val || '';
+			const color = priority_color[pr] || 'grey';
+			// return an inline-styled badge; using translation function for label
+			return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${color};color:#fff;font-size:0.85em;">${__(pr)}</span>`;
+		}
 	},
 	refresh(listview) {
 		let workspace = 'Task Management';
