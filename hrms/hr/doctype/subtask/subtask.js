@@ -854,6 +854,13 @@ frappe.ui.form.on("SubTask", {
 		if (frm.doc.maintask) {
 			sessionStorage.setItem('prefill_fusion_maintask', frm.doc.maintask);
 		}
+		if (!frm.doc.choose_maintask_manually) {
+			frm.set_query("tasks", function () {
+				return {
+					query: "hrms.hr.doctype.subtask.subtask.get_task_with_same_pic"
+				};
+			});
+		}
 		frm.set_query("pic_subtask", function () {
 			if (!frm.doc.tasks) {
 				frappe.msgprint("Choose the task field first.");
