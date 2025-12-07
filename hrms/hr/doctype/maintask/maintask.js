@@ -26,7 +26,7 @@ frappe.ui.form.on("MainTask", {
 						"status",
 						"assign_date",
 						"due_date",
-						"assign_by",
+						// "assign_by",
 						"priority",
 					];
 					if (r.message === "none") {
