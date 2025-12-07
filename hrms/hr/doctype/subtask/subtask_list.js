@@ -47,7 +47,7 @@ frappe.listview_settings['SubTask'] = {
 
 		// allow subject column to wrap to multiple lines (no ellipsis truncation)
 		const applySubjectWrap = () => {
-			document.querySelectorAll('.list-row-container .list-subject').forEach(function(col){
+			document.querySelectorAll('.list-row-container .list-subject').forEach(function (col) {
 				// sizing
 				// col.style.maxWidth = "25vw";
 				// col.style.minWidth = "25vw";
@@ -98,6 +98,63 @@ frappe.listview_settings['SubTask'] = {
 		requestAnimationFrame(applySubjectWrap);
 		setTimeout(applySubjectWrap, 0);
 		setTimeout(applySubjectWrap, 50);
+
+		// bind dependent filter: limit `tasks` options by selected `maintask`
+		const ensureDependentTaskFilter = () => {
+			// Prefer v16 ListView page fields
+			const page_fields = listview && listview.page && listview.page.fields_dict;
+			const filter_area = listview && listview.filter_area; // fallback for older builds
+			console.log('page fields', page_fields);
+			console.log('filter_area', filter_area);
+			if (!page_fields && !filter_area) return;
+
+			const getMaintaskFilterValue = () => {
+				// Prefer page fields in v16
+				const mt_field = page_fields && page_fields.maintask;
+				if (mt_field) {
+					if (mt_field.value) return mt_field.value;
+				}
+			};
+
+			const bindTasksQuery = () => {
+				// Bind on page fields (v16)
+				const tasks_field = page_fields && page_fields.tasks;
+				console.log('task field', tasks_field);
+				if (tasks_field) {
+					const mt = getMaintaskFilterValue();
+					console.log('maintask filter value', mt);
+					const query_fn = () => ({ filters: { maintask: getMaintaskFilterValue() } });
+
+					if (mt) {
+						if (!tasks_field.set_query) {
+							tasks_field.df.get_query = query_fn;
+							tasks_field.get_query = query_fn;
+						}
+					} else {
+						if (tasks_field.df) {
+							delete tasks_field.df.get_query;
+						}
+						if (tasks_field.get_query) {
+							delete tasks_field.get_query;
+						}
+					}
+				}
+			};
+
+			// initial bind
+			bindTasksQuery();
+
+			// re-bind when filters UI changes (user edits maintask filter)
+			const maybeRebind = () => setTimeout(bindTasksQuery, 0);
+			if (filter_area && filter_area.wrapper) {
+				filter_area.wrapper.addEventListener('change', maybeRebind);
+				filter_area.wrapper.addEventListener('click', maybeRebind);
+			}
+		};
+
+		// run after standard filters are constructed; try multiple times to ensure controls exist
+		const attempts = [0, 50, 150, 300];
+		attempts.forEach(ms => setTimeout(ensureDependentTaskFilter, ms));
 	},
 	onload(listview) {
 		// hindari loop set_route berulang
