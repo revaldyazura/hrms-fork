@@ -691,7 +691,7 @@ frappe.ui.form.on("SubTask", {
 				}
 
 				// Additional permission: when status is Done -> only allow editing the status field
-				if (status === 'Done' || status === 'Cancel') {
+				if (status === 'Done' || status === 'Cancel' || status === 'Resolved') {
 					try {
 						const fields = frm.fields_dict || {};
 						Object.keys(fields).forEach((fn) => {
