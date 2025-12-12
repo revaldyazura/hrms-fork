@@ -204,7 +204,7 @@ def has_permission(doc, ptype, user):
 		if is_task_pic and is_owner:
 			return True
 	elif ptype == "write":
-		if is_task_pic or is_maintask_owner or is_owner or is_pic_subtask:
+		if is_task_pic or is_maintask_owner or is_owner or is_pic_subtask or in_assign_by_list:
 			return True
 		else:
 			frappe.throw(f"{employee.employee_name} is not allowed to editing {doc.subtask_name} subtask, because not part of maintask or tasks.",
