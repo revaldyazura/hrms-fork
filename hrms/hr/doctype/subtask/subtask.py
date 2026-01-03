@@ -204,7 +204,7 @@ def has_permission(doc, ptype, user):
 		if is_task_pic and is_owner:
 			return True
 	elif ptype == "write":
-		if is_task_pic or is_maintask_owner or is_owner or is_pic_subtask or in_assign_by_list:
+		if is_task_pic or is_maintask_owner or is_owner or is_pic_subtask or in_assign_by_list or is_tasks_owner:
 			return True
 		else:
 			frappe.throw(f"{employee.employee_name} is not allowed to editing {doc.subtask_name} subtask, because not part of maintask or tasks.",
@@ -470,8 +470,8 @@ def button_evaluation_subtask(subtask):
  
 	if maintask.owner == user and subtask.status == "Done":
 		return "maintask_owner_done"
-	# if tasks.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
-	# 	return "task_owner_done"
+	if tasks.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
+		return "task_owner_done"
 	# if subtask.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
 	# 	return "subtask_owner_done"
 	if subtask.tasks in parent_task_pic and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles) and subtask.status == "Done":

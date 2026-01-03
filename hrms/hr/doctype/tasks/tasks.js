@@ -38,6 +38,8 @@ frappe.ui.form.on("Tasks", {
 					} else if (r.message.includes("none")) {
 						frm.set_read_only(true);
 						frm.disable_save();
+					} else if (r.message.includes("admin")) {
+						
 					}
 
 					if (
