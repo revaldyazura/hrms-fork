@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "MT-.YYYY.MM.-.#######",
  "creation": "2025-05-04 12:56:51.620225",
  "doctype": "DocType",
@@ -131,7 +132,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-30 13:39:46.309755",
+ "modified": "2026-01-04 06:03:45.569604",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "MainTask",
