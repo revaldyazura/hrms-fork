@@ -12,7 +12,7 @@ def get_team_options():
 
 
 @frappe.whitelist()
-def get_team_overview(team: str | None = None, status: str | None = None, start_date: str | None = None, end_date: str | None = None):
+def get_team_overview(team: str | None = None, pic_subtask: str | None = None, status: str | None = None, start_date: str | None = None, end_date: str | None = None):
     """
     Return merged data for Team Overview page.
 
@@ -53,6 +53,8 @@ def get_team_overview(team: str | None = None, status: str | None = None, start_
     emp_filters = {}
     if team:
         emp_filters["team"] = team
+    if pic_subtask:
+        emp_filters["name"] = pic_subtask
     # Prefer active employees only to avoid noise
     # Many HRMS setups use Employee.status in {"Active", "Left"}
     try:

@@ -27,14 +27,20 @@ frappe.query_reports["Report Task Management"] = {
 					{
 						label: "From Date",
 						fieldname: "from_date",
-						fieldtype: "Date",
+						fieldtype: "Datetime",
 						reqd: 1
 					},
 					{
 						label: "To Date",
 						fieldname: "to_date",
-						fieldtype: "Date",
+						fieldtype: "Datetime",
 						reqd: 1
+					},
+					{
+						label: "Separate sheets by PIC",
+						fieldname: "separate_sheets_by_pic",
+						fieldtype: "Check",
+						default: 0
 					}
 				],
 				primary_action_label: "Generate",

@@ -99,8 +99,34 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
         onchange: () => {
             updateTeamHeaderFromField();
             const selectedLabel = teamField.get_value();
+            // update picField team filter dynamically
+            try {
+                picField.df.filters = picField.df.filters || {};
+                picField.df.filters.team = TEAM_MAP.get(selectedLabel) || null;
+                if (typeof picField.refresh === 'function') picField.refresh();
+                // clear pic selection when team changes
+                if (typeof picField.set_value === 'function') picField.set_value(null);
+            } catch (e) { console.warn('failed to update picField filters', e); }
+
             const teamDocname = TEAM_MAP.get(selectedLabel) || null;
-            load_data(teamDocname, getStatusValue());
+            load_data(teamDocname, picField.get_value() ,getStatusValue());
+        }
+    });
+
+    const picField = page.add_field({
+        label: 'PIC SubTask',
+        fieldtype: 'Link',
+        options: 'Employee',
+        fieldname: 'pic_filter',
+        // apply only the status filter here; team filter is set dynamically
+        filters: {
+            status: 'Active'
+        },
+        onchange: () => {
+            const selectedLabel = teamField.get_value();
+            const teamDocname = TEAM_MAP.get(selectedLabel) || null;
+            const picValue = picField.get_value() || null;
+            load_data(teamDocname, picValue, getStatusValue());
         }
     });
 
@@ -114,7 +140,7 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
         onchange: () => {
             const selectedLabel = teamField.get_value();
             const teamDocname = TEAM_MAP.get(selectedLabel) || null;
-            load_data(teamDocname, getStatusValue());
+            load_data(teamDocname, picField.get_value() , getStatusValue());
         },
     });
 
@@ -140,7 +166,7 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
 		const team = teamField.get_value();
 		if (team) {
 			const teamDocname = TEAM_MAP.get(team) || null;
-            load_data(teamDocname, getStatusValue());
+            load_data(teamDocname, picField.get_value() , getStatusValue());
 		}
 	});
 
@@ -182,12 +208,19 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
         ctrl.set_value(defaultLabel);
         updateTeamHeaderFromField();
 
+        // ensure picField's team filter follows the selected/default team
+        try {
+            picField.df.filters = picField.df.filters || {};
+            picField.df.filters.team = TEAM_MAP.get(defaultLabel) || null;
+            if (typeof picField.refresh === 'function') picField.refresh();
+        } catch (e) { console.warn('failed to initialize picField filters', e); }
+
         // ensure status default is "In Progress"
         if (statusField && statusField.get_value() !== 'In Progress') {
             statusField.set_value('In Progress');
         }
 
-        load_data(defaultLabel !== '-- All Teams --' ? userTeamValue : null, getStatusValue());
+        load_data(defaultLabel !== '-- All Teams --' ? userTeamValue : null, picField.get_value() , getStatusValue());
     }
 
     async function get_current_user_team() {
@@ -232,16 +265,17 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
         }
         const selectedLabel = teamField.get_value();
         const teamDocname = TEAM_MAP.get(selectedLabel) || null;
-        load_data(teamDocname, getStatusValue());
+        load_data(teamDocname, picField.get_value() , getStatusValue());
     }
 
-    function load_data(team_docname, status_value) {
-        // team_docname can be null for all teams
+    function load_data(teamDocname, picValue, status_value) {
+        // teamDocname can be null for all teams
         // status_value can be null for all statuses
         frappe.call({
             method: 'hrms.task_management.page.division_summary.division_summary.get_team_overview',
             args: {
-                team: team_docname || null,
+                team: teamDocname || null,
+                pic_subtask: picValue || null,
                 status: status_value || null,
                 start_date: getStartDateValue(),
                 end_date: getEndDateValue(),

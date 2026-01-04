@@ -15,6 +15,29 @@ frappe.ui.form.on("Tasks", {
 		if (frm.is_new()) {
 			frm.set_df_property("status", "options", ["Open"]);
 			frm.set_value("status", "Open");
+
+			if (frm.doc.maintask) {
+				// Ensure the logged-in user's Employee is added to Task PIC (if not present)
+				frappe.after_ajax(() => {
+					frappe.db
+						.get_value("Employee", { user_id: frappe.session.user }, ["name", "employee_name"]) // async
+						.then((res) => {
+							const emp = res && res.message && res.message.name;
+							if (!emp) return;
+							const already = (frm.doc.task_pic || []).some((r) => r.employee === emp);
+							if (!already) {
+								frm.add_child("task_pic", {
+									employee: emp,
+									employee_name: res.message.employee_name || "",
+								});
+								frm.refresh_field("task_pic");
+							}
+						})
+						.catch(() => {
+							// ignore
+						});
+				});
+			}
 		}
 
 		if (!frm.is_new()) {
@@ -39,7 +62,7 @@ frappe.ui.form.on("Tasks", {
 						frm.set_read_only(true);
 						frm.disable_save();
 					} else if (r.message.includes("admin")) {
-						
+
 					}
 
 					if (
@@ -435,6 +458,28 @@ frappe.ui.form.on("Tasks", {
 			};
 		};
 	},
+
+	maintask: function (frm) {
+		if (!frm.doc.maintask) return;
+		// After user selects maintask, ensure logged-in user's Employee is added to Task PIC
+		frappe.db
+			.get_value("Employee", { user_id: frappe.session.user }, ["name", "employee_name"]) // async
+			.then((res) => {
+				const emp = res && res.message && res.message.name;
+				if (!emp) return;
+				const already = (frm.doc.task_pic || []).some((r) => r.employee === emp);
+				if (!already) {
+					frm.add_child("task_pic", {
+						employee: emp,
+						employee_name: res.message.employee_name || "",
+					});
+					frm.refresh_field("task_pic");
+				}
+			})
+			.catch(() => {
+				// ignore
+			});
+	},
 });
 
 function show_subtask_dialog(frm, subtask) {
@@ -608,9 +653,42 @@ frappe.ui.form.on("Task PIC", {
 	employee: function (frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
 		if (!row.employee) return;
-
-		const is_duplicate =
-			frm.doc.task_pic.filter((r) => r.employee === row.employee).length > 1;
+		// Get Employee linked to current user (async)
+		frappe.db
+			.get_value("Employee", { user_id: frappe.session.user }, ["name", "employee_name"]) // returns a Promise
+			.then((res) => {
+				const owner = res && res.message;
+				console.log('owner', owner);
+				if (!owner || !owner.name) return;
+				const owner_employee = owner.name;
+				const owner_employee_name = owner.employee_name || "";
+				const already_exists = (frm.doc.task_pic || []).some(
+					(entry) => entry.employee === owner_employee
+				);
+				if (!already_exists) {
+					frm.doc.task_pic = (frm.doc.task_pic || []).filter((r) => r.employee);
+					frm.add_child("task_pic", {
+						employee: owner_employee,
+						employee_name: owner_employee_name,
+					});
+					frm.refresh_field("task_pic");
+				}
+				const is_duplicate =
+					(frm.doc.task_pic || []).filter((r) => r.employee === row.employee).length > 1;
+				if (is_duplicate) {
+					frappe.msgprint(
+						__("{0} has been choosen as PIC Task member", [
+							frappe.model.get_value(cdt, cdn, "employee_name") || "",
+						])
+					);
+					frappe.model.set_value(cdt, cdn, "employee", null);
+					frappe.model.set_value(cdt, cdn, "employee_name", null);
+					return;
+				}
+			})
+			.catch(() => {
+				// ignore errors
+			});
 		if (is_duplicate) {
 			frappe.msgprint(
 				__("{0} has been choosen as PIC Task member", [

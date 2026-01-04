@@ -88,8 +88,9 @@ def export_individual_evaluation(filters=None):
         query += " WHERE " + " AND ".join(conditions)
     data = frappe.db.sql(query, values, as_dict=True)
     employee_filename = data[0].get('pic_subtask_name')
+    subtask_type_map = get_subtask_type_map()
     for row in data:
-        row["subtask_types"] = get_subtask_type_map().get(row["subtask"], "")
+        row["subtask_types"] = subtask_type_map.get(row["subtask"], "")
 
     total_working_hours, total_holiday = calculate_working_hours(from_date, to_date,
                                                                  'Annual Holiday') if to_date and from_date else 0
@@ -263,8 +264,9 @@ def export_team_evaluation(filters=None):
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     data = frappe.db.sql(query, values, as_dict=True)
+    subtask_type_map = get_subtask_type_map()
     for row in data:
-        row["subtask_types"] = get_subtask_type_map().get(row["subtask"], "")
+        row["subtask_types"] = subtask_type_map.get(row["subtask"], "")
     team_filename = data[0].get('team') if data else filters.get('team')
 
     total_working_hours, total_holiday = calculate_working_hours(from_date, to_date,

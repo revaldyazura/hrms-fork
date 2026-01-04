@@ -19,8 +19,8 @@ def get_subtask_type_map():
     return data
 
 def calculate_working_hours(from_date_str, to_date_str, holiday_list_name):
-    from_date = datetime.strptime(from_date_str, "%Y-%m-%d").date()
-    to_date = datetime.strptime(to_date_str, "%Y-%m-%d").date()
+    from_date = datetime.strptime(from_date_str, "%Y-%m-%d %H:%M:%S").date()
+    to_date = datetime.strptime(to_date_str, "%Y-%m-%d %H:%M:%S").date()
 
     holiday_dates = set(
         frappe.get_all("Holiday", filters={
@@ -50,55 +50,16 @@ def date_change_format(date_source, date_format="%d %B %Y"):
     return formatted_datetime
 
 
-@frappe.whitelist()
-def export_team_task_management(filters=None):
-    filters = frappe.parse_json(filters or '{}')
+def create_formats(workbook):
+    """Create and return commonly used xlsxwriter formats and constants.
 
-    query = """SELECT st.pic_subtask_name,
-                      st.maintask,
-                      st.maintask_name,
-                      st.tasks,
-                      st.tasks_name AS task_name,
-                      st.name AS subtask,
-                      st.subtask_name,
-                      st.value AS value_subtask,
-                      st.target_time_minutes,
-                      st.status AS subtask_status,
-                      emp.team
-               FROM `tabSubTask` st
-                        LEFT JOIN `tabEmployee` emp ON emp.name = st.pic_subtask \
-            """
-
-    conditions = []
-    values = {}
-    from_date = None
-    to_date = None
-
-    if filters.get("team"):
-        conditions.append("team = %(team)s")
-        values["team"] = filters["team"]
-    if filters.get("from_date") and filters.get("to_date"):
-        from_date = filters.get("from_date")
-        to_date = filters.get("to_date")
-        conditions.append("subtask_open_date BETWEEN %(from_date)s AND %(to_date)s")
-        # conditions.append("due_date BETWEEN %(from_date)s AND %(to_date)s")
-        values["from_date"] = filters["from_date"]
-        values["to_date"] = filters["to_date"]
-
-    if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-    data = frappe.db.sql(query, values, as_dict=True)
-    for row in data:
-        row["subtask_types"] = get_subtask_type_map().get(row["subtask"], "")
-    team_filename = data[0].get('team') if data else filters.get('team')
-
-    total_working_hours, total_holiday = calculate_working_hours(from_date, to_date,
-                                                                 'Annual Holiday') if to_date and from_date else 0
-
-    output = BytesIO()
-    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
-    sheet = workbook.add_worksheet("Report Team")
-
+    Returns a dict with keys:
+      - bold_format
+      - center_format
+      - header_format
+      - additional_data_format
+      - base_colors
+    """
     bold_format = workbook.add_format({'bold': True})
     center_format = workbook.add_format({'align': 'center',
                                          'valign': 'vcenter',
@@ -115,30 +76,53 @@ def export_team_task_management(filters=None):
         'align': 'center', 'valign': 'vcenter', 'text_wrap': True,
         'border': 1, 'bg_color': '#f0f4c3'
     })
+
+    return {
+        'bold_format': bold_format,
+        'center_format': center_format,
+        'base_colors': base_colors,
+        'header_format': header_format,
+        'additional_data_format': additional_data_format,
+    }
+
+
+def write_report_sheet(workbook, data, from_date, to_date, total_working_hours, total_holiday, team_filename):
+    """Write the main report sheet into `workbook` using provided data and meta.
+
+    This extracts the large inline block that formats and writes the Excel sheet.
+    """
+    sheet = workbook.add_worksheet(f"Report {team_filename}")
+
+    formats = create_formats(workbook)
+    bold_format = formats['bold_format']
+    center_format = formats['center_format']
+    base_colors = formats['base_colors']
+    header_format = formats['header_format']
+    additional_data_format = formats['additional_data_format']
     main_task_color_map = {}
     format_cache = {}
     sheet.set_column("A:J", 20)
 
-    headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status"]
+    headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status", "SubTask Start Date", "SubTask Done Date"]
     for col, h in enumerate(headers):
         sheet.write(0, col, h, header_format)
 
     start_row = 1
     row = start_row
 
-    data.sort(key=lambda x: (x["team"], x["pic_subtask_name"], x["maintask"], x["tasks"]))
+    data.sort(key=lambda x: (x.get("team"), x.get("pic_subtask_name"), x.get("maintask"), x.get("tasks")))
 
-    for team_key, team_rows in groupby(data, key=lambda x: x["team"]):
+    for team_key, team_rows in groupby(data, key=lambda x: x.get("team")):
         team_rows = list(team_rows)
         team_row_start = row
-        for emp_key, emp_rows in groupby(team_rows, key=lambda x: x["pic_subtask_name"]):
+        for emp_key, emp_rows in groupby(team_rows, key=lambda x: x.get("pic_subtask_name")):
             emp_rows = list(emp_rows)
             emp_row_start = row
-            for mt_key, mt_rows in groupby(emp_rows, key=lambda x: x["maintask"]):
+            for mt_key, mt_rows in groupby(emp_rows, key=lambda x: x.get("maintask")):
                 mt_rows = list(mt_rows)
                 mt_row_start = row
                 if mt_key not in main_task_color_map:
-                    hash_val = int(hashlib.md5(mt_key.encode()).hexdigest(), 16)
+                    hash_val = int(hashlib.md5(str(mt_key).encode()).hexdigest(), 16)
                     color = base_colors[hash_val % len(base_colors)]
                     main_task_color_map[mt_key] = color
 
@@ -150,16 +134,17 @@ def export_team_task_management(filters=None):
                     })
                 colored_format = format_cache[bg_color]
 
-                for t_key, t_rows in groupby(mt_rows, key=lambda x: x["tasks"]):
+                for t_key, t_rows in groupby(mt_rows, key=lambda x: x.get("tasks")):
                     t_rows = list(t_rows)
                     t_row_start = row
                     for tr in t_rows:
-
-                        sheet.write(row, 4, tr["subtask_name"], colored_format)
-                        sheet.write(row, 5, tr["subtask_types"], colored_format)
-                        sheet.write_number(row, 6, int(tr["value_subtask"]), colored_format)
-                        sheet.write_number(row, 7, int(tr["target_time_minutes"]), colored_format)
-                        sheet.write(row, 8, tr["subtask_status"], colored_format)
+                        sheet.write(row, 4, tr.get("subtask_name"), colored_format)
+                        sheet.write(row, 5, tr.get("subtask_types"), colored_format)
+                        sheet.write_number(row, 6, int(tr.get("value_subtask") or 0), colored_format)
+                        sheet.write_number(row, 7, int(tr.get("target_time_minutes") or 0), colored_format)
+                        sheet.write(row, 8, tr.get("subtask_status"), colored_format)
+                        sheet.write(row, 9, date_change_format(tr.get("subtask_start_date")) if tr.get("subtask_start_date") else "", colored_format)
+                        sheet.write(row, 10, date_change_format(tr.get("subtask_done_date")) if tr.get("subtask_done_date") else "", colored_format)
                         row += 1
 
                     # Merge Task
@@ -169,8 +154,7 @@ def export_team_task_management(filters=None):
                         sheet.write(t_row_start, 3, t_rows[0].get("task_name", t_key), colored_format)
                 # Merge Main Task
                 if row - mt_row_start > 1:
-                    sheet.merge_range(mt_row_start, 2, row - 1, 2, mt_rows[0].get("maintask_name", mt_key),
-                                      colored_format)
+                    sheet.merge_range(mt_row_start, 2, row - 1, 2, mt_rows[0].get("maintask_name", mt_key), colored_format)
                 else:
                     sheet.write(mt_row_start, 2, mt_rows[0].get("maintask_name", mt_key), colored_format)
             # Merge Employee
@@ -193,13 +177,12 @@ def export_team_task_management(filters=None):
 
     row += 1
     additional_data_row = row
-    from_date = date_change_format(from_date)
-    to_date = date_change_format(to_date)
-    sheet.write(additional_data_row, 0, from_date, additional_data_format)
-    sheet.write(additional_data_row, 1, to_date, additional_data_format)
+    from_date_fmt = date_change_format(from_date) if from_date else ""
+    to_date_fmt = date_change_format(to_date) if to_date else ""
+    sheet.write(additional_data_row, 0, from_date_fmt, additional_data_format)
+    sheet.write(additional_data_row, 1, to_date_fmt, additional_data_format)
     sheet.write(additional_data_row, 2, total_holiday, additional_data_format)
     sheet.write_number(additional_data_row, 3, total_working_hours, additional_data_format)
-    # excel_row = row + 1
     sheet.write_formula(additional_data_row, 4, f'=D{additional_data_row+1}*60', additional_data_format)
 
     row += 2
@@ -219,19 +202,19 @@ def export_team_task_management(filters=None):
     unique_rows = []
 
     for row_data in data:
-        key = (row_data["maintask"], row_data["tasks"], row_data["subtask"])
+        key = (row_data.get("maintask"), row_data.get("tasks"), row_data.get("subtask"))
         if key not in unique_subtasks:
             unique_subtasks.add(key)
             unique_rows.append(row_data)
 
-    unique_rows.sort(key=lambda x: (x["maintask"], x["tasks"]))
+    unique_rows.sort(key=lambda x: (x.get("maintask"), x.get("tasks")))
 
-    for mt_key, mt_rows in groupby(unique_rows, key=lambda x: x["maintask"]):
+    for mt_key, mt_rows in groupby(unique_rows, key=lambda x: x.get("maintask")):
         mt_rows = list(mt_rows)
         mt_row_start = row
 
         if mt_key not in main_task_color_map:
-            hash_val = int(hashlib.md5(mt_key.encode()).hexdigest(), 16)
+            hash_val = int(hashlib.md5(str(mt_key).encode()).hexdigest(), 16)
             color = base_colors[hash_val % len(base_colors)]
             main_task_color_map[mt_key] = color
 
@@ -243,14 +226,14 @@ def export_team_task_management(filters=None):
             })
         colored_format = format_cache[bg_color]
 
-        for t_key, t_rows in groupby(mt_rows, key=lambda x: x["tasks"]):
+        for t_key, t_rows in groupby(mt_rows, key=lambda x: x.get("tasks")):
             t_rows = list(t_rows)
             t_row_start = row
             for tr in t_rows:
-                sheet.write(row, 2, tr["subtask_name"], colored_format)
-                sheet.write(row, 3, tr["subtask_types"], colored_format)
-                sheet.write_number(row, 4, int(tr["value_subtask"]), colored_format)
-                sheet.write_number(row, 5, int(tr["target_time_minutes"]), colored_format)
+                sheet.write(row, 2, tr.get("subtask_name"), colored_format)
+                sheet.write(row, 3, tr.get("subtask_types"), colored_format)
+                sheet.write_number(row, 4, int(tr.get("value_subtask") or 0), colored_format)
+                sheet.write_number(row, 5, int(tr.get("target_time_minutes") or 0), colored_format)
                 row += 1
 
             if row - t_row_start > 1:
@@ -262,20 +245,375 @@ def export_team_task_management(filters=None):
             sheet.merge_range(mt_row_start, 0, row - 1, 0, mt_rows[0].get("maintask_name", mt_key), colored_format)
             sheet.merge_range(mt_row_start, 6, row - 1, 6, f'=AVERAGE(E{mt_row_start+1}:E{row})', colored_format)
             sheet.merge_range(mt_row_start, 7, row - 1, 7, f'=SUM(F{mt_row_start+1}:F{row})', colored_format)
-            # sheet.merge_range(mt_row_start, 7, row - 1, 7, f'=SUM(F{mt_row_start+1}:F{row})', colored_format)
-            # sheet.merge_range(mt_row_start, 8, row - 1, 8, f'=H{mt_row_start+1}/E{additional_data_row+1}', colored_format)
-            # sheet.merge_range(mt_row_start, 9, row - 1, 9, f'=G{mt_row_start+1}*I{mt_row_start+1}', colored_format)
         else:
             sheet.write(mt_row_start, 0, mt_rows[0].get("maintask_name", mt_key), colored_format)
             sheet.write_formula(mt_row_start, 6, f'=AVERAGE(E{row}:E{row})', colored_format)
             sheet.write_formula(mt_row_start, 7, f'=SUM(F{row}:F{row})', colored_format)
-            # sheet.write_formula(mt_row_start, 7, f'=SUM(F{row}:F{row})', colored_format)
-            # sheet.write_formula(mt_row_start, 8, f'=H{row}/E{additional_data_row+1}', colored_format)
-            # sheet.write_formula(mt_row_start, 9, f'=G{row}*I{row}', colored_format)
+
+
+def write_report_sheets_by_pic(workbook, data, from_date, to_date, total_working_hours, total_holiday):
+    """Write separate report sheets per PIC into `workbook`.
+
+    Each PIC (st.pic_subtask_name) gets its own sheet, with the
+    same layout and aggregation as the main report.
+    """
+
+    formats = create_formats(workbook)
+    bold_format = formats['bold_format']
+    center_format = formats['center_format']
+    base_colors = formats['base_colors']
+    header_format = formats['header_format']
+    additional_data_format = formats['additional_data_format']
+
+    # Sort terlebih dahulu untuk groupby yang stabil
+    data.sort(key=lambda x: (x.get("pic_subtask_name"), x.get("team"), x.get("maintask"), x.get("tasks")))
+
+    for emp_key, emp_rows in groupby(data, key=lambda x: x.get("pic_subtask_name")):
+        emp_rows = list(emp_rows)
+
+        # Nama sheet: satu sheet per PIC, dibatasi 31 karakter (batas Excel)
+        sheet_label = emp_key or "Unknown"
+        sheet_name = f"{sheet_label}"[:31]
+        sheet = workbook.add_worksheet(sheet_name)
+
+        main_task_color_map = {}
+        format_cache = {}
+
+        sheet.set_column("A:J", 20)
+
+        headers = [
+            "Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type",
+            "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status",
+            "SubTask Start Date", "SubTask Done Date",
+        ]
+        for col, h in enumerate(headers):
+            sheet.write(0, col, h, header_format)
+
+        start_row = 1
+        row = start_row
+
+        for team_key, team_rows in groupby(emp_rows, key=lambda x: x.get("team")):
+            team_rows = list(team_rows)
+            team_row_start = row
+
+            for mt_key, mt_rows in groupby(team_rows, key=lambda x: x.get("maintask")):
+                mt_rows = list(mt_rows)
+                mt_row_start = row
+
+                if mt_key not in main_task_color_map:
+                    hash_val = int(hashlib.md5(str(mt_key).encode()).hexdigest(), 16)
+                    color = base_colors[hash_val % len(base_colors)]
+                    main_task_color_map[mt_key] = color
+
+                bg_color = main_task_color_map[mt_key]
+                if bg_color not in format_cache:
+                    format_cache[bg_color] = workbook.add_format({
+                        'align': 'center', 'valign': 'vcenter', 'text_wrap': True,
+                        'border': 1, 'bg_color': bg_color,
+                    })
+                colored_format = format_cache[bg_color]
+
+                for t_key, t_rows in groupby(mt_rows, key=lambda x: x.get("tasks")):
+                    t_rows = list(t_rows)
+                    t_row_start = row
+
+                    for tr in t_rows:
+                        sheet.write(row, 4, tr.get("subtask_name"), colored_format)
+                        sheet.write(row, 5, tr.get("subtask_types"), colored_format)
+                        sheet.write_number(row, 6, int(tr.get("value_subtask") or 0), colored_format)
+                        sheet.write_number(row, 7, int(tr.get("target_time_minutes") or 0), colored_format)
+                        sheet.write(row, 8, tr.get("subtask_status"), colored_format)
+                        sheet.write(
+                            row,
+                            9,
+                            date_change_format(tr.get("subtask_start_date"))
+                            if tr.get("subtask_start_date")
+                            else "",
+                            colored_format,
+                        )
+                        sheet.write(
+                            row,
+                            10,
+                            date_change_format(tr.get("subtask_done_date"))
+                            if tr.get("subtask_done_date")
+                            else "",
+                            colored_format,
+                        )
+                        row += 1
+
+                    # Merge Task
+                    if row - t_row_start > 1:
+                        sheet.merge_range(
+                            t_row_start,
+                            3,
+                            row - 1,
+                            3,
+                            t_rows[0].get("task_name", t_key),
+                            colored_format,
+                        )
+                    else:
+                        sheet.write(
+                            t_row_start,
+                            3,
+                            t_rows[0].get("task_name", t_key),
+                            colored_format,
+                        )
+
+                # Merge Main Task
+                if row - mt_row_start > 1:
+                    sheet.merge_range(
+                        mt_row_start,
+                        2,
+                        row - 1,
+                        2,
+                        mt_rows[0].get("maintask_name", mt_key),
+                        colored_format,
+                    )
+                else:
+                    sheet.write(
+                        mt_row_start,
+                        2,
+                        mt_rows[0].get("maintask_name", mt_key),
+                        colored_format,
+                    )
+
+            # Merge Employee (kolom 1) untuk seluruh blok team ini
+            if row - team_row_start > 1:
+                sheet.merge_range(
+                    team_row_start,
+                    1,
+                    row - 1,
+                    1,
+                    emp_key,
+                    center_format,
+                )
+            else:
+                sheet.write(team_row_start, 1, emp_key, center_format)
+
+            # Merge Team (kolom 0)
+            if row - team_row_start > 1:
+                sheet.merge_range(
+                    team_row_start,
+                    0,
+                    row - 1,
+                    0,
+                    team_key,
+                    center_format,
+                )
+            else:
+                sheet.write(team_row_start, 0, team_key, center_format)
+
+        # Bagian summary di bawah per sheet PIC
+        row += 1
+        sheet.write(row, 0, "From date", header_format)
+        sheet.write(row, 1, "To date", header_format)
+        sheet.write(row, 2, "Total Holiday", header_format)
+        sheet.write(row, 3, "Total Working Hours", header_format)
+        sheet.write(row, 4, "Working Hours\n(In minutes)", header_format)
+
+        row += 1
+        additional_data_row = row
+        from_date_fmt = date_change_format(from_date) if from_date else ""
+        to_date_fmt = date_change_format(to_date) if to_date else ""
+        sheet.write(additional_data_row, 0, from_date_fmt, additional_data_format)
+        sheet.write(additional_data_row, 1, to_date_fmt, additional_data_format)
+        sheet.write(additional_data_row, 2, total_holiday, additional_data_format)
+        sheet.write_number(additional_data_row, 3, total_working_hours, additional_data_format)
+        sheet.write_formula(additional_data_row, 4, f'=D{additional_data_row+1}*60', additional_data_format)
+
+        row += 2
+        sheet.write(row, 0, "MainTask", header_format)
+        sheet.write(row, 1, "Task", header_format)
+        sheet.write(row, 2, "SubTask", header_format)
+        sheet.write(row, 3, "SubTask Type", header_format)
+        sheet.write(row, 4, "SubTask Value", header_format)
+        sheet.write(row, 5, "SubTask Target Time (Minutes)", header_format)
+        sheet.write(row, 6, "Average SubTask Value", header_format)
+        sheet.write(row, 7, "Total SubTask Target Time (Minutes)", header_format)
+
+        row += 1
+        unique_subtasks = set()
+        unique_rows = []
+
+        for row_data in emp_rows:
+            key = (
+                row_data.get("maintask"),
+                row_data.get("tasks"),
+                row_data.get("subtask"),
+            )
+            if key not in unique_subtasks:
+                unique_subtasks.add(key)
+                unique_rows.append(row_data)
+
+        unique_rows.sort(key=lambda x: (x.get("maintask"), x.get("tasks")))
+
+        for mt_key, mt_rows in groupby(unique_rows, key=lambda x: x.get("maintask")):
+            mt_rows = list(mt_rows)
+            mt_row_start = row
+
+            if mt_key not in main_task_color_map:
+                hash_val = int(hashlib.md5(str(mt_key).encode()).hexdigest(), 16)
+                color = base_colors[hash_val % len(base_colors)]
+                main_task_color_map[mt_key] = color
+
+            bg_color = main_task_color_map[mt_key]
+            if bg_color not in format_cache:
+                format_cache[bg_color] = workbook.add_format({
+                    'align': 'center', 'valign': 'vcenter', 'text_wrap': True,
+                    'border': 1, 'bg_color': bg_color,
+                })
+            colored_format = format_cache[bg_color]
+
+            for t_key, t_rows in groupby(mt_rows, key=lambda x: x.get("tasks")):
+                t_rows = list(t_rows)
+                t_row_start = row
+                for tr in t_rows:
+                    sheet.write(row, 2, tr.get("subtask_name"), colored_format)
+                    sheet.write(row, 3, tr.get("subtask_types"), colored_format)
+                    sheet.write_number(row, 4, int(tr.get("value_subtask") or 0), colored_format)
+                    sheet.write_number(row, 5, int(tr.get("target_time_minutes") or 0), colored_format)
+                    row += 1
+
+                if row - t_row_start > 1:
+                    sheet.merge_range(
+                        t_row_start,
+                        1,
+                        row - 1,
+                        1,
+                        t_rows[0].get("task_name", t_key),
+                        colored_format,
+                    )
+                else:
+                    sheet.write(
+                        t_row_start,
+                        1,
+                        t_rows[0].get("task_name", t_key),
+                        colored_format,
+                    )
+
+            if row - mt_row_start > 1:
+                sheet.merge_range(
+                    mt_row_start,
+                    0,
+                    row - 1,
+                    0,
+                    mt_rows[0].get("maintask_name", mt_key),
+                    colored_format,
+                )
+                sheet.merge_range(
+                    mt_row_start,
+                    6,
+                    row - 1,
+                    6,
+                    f'=AVERAGE(E{mt_row_start+1}:E{row})',
+                    colored_format,
+                )
+                sheet.merge_range(
+                    mt_row_start,
+                    7,
+                    row - 1,
+                    7,
+                    f'=SUM(F{mt_row_start+1}:F{row})',
+                    colored_format,
+                )
+            else:
+                sheet.write(
+                    mt_row_start,
+                    0,
+                    mt_rows[0].get("maintask_name", mt_key),
+                    colored_format,
+                )
+                sheet.write_formula(
+                    mt_row_start,
+                    6,
+                    f'=AVERAGE(E{row}:E{row})',
+                    colored_format,
+                )
+                sheet.write_formula(
+                    mt_row_start,
+                    7,
+                    f'=SUM(F{row}:F{row})',
+                    colored_format,
+                )
+
+
+@frappe.whitelist()
+def export_team_task_management(filters=None):
+    filters = frappe.parse_json(filters or '{}')
+
+    query = """SELECT st.pic_subtask,
+                    st.pic_subtask_name,
+                      st.maintask,
+                      st.maintask_name,
+                      st.tasks,
+                      st.tasks_name AS task_name,
+                      st.name AS subtask,
+                      st.subtask_name,
+                      st.value AS value_subtask,
+                      st.target_time_minutes,
+                      st.status AS subtask_status,
+                      st.subtask_start_date,
+                      st.subtask_done_date,
+                      emp.team
+               FROM `tabSubTask` st
+                                                LEFT JOIN `tabEmployee` emp ON emp.name = st.pic_subtask \
+            """
+
+    conditions = []
+    values = {}
+    from_date = None
+    to_date = None
+
+    if filters.get("team"):
+        conditions.append("emp.team = %(team)s")
+        values["team"] = filters["team"]
+    if filters.get("from_date") and filters.get("to_date"):
+        from_date = filters.get("from_date")
+        to_date = filters.get("to_date")
+        conditions.append("st.subtask_start_date BETWEEN %(from_date)s AND %(to_date)s")
+        values["from_date"] = filters["from_date"]
+        values["to_date"] = filters["to_date"]
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    data = frappe.db.sql(query, values, as_dict=True)
+    # Ambil peta subtask_type sekali saja untuk menghindari N+1 query
+    subtask_type_map = get_subtask_type_map()
+    for row in data:
+        row["subtask_types"] = subtask_type_map.get(row["subtask"], "")
+    team_filename = data[0].get('team') if data else filters.get('team')
+
+    total_working_hours, total_holiday = calculate_working_hours(from_date, to_date,
+                                                                 'Annual Holiday') if to_date and from_date else 0
+
+    output = BytesIO()
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+
+    # Jika flag `separate_sheets_by_pic` tidak aktif, tulis satu sheet utama
+    if not filters.get('separate_sheets_by_pic'):
+        write_report_sheet(
+            workbook,
+            data,
+            from_date,
+            to_date,
+            total_working_hours,
+            total_holiday,
+            team_filename,
+        )
+    else:
+        # Jika aktif, buat satu sheet per PIC
+        write_report_sheets_by_pic(
+            workbook,
+            data,
+            from_date,
+            to_date,
+            total_working_hours,
+            total_holiday,
+        )
 
     workbook.close()
     output.seek(0)
 
-    frappe.response["filename"] = f"Report {team_filename} {from_date} -  {to_date}.xlsx"
+    frappe.response["filename"] = f"Report Task Management {team_filename} {from_date} -  {to_date}.xlsx"
     frappe.response["filecontent"] = output.read()
     frappe.response["type"] = "binary"

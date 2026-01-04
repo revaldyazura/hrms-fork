@@ -117,7 +117,7 @@
    "label": "PIC"
   },
   {
-   "description": "You're able to choose multiple employee as the PIC",
+   "description": "You can select multiple employees as PICs. Selected employees can create subtasks and evaluate them, provided they have at least a Leader role. You must also include yourself as a PIC.",
    "fieldname": "task_pic",
    "fieldtype": "Table",
    "label": "Task PICs",
@@ -147,7 +147,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-28 19:25:35.705278",
+ "modified": "2026-01-04 06:54:33.155759",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Tasks",
