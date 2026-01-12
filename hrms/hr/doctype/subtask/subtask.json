@@ -41,6 +41,7 @@
   "subtask_start_date",
   "subtask_resolved_date",
   "subtask_close_date",
+  "maintask_owner",
   "column_break_kemw",
   "subtask_open_date",
   "subtask_pause_date",
@@ -320,12 +321,18 @@
    "fieldname": "subtask_resolved_date",
    "fieldtype": "Datetime",
    "label": "Sub Task Resolved Date"
+  },
+  {
+   "fetch_from": "maintask.created_by",
+   "fieldname": "maintask_owner",
+   "fieldtype": "Data",
+   "label": "MainTask Owner"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-07 12:14:35.085478",
+ "modified": "2026-01-07 18:36:48.993567",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",
