@@ -101,7 +101,7 @@ def write_report_sheet(workbook, data, from_date, to_date, total_working_hours, 
     additional_data_format = formats['additional_data_format']
     main_task_color_map = {}
     format_cache = {}
-    sheet.set_column("A:J", 20)
+    sheet.set_column("A:K", 20)
 
     headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status", "SubTask Start Date", "SubTask Done Date"]
     for col, h in enumerate(headers):
@@ -279,7 +279,7 @@ def write_report_sheets_by_pic(workbook, data, from_date, to_date, total_working
         main_task_color_map = {}
         format_cache = {}
 
-        sheet.set_column("A:J", 20)
+        sheet.set_column("A:K", 20)
 
         headers = [
             "Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type",
