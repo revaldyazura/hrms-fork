@@ -8,7 +8,7 @@ frappe.ui.form.on("Evaluation", {
 		// });
 		frm.set_query("subtask", function () {
 			return {
-				query: "hrms.hr.doctype.evaluation.evaluation.get_done_subtask_as_owner"
+				query: "hrms.hr.doctype.evaluation.evaluation.get_done_subtask_as_evaluator"
 			};
 		});
 		frappe.after_ajax(() => {
@@ -59,28 +59,47 @@ frappe.ui.form.on("Evaluation", {
 				callback: function (r) {
 					frm.set_df_property('subtask', 'read_only', 1);
 					const readonly_fields = ["performance"];
-					if (r.message.includes("pic_subtask") && !r.message.includes("owner_subtask") && !r.message.includes("task_pics") && !r.message.includes("owner_task") && !r.message.includes("owner_maintask")) {
+					const msg = r.message;
+					const hasFlag = (flag) => {
+						if (!msg && msg !== 0) return false;
+						if (Array.isArray(msg)) return msg.indexOf(flag) !== -1;
+						return String(msg).includes(flag);
+					};
+
+					if (hasFlag("none")) {
+						frm.set_read_only(true);
+						frm.disable_save();
+						return;
+					}
+
+					// Determine whether the current user should be allowed to edit `performance`.
+					// Allow edit when user has higher hierarchy or relevant ownership/assignment flags.
+					const allowEdit = hasFlag("owner_evaluation") || hasFlag("owner_maintask") || hasFlag("admin") || hasFlag("assign_by_maintask") || hasFlag("assign_by_maintask_supervisor") || hasFlag("assign_by_maintask_manager");
+
+					if (!allowEdit || hasFlag("pic_subtask_only")) {
 						readonly_fields.forEach(field => {
 							frm.set_df_property(field, "read_only", 1);
 						});
-					} else if (r.message.includes("none")) {
-						frm.set_read_only(true);
-						frm.disable_save();
+					} else {
+						// ensure editable for allowed roles
+						readonly_fields.forEach(field => {
+							frm.set_df_property(field, "read_only", 0);
+						});
 					}
 				}
 			});
 		}
 	},
 	refresh(frm) {
-		
+
 		let workspace = 'Task Management';
-            
-        frappe.breadcrumbs.all[frappe.get_route_str()] = {
-            workspace: workspace,
-            doctype: frm.doctype,
-            type: 'Form'
-        };
-        frappe.breadcrumbs.update();
-		
+
+		frappe.breadcrumbs.all[frappe.get_route_str()] = {
+			workspace: workspace,
+			doctype: frm.doctype,
+			type: 'Form'
+		};
+		frappe.breadcrumbs.update();
+
 	},
 });

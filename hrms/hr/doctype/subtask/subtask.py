@@ -295,8 +295,9 @@ def ensure_employee_in_maintask_child_table(doc: Document | str):
 
 @frappe.whitelist()
 def user_edit_subtask(subtask_name):
+	privileges = list()
 	if frappe.session.user == "Administrator":
-		return "admin"
+		return privileges.append("admin")
 
 	doc = frappe.get_doc("SubTask", subtask_name)
 	employee_id = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
@@ -307,7 +308,6 @@ def user_edit_subtask(subtask_name):
 	if not employee_id:
 		return "none"
 
-	privileges = list()
 
 	if doc.tasks and doc.maintask:
 		tasks = frappe.get_doc("Tasks", doc.tasks)
@@ -465,13 +465,18 @@ def button_evaluation_subtask(subtask):
 			filters={"employee": employee_id},
 			pluck="parent"
 		)
+	parent_assign_by = frappe.get_all(
+			"MainTask Assign By", filters={"employee": employee_id}, pluck="parent"
+		)
 	is_pic = subtask.tasks in parent_task_pic
 	print(f"User: {user}, Maintask Owner: {maintask.owner}, is PIC? {is_pic}, Roles: {roles}")
  
 	if maintask.owner == user and subtask.status == "Done":
 		return "maintask_owner_done"
-	if tasks.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
-		return "task_owner_done"
+	if maintask.name in parent_assign_by and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
+		return "assign_by_maintask_done"
+	# if tasks.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
+	# 	return "task_owner_done"
 	# if subtask.owner == user and subtask.status == "Done" and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles):
 	# 	return "subtask_owner_done"
 	if subtask.tasks in parent_task_pic and ('Leader' in roles or 'Manager' in roles or 'Supervisor' in roles) and subtask.status == "Done":

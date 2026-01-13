@@ -44,6 +44,7 @@ class Evaluation(Document):
 		self.created_by = frappe.db.get_value(
 			"Employee", {"user_id": self.owner}, "employee_name"
 		)
+
 	def after_insert(self):
 		print("after insert eval called")
 		subtask_route = f"/app/subtask/{self.subtask}"
@@ -63,7 +64,7 @@ class Evaluation(Document):
 		)
 		subtask_name = frappe.db.get_value("SubTask", self.subtask, "subtask_name")
 		link_subtask_html = get_link_to_form(
-			"SubTask", self.subtask, label = subtask_name
+			"SubTask", self.subtask, label=subtask_name
 		)
 		# Decide which button to show depending on where the request came from.
 		# If creation is initiated from a SubTask page (e.g. via subtask.js), the
@@ -72,18 +73,18 @@ class Evaluation(Document):
 		# the Evaluation from the Evaluation doctype/form), show 'Open SubTask'.
 		btn_html = open_eval_btn
 		try:
-			request = getattr(frappe.local, 'request', None)
-			headers = getattr(request, 'headers', None) if request else None
+			request = getattr(frappe.local, "request", None)
+			headers = getattr(request, "headers", None) if request else None
 			referer = None
 			if headers:
 				# WSGI headers mapping; headers may be a dict-like
-				referer = headers.get('Referer') or headers.get('referer')
+				referer = headers.get("Referer") or headers.get("referer")
 			# Fallback: sometimes frappe.request is available
-			if not referer and hasattr(frappe, 'request'):
-				_r = getattr(frappe, 'request')
-				if _r and getattr(_r, 'headers', None):
-					referer = _r.headers.get('Referer') or _r.headers.get('referer')
-			if referer and '/app/subtask/' in referer:
+			if not referer and hasattr(frappe, "request"):
+				_r = getattr(frappe, "request")
+				if _r and getattr(_r, "headers", None):
+					referer = _r.headers.get("Referer") or _r.headers.get("referer")
+			if referer and "/app/subtask/" in referer:
 				btn_html = open_eval_btn
 			else:
 				# default to open_subtask_btn when not coming from a subtask page
@@ -98,7 +99,6 @@ class Evaluation(Document):
 		)
 
 		frappe.msgprint(msg_html, title="Evaluation Created", indicator="green")
-	
 
 
 def update_fields(doc, method):
@@ -162,7 +162,14 @@ def update_fields(doc, method):
 
 
 def has_permission(doc, ptype, user):
-	print("has permission evaluation doc:", doc.name, "called for user:", user, "ptype:", ptype)
+	print(
+		"has permission evaluation doc:",
+		doc.name,
+		"called for user:",
+		user,
+		"ptype:",
+		ptype,
+	)
 
 	if frappe.session.user == "Administrator":
 		return True
@@ -210,23 +217,26 @@ def has_permission(doc, ptype, user):
 	has_privileged_role = any(r in privileged_roles for r in roles)
 	is_task_owner = tasks.owner == user
 	is_maintask_owner = maintask.owner == user
+	is_maintask_assign_by = maintask.name in parent_assign_by
 	is_task_pic = tasks.name in parent_task_pic
 
 	if ptype in ("create", "write", "delete"):
-		if has_privileged_role and (is_task_pic or is_maintask_owner or is_task_owner):
+		if has_privileged_role and (
+			is_task_pic or is_maintask_owner or is_maintask_assign_by
+		):
 			print(
-				f"task owner {is_task_owner}, maintask owner {is_maintask_owner}, task pic {is_task_pic}, roles {roles}"
+				f"maintask owner {is_maintask_owner}, assign by {is_maintask_assign_by}, task pic {is_task_pic}, roles {roles}"
 			)
 			return True
 		else:
 			if ptype == "delete":
 				frappe.throw(
-					"You cannot delete this Evaluation because you do not meet the required criteria (required role and must be PIC Task or Task Owner or MainTask Owner).",
+					"You cannot delete this Evaluation because you do not meet the required criteria (required role and must be PIC Task, MainTask Owner, Tasks Owner).",
 					frappe.PermissionError,
 				)
 			else:
 				frappe.throw(
-					f"You cannot {'create' if ptype == 'create' else 'edit'} this Evaluation because you do not meet the required criteria (required role and must be PIC Task or Task Owner, or MainTask Owner).",
+					f"You cannot {'create' if ptype == 'create' else 'edit'} this Evaluation because you do not meet the required criteria (required role and must be PIC Task, MainTask Owner, Tasks Owner).",
 					frappe.PermissionError,
 				)
 
@@ -263,7 +273,7 @@ def after_delete(doc, method):
 			"Evaluation", subtask.name, label=doc.name
 		)
 		link_subtask_html = get_link_to_form(
-			"SubTask", subtask.name, label = subtask.subtask_name
+			"SubTask", subtask.name, label=subtask.subtask_name
 		)
 		msg_html = (
 			f"SubTask <b>{link_subtask_html}</b> status revert back to Done after this evaluation <b>{link_evaluation_html}</b> is deleted."
@@ -276,13 +286,15 @@ def after_delete(doc, method):
 @frappe.whitelist()
 def user_edit_evaluation(subtask):
 	print("user edit evaluation called")
-
-	if frappe.session.user == "Administrator":
-		return "admin"
+	user = frappe.session.user
+	privileges = list()
+	if user == "Administrator":
+		return ["admin"]
 
 	doc = frappe.get_doc("SubTask", subtask)
-	employee_id = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
-
+	employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
+	roles = frappe.get_all("Has Role", filters={"parent": user}, pluck="role")
+	print(f"roles: {roles}")
 	maintask = frappe.get_doc("MainTask", doc.maintask)
 
 	if not employee_id:
@@ -291,37 +303,67 @@ def user_edit_evaluation(subtask):
 	if doc.owner == frappe.session.user:
 		return "owner_evaluation"
 
-	privileges = list()
-
 	if doc.tasks:
 		tasks = frappe.get_doc("Tasks", doc.tasks)
-		owner_task = tasks.owner
+		# owner_task = tasks.owner
 
 		parent_task_pic = frappe.get_all(
 			"Task PIC", filters={"employee": employee_id}, pluck="parent"
 		)
 
-		if doc.owner == frappe.session.user:
-			privileges.append("owner_subtask")
+		parent_assign_by = frappe.get_all(
+			"MainTask Assign By", filters={"employee": employee_id}, pluck="parent"
+		)
 
-		if tasks.name in parent_task_pic:
-			privileges.append("task_pics")
+		# if tasks.name in parent_task_pic and (
+		# 	"Leader" in roles or "Manager" in roles or "Supervisor" in roles
+		# ):
+		# 	privileges.append("task_pics_leader")
 
-		if owner_task == frappe.session.user:
-			privileges.append("owner_task")
+		# if owner_task == frappe.session.user:
+		# 	privileges.append("owner_task")
 
-		if doc.pic_subtask == employee_id:
-			privileges.append("pic_subtask")
+		if doc.pic_subtask == employee_id and all(
+			r not in roles for r in ("Leader", "Manager", "Supervisor")
+		):
+			privileges.append("pic_subtask_only")
+
+		# if maintask.name in parent_assign_by and (
+		# 	"Leader" in roles or "Manager" in roles or "Supervisor" in roles
+		# ):
+		# 	privileges.append("assign_by_maintask")
 
 		if maintask.owner == frappe.session.user:
 			privileges.append("owner_maintask")
+		
+		if doc.maintask in parent_assign_by:
+			pic_subtask_user = frappe.get_value("Employee", {"name": doc.pic_subtask}, "user_id")
+			pic_subtask_roles = [r.lower() for r in (frappe.get_all("Has Role", filters={"parent": pic_subtask_user}, pluck="role") or [])]
+			user_roles_l = [r.lower() for r in (roles or [])]
+			# PIC has manager role -> conservative: don't expose editing flag here
+			if 'manager' in pic_subtask_roles:
+				# no extra privilege (only higher authority / admin should edit)
+				pass
+			# PIC is supervisor -> allow only manager to edit
+			elif 'supervisor' in pic_subtask_roles:
+				if 'manager' in user_roles_l:
+					privileges.append("assign_by_maintask_manager")
+			# PIC is leader -> allow supervisor or manager to edit
+			elif 'leader' in pic_subtask_roles:
+				if 'manager' in user_roles_l or 'supervisor' in user_roles_l:
+					privileges.append("assign_by_maintask_supervisor")
+			# PIC is regular employee (no leader/supervisor/manager) -> allow
+			# leader/supervisor/manager to edit
+			else:
+				if any(r in user_roles_l for r in ('manager', 'supervisor', 'leader')):
+					privileges.append("assign_by_maintask")
 
 		print(f"privileges: {privileges}")
 		return privileges if privileges else ["none"]
 
 
 @frappe.whitelist()
-def get_done_subtask_as_owner(doctype, txt, searchfield, start, page_len, filters):
+def get_done_subtask_as_evaluator(doctype, txt, searchfield, start, page_len, filters):
 	user_id = frappe.session.user
 
 	employee_id = frappe.get_value("Employee", {"user_id": user_id}, "name")
@@ -332,8 +374,9 @@ def get_done_subtask_as_owner(doctype, txt, searchfield, start, page_len, filter
 		FROM `tabSubTask` st
 		JOIN `tabTasks` t ON st.tasks = t.name
 		JOIN `tabMainTask` mt ON st.maintask = mt.name
+		JOIN `tabMainTask Assign By` mab ON mab.parent = st.maintask
   		JOIN `tabTask PIC` tp ON tp.parent = st.tasks
-		WHERE ( mt.owner = %(user_id)s OR tp.employee = %(employee_id)s OR t.owner = %(user_id)s) AND st.status = 'Done' AND (st.name LIKE %(txt)s OR st.subtask_name LIKE %(txt)s)
+		WHERE ( mt.owner = %(user_id)s OR tp.employee = %(employee_id)s OR ma.employee = %(employee_id)s) AND st.status = 'Done' AND (st.name LIKE %(txt)s OR st.subtask_name LIKE %(txt)s)
 		GROUP BY st.name
 		  ORDER BY st.creation DESC, st.name
 	""",
