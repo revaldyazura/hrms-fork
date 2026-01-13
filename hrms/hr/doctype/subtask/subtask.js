@@ -671,6 +671,9 @@ frappe.ui.form.on("SubTask", {
 			});
 			// ================= Refactored Permission & Status Logic =================
 			function apply_subtask_access_and_status(frm, flagString) {
+				if (frappe.session.user === 'Administrator') {
+					return;
+				}
 				const flags = parse_role_flags(flagString);
 				const status = frm.doc.status;
 				frm.set_df_property('total_time', 'read_only', 1);
