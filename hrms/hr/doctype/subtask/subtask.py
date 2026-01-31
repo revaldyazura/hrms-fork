@@ -76,7 +76,10 @@ class SubTask(Document):
 		elif self.status in ("Pause", "Done", "Resolved"):
 			if not self.last_in_progress_timestamp:
 				if from_parent and prev.status in ("Open", "Cancel", None):
-					self.last_in_progress_timestamp = 0
+					self.subtask_start_date = now
+					self.last_in_progress_timestamp = now
+					if self.status == "Done":
+						self.subtask_done_date = now
 					self.total_time = 0
 					return
 				if prev.status == "Close":
@@ -98,9 +101,9 @@ class SubTask(Document):
 			self.subtask_close_date = now	
 
 def update_fields(doc, method):
-	if frappe.flags.in_update:
-		# frappe.msgprint(f"In update SubTask")
-		return
+	# if frappe.flags.in_update:
+	# 	# frappe.msgprint(f"In update SubTask")
+	# 	return
 	frappe.flags.in_update = True
 
 	frappe.flags.in_update = False

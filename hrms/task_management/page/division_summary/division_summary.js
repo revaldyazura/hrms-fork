@@ -292,7 +292,11 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
             }
         });
     }
+    
 
+    // pagination state
+    let pageSize = 15;
+    let currentPage = 1;
     function renderSubtaskTable(rows, employees) {
         const wrap = document.getElementById("div_table_wrapper");
         if (!wrap) return;
@@ -347,10 +351,6 @@ frappe.pages['division-summary'].on_page_load = async function (wrapper) {
             const B = (b.employee_name || '').toLowerCase();
             return A.localeCompare(B);
         });
-
-    // pagination state
-    let pageSize = 15;
-    let currentPage = 1;
     function computeTotalPages() {
         return Math.max(1, Math.ceil(merged.length / pageSize));
     }

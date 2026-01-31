@@ -47,14 +47,15 @@ frappe.ui.form.on("Tasks", {
 					task_name: frm.doc.name,
 				},
 				callback: function (r) {
+					frm.set_df_property("status", "options", ["Open", "In Progress", "Pause", "Done", "Cancel"]);
+
 					const readonly_fields = [
 						"target_time",
 						"maintask",
 						"task_pic",
 						"unit_target_time",
 					];
-					if (r.message.includes("task_pics") && !r.message.includes("owner_tasks") &&
-						!r.message.includes("admin") && !r.message.includes("assign_by_maintask") && !r.message.includes("pic_maintask")) {
+					if (r.message.includes("task_pics") && !r.message.includes("admin") && !r.message.includes("assign_by_maintask") && !r.message.includes("pic_maintask")) {
 						readonly_fields.forEach((field) => {
 							frm.set_df_property(field, "read_only", 1);
 						});

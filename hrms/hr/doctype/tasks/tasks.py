@@ -45,9 +45,10 @@ def after_delete(doc, method):
 
 
 def update_fields(doc, method):
-	if frappe.flags.in_update:
-		# frappe.msgprint(f"In update Tasks")
-		return
+	# if frappe.flags.in_update:
+	# 	# frappe.msgprint(f"In update Tasks")
+	# 	print("In update Tasks, skipping to avoid recursion.")
+	# 	return
 	frappe.flags.in_update = True
 
 	previous_status = doc.flags.get("_previous_status")

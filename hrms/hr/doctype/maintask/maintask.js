@@ -386,6 +386,11 @@ frappe.ui.form.on("MainTask", {
 function show_task_dialog(frm, tasks) {
   let fields = [];
 
+  // Build Task PIC rows from MainTask team once
+  const base_team_rows = (frm.doc.team || [])
+    .filter((r) => r.employee)
+    .map((r) => ({ employee: r.employee, employee_name: r.employee_name }));
+
   tasks.forEach((task, i) => {
     fields.push({
       fieldname: `section_${i}`,
@@ -419,11 +424,16 @@ function show_task_dialog(frm, tasks) {
       options: ["Open"],
       default: task.status_template,
     });
+    // Prefill Task PIC table with MainTask team members
+    const team_rows = (base_team_rows || []).map((r) => ({ ...r }));
     fields.push({
       fieldname: `task_pic_${i}`,
       label: "Task PICs",
       fieldtype: "Table",
       cannot_add_rows: 0,
+      // NOTE: `default` may not auto-render rows for Dialog table fields,
+      // but we keep it for completeness and also set values after dialog.show().
+      // default: team_rows,
       fields: [
         {
           fieldname: "employee",
@@ -482,6 +492,32 @@ function show_task_dialog(frm, tasks) {
   });
 
   dialog.show();
+
+  // Ensure the table grids are rendered, then set values + refresh.
+  // This is the most reliable way to prefill Dialog Table fields.
+  setTimeout(() => {
+    const rows = (base_team_rows || []).map((r) => ({ ...r }));
+    if (!rows.length) return;
+
+    for (let i = 0; i < tasks.length; i++) {
+      const table_fieldname = `task_pic_${i}`;
+      const cloned_rows = rows.map((r) => ({ ...r }));
+
+      try {
+        dialog.set_value(table_fieldname, cloned_rows);
+      } catch (e) {
+        // ignore
+      }
+
+      const field = dialog.fields_dict && dialog.fields_dict[table_fieldname];
+      if (field && field.grid) {
+        // Some versions rely on df.data for initial grid rows
+        field.df.data = cloned_rows;
+        field.grid.df.data = cloned_rows;
+        field.grid.refresh();
+      }
+    }
+  }, 0);
 }
 
 frappe.ui.form.on("MainTask Team", {
