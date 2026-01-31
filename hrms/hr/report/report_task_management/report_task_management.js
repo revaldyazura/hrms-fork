@@ -41,6 +41,12 @@ frappe.query_reports["Report Task Management"] = {
 						fieldname: "separate_sheets_by_pic",
 						fieldtype: "Check",
 						default: 0
+					},
+					{
+						label: "Filter by Open Date",
+						fieldname: "filter_by_open_date",
+						fieldtype: "Check",
+						default: 0
 					}
 				],
 				primary_action_label: "Generate",

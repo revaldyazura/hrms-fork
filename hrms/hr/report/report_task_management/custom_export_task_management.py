@@ -86,7 +86,7 @@ def create_formats(workbook):
     }
 
 
-def write_report_sheet(workbook, data, from_date, to_date, total_working_hours, total_holiday, team_filename):
+def write_report_sheet(workbook, data, from_date, to_date, total_working_hours, total_holiday, team_filename, filter_by_open_date):
     """Write the main report sheet into `workbook` using provided data and meta.
 
     This extracts the large inline block that formats and writes the Excel sheet.
@@ -103,7 +103,10 @@ def write_report_sheet(workbook, data, from_date, to_date, total_working_hours, 
     format_cache = {}
     sheet.set_column("A:K", 20)
 
-    headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status", "SubTask Start Date", "SubTask Done Date"]
+    if filter_by_open_date:
+        headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status", "SubTask Open Date", "SubTask Done Date"]
+    else:
+        headers = ["Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type", "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status", "SubTask Start Date", "SubTask Done Date"]
     for col, h in enumerate(headers):
         sheet.write(0, col, h, header_format)
 
@@ -143,7 +146,10 @@ def write_report_sheet(workbook, data, from_date, to_date, total_working_hours, 
                         sheet.write_number(row, 6, int(tr.get("value_subtask") or 0), colored_format)
                         sheet.write_number(row, 7, int(tr.get("target_time_minutes") or 0), colored_format)
                         sheet.write(row, 8, tr.get("subtask_status"), colored_format)
-                        sheet.write(row, 9, date_change_format(tr.get("subtask_start_date")) if tr.get("subtask_start_date") else "", colored_format)
+                        if filter_by_open_date:
+                            sheet.write(row, 9, date_change_format(tr.get("subtask_open_date")) if tr.get("subtask_open_date") else "", colored_format)
+                        else:
+                            sheet.write(row, 9, date_change_format(tr.get("subtask_start_date")) if tr.get("subtask_start_date") else "", colored_format)
                         sheet.write(row, 10, date_change_format(tr.get("subtask_done_date")) if tr.get("subtask_done_date") else "", colored_format)
                         row += 1
 
@@ -251,7 +257,7 @@ def write_report_sheet(workbook, data, from_date, to_date, total_working_hours, 
             sheet.write_formula(mt_row_start, 7, f'=SUM(F{row}:F{row})', colored_format)
 
 
-def write_report_sheets_by_pic(workbook, data, from_date, to_date, total_working_hours, total_holiday):
+def write_report_sheets_by_pic(workbook, data, from_date, to_date, total_working_hours, total_holiday, filter_by_open_date):
     """Write separate report sheets per PIC into `workbook`.
 
     Each PIC (st.pic_subtask_name) gets its own sheet, with the
@@ -281,11 +287,18 @@ def write_report_sheets_by_pic(workbook, data, from_date, to_date, total_working
 
         sheet.set_column("A:K", 20)
 
-        headers = [
-            "Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type",
-            "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status",
-            "SubTask Start Date", "SubTask Done Date",
-        ]
+        if filter_by_open_date:
+            headers = [
+                "Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type",
+                "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status",
+                "SubTask Open Date", "SubTask Done Date",
+            ]
+        else:
+            headers = [
+                "Team", "Employee", "MainTask", "Task", "SubTask", "SubTask Type",
+                "SubTask Value", "SubTask Target Time (Minutes)", "SubTask Status",
+                "SubTask Start Date", "SubTask Done Date",
+            ]
         for col, h in enumerate(headers):
             sheet.write(0, col, h, header_format)
 
@@ -323,14 +336,24 @@ def write_report_sheets_by_pic(workbook, data, from_date, to_date, total_working
                         sheet.write_number(row, 6, int(tr.get("value_subtask") or 0), colored_format)
                         sheet.write_number(row, 7, int(tr.get("target_time_minutes") or 0), colored_format)
                         sheet.write(row, 8, tr.get("subtask_status"), colored_format)
-                        sheet.write(
-                            row,
-                            9,
-                            date_change_format(tr.get("subtask_start_date"))
-                            if tr.get("subtask_start_date")
-                            else "",
-                            colored_format,
-                        )
+                        if filter_by_open_date:
+                            sheet.write(
+                                row,
+                                9,
+                                date_change_format(tr.get("subtask_open_date"))
+                                if tr.get("subtask_open_date")
+                                else "",
+                                colored_format,
+                            )
+                        else:
+                            sheet.write(
+                                row,
+                                9,
+                                date_change_format(tr.get("subtask_start_date"))
+                                if tr.get("subtask_start_date")
+                                else "",
+                                colored_format,
+                            )
                         sheet.write(
                             row,
                             10,
@@ -552,6 +575,7 @@ def export_team_task_management(filters=None):
                       st.value AS value_subtask,
                       st.target_time_minutes,
                       st.status AS subtask_status,
+                      st.subtask_open_date,
                       st.subtask_start_date,
                       st.subtask_done_date,
                       emp.team
@@ -570,7 +594,10 @@ def export_team_task_management(filters=None):
     if filters.get("from_date") and filters.get("to_date"):
         from_date = filters.get("from_date")
         to_date = filters.get("to_date")
-        conditions.append("st.subtask_start_date BETWEEN %(from_date)s AND %(to_date)s")
+        if filters.get('filter_by_open_date'):
+            conditions.append("st.subtask_open_date BETWEEN %(from_date)s AND %(to_date)s")
+        else:
+            conditions.append("st.subtask_start_date BETWEEN %(from_date)s AND %(to_date)s")
         values["from_date"] = filters["from_date"]
         values["to_date"] = filters["to_date"]
 
@@ -599,6 +626,7 @@ def export_team_task_management(filters=None):
             total_working_hours,
             total_holiday,
             team_filename,
+            filter_by_open_date=filters.get('filter_by_open_date', False)
         )
     else:
         # Jika aktif, buat satu sheet per PIC
@@ -609,6 +637,7 @@ def export_team_task_management(filters=None):
             to_date,
             total_working_hours,
             total_holiday,
+            filter_by_open_date=filters.get('filter_by_open_date', False)
         )
 
     workbook.close()

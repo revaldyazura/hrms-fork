@@ -54,17 +54,17 @@ def date_change_format(date_source, date_format="%d %B %Y"):
 def export_individual_evaluation(filters=None):
     filters = frappe.parse_json(filters or '{}')
 
-    query = """SELECT pic_subtask_name,
-        maintask,
-                      maintask_name,
-        tasks,
-                      task_name,
-                      subtask,
-                      subtask_name,
-                      value_subtask,
-                      performance,
-                      final_target_time,
-                      contribution
+    query = """SELECT ev.pic_subtask_name,
+                        ev.maintask,
+                      ev.maintask_name,
+                        ev.tasks,
+                      ev.task_name,
+                      ev.subtask,
+                      ev.subtask_name,
+                      ev.value_subtask,
+                      ev.performance,
+                      ev.final_target_time,
+                      ev.contribution
                FROM `tabEvaluation` ev\
             """
 
@@ -79,7 +79,7 @@ def export_individual_evaluation(filters=None):
     if filters.get("from_date") and filters.get("to_date"):
         from_date = filters.get("from_date")
         to_date = filters.get("to_date")
-        conditions.append("subtask_open_date BETWEEN %(from_date)s AND %(to_date)s")
+        conditions.append("ev.subtask_open_date BETWEEN %(from_date)s AND %(to_date)s")
         # conditions.append("due_date BETWEEN %(from_date)s AND %(to_date)s")
         values["from_date"] = filters["from_date"]
         values["to_date"] = filters["to_date"]

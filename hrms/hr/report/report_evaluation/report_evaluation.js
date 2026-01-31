@@ -27,13 +27,13 @@ frappe.query_reports["Report Evaluation"] = {
 					{
 						label: "From Date",
 						fieldname: "from_date",
-						fieldtype: "Datetime",
+						fieldtype: "Date",
 						reqd: 1
 					},
 					{
 						label: "To Date",
 						fieldname: "to_date",
-						fieldtype: "Datetime",
+						fieldtype: "Date",
 						reqd: 1
 					}
 				],
@@ -75,13 +75,13 @@ frappe.query_reports["Report Evaluation"] = {
 					{
 						label: "From Date",
 						fieldname: "from_date",
-						fieldtype: "Datetime",
+						fieldtype: "Date",
 						reqd: 1
 					},
 					{
 						label: "To Date",
 						fieldname: "to_date",
-						fieldtype: "Datetime",
+						fieldtype: "Date",
 						reqd: 1
 					}
 				],
