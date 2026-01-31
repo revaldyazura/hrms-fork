@@ -145,6 +145,9 @@ def execute(filters=None):
                 ),
                 "cancel_subtask": frappe.db.count(
                     "SubTask", filters={"maintask": tsm.mt_name, "status": "Cancel"}
+                ),
+                "total_subtask": frappe.db.count(
+                    "SubTask", filters={"maintask": tsm.mt_name}
                 )
             }
         )
@@ -195,6 +198,7 @@ def get_chart_data(data):
         completed.append(tsm["completed_subtask"])
         close.append(tsm["close_subtask"])
         cancel.append(tsm["cancel_subtask"])
+        total.append(tsm["total_subtask"])
 
     return {
         "data": {
@@ -206,10 +210,11 @@ def get_chart_data(data):
                 {"name": _("Done"), "values": completed[:30]},
                 {"name": _("Close"), "values": close[:30]},
                 {"name": _("Cancel"), "values": cancel[:30]},
+                {"name": _("Total"), "values": total[:30]}
             ],
         },
         "type": "bar",
-        "colors": ["#4B4B61","#0000FF","#FFD580", "#008000",  "#5A0363",  "#FF0000"],
+        "colors": ["#4B4B61","#0000FF","#FFD580", "#008000",  "#5A0363",  "#FF0000", "#808080"],
         "barOptions": {"stacked": True},
     }
 
