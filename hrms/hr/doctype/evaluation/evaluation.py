@@ -111,11 +111,10 @@ def update_fields(doc, method):
 	print("update fields evaluation called")
 
 	subtask = frappe.get_doc("SubTask", doc.subtask)
-	tasks_doc = frappe.get_doc("Tasks", subtask.tasks)
 
 	doc.pic_subtask = subtask.pic_subtask
 	doc.tasks = subtask.tasks
-	doc.maintask = tasks_doc.maintask
+	doc.maintask = subtask.maintask
 	doc.final_target_time = round(
 		(subtask.target_time_minutes * doc.performance) / 100, 2
 	)
@@ -130,7 +129,7 @@ def update_fields(doc, method):
 
 	evaluations = frappe.get_all(
 		"Evaluation",
-		filters={"maintask": tasks_doc.maintask},
+		filters={"maintask": subtask.maintask},
 		fields=["name", "subtask", "performance"],
 	)
 	evaluated_subtasks = len(evaluations)
@@ -376,7 +375,7 @@ def get_done_subtask_as_evaluator(doctype, txt, searchfield, start, page_len, fi
 		JOIN `tabMainTask` mt ON st.maintask = mt.name
 		JOIN `tabMainTask Assign By` mab ON mab.parent = st.maintask
   		JOIN `tabTask PIC` tp ON tp.parent = st.tasks
-		WHERE ( mt.owner = %(user_id)s OR tp.employee = %(employee_id)s OR ma.employee = %(employee_id)s) AND st.status = 'Done' AND (st.name LIKE %(txt)s OR st.subtask_name LIKE %(txt)s)
+		WHERE ( mt.owner = %(user_id)s OR tp.employee = %(employee_id)s OR mab.employee = %(employee_id)s) AND st.status = 'Done' AND (st.name LIKE %(txt)s OR st.subtask_name LIKE %(txt)s)
 		GROUP BY st.name
 		  ORDER BY st.creation DESC, st.name
 	""",
