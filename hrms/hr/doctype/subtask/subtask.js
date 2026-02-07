@@ -714,6 +714,7 @@ frappe.ui.form.on("SubTask", {
 								flagString.includes("assign_by_maintask_manager"))
 						) {
 							frm.set_df_property('total_time', 'read_only', 0);
+							frm.set_df_property('target_time', 'read_only', 0);
 						}
 					} catch (e) {
 						// noop

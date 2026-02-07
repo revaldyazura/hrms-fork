@@ -47,6 +47,12 @@ frappe.query_reports["Report Task Management"] = {
 						fieldname: "filter_by_open_date",
 						fieldtype: "Check",
 						default: 0
+					},
+					{
+						label: "Plain Export",
+						fieldname: "plain_export",
+						fieldtype: "Check",
+						default: 0
 					}
 				],
 				primary_action_label: "Generate",
