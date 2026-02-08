@@ -50,6 +50,11 @@ frappe.ui.form.on("Evaluation", {
 				});
 			}, 300); // Delay sedikit agar field render dulu
 		});
+		if (frm.is_new()) {
+			frm.add_custom_button(__('Bulk Evaluation'), () => {
+				frappe.set_route('evaluate-subtasks');
+			}, __('Actions'));
+		}
 		if (!frm.is_new()) {
 			frappe.call({
 				method: "hrms.hr.doctype.evaluation.evaluation.user_edit_evaluation",
@@ -100,6 +105,15 @@ frappe.ui.form.on("Evaluation", {
 			type: 'Form'
 		};
 		frappe.breadcrumbs.update();
+
+		// Add the Bulk Evaluation shortcut in a reliable hook.
+		// `onload` runs once; `refresh` runs on every load/reload and after saves.
+		const bulk_label = __('Bulk Evaluation');
+		if (!frm.custom_buttons || !frm.custom_buttons[bulk_label]) {
+			frm.add_custom_button(bulk_label, () => {
+				frappe.set_route('evaluate-subtasks');
+			}, __('Actions'));
+		}
 
 	},
 });

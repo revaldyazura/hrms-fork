@@ -46,6 +46,8 @@ class Evaluation(Document):
 		)
 
 	def after_insert(self):
+		if getattr(frappe.flags, "bulk_evaluation_creation", False):
+			return
 		print("after insert eval called")
 		subtask_route = f"/app/subtask/{self.subtask}"
 		eval_route = f"/app/evaluation/{self.name}"
