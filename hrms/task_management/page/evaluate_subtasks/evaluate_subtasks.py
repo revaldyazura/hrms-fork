@@ -41,7 +41,7 @@ def get_done_subtasks(txt: str | None = None, limit: int = 200):
 	if user != "Administrator" and not employee_id:
 		return []
 
-	limit = min(int(limit or 200), 500)
+	# limit = min(int(limit or 200), 500)
 	txt = (txt or "").strip()
 	like_txt = f"%{txt}%" if txt else None
 
@@ -55,14 +55,20 @@ def get_done_subtasks(txt: str | None = None, limit: int = 200):
 	if like_txt:
 		params["txt"] = like_txt
 		search_cond = " AND (st.name LIKE %(txt)s OR st.subtask_name LIKE %(txt)s)"
-
+	
+	joins = [
+		"JOIN `tabMainTask` mt ON mt.name = st.maintask"
+	]
+ 
+	where_clauses = [
+    "st.status = 'Done'",
+    # "NOT EXISTS (SELECT 1 FROM `tabEvaluation` ev WHERE ev.subtask = st.name)"
+	]
+ 
 	# Admin can view all eligible Done subtasks (still excludes already evaluated)
-	assign_by_join = "JOIN `tabMainTask Assign By` mab ON mab.parent = mt.name"
-	assign_by_where = "mab.employee = %(employee_id)s"
-	owner_where = "mt.owner = %(user_id)s"
-	if user == "Administrator":
-		assign_by_join = ""
-		assign_by_where = ""
+	if user != "Administrator":
+		joins.append("JOIN `tabMainTask Assign By` mab ON mab.parent = mt.name")
+		where_clauses.append("(mab.employee = %(employee_id)s OR mt.owner = %(user_id)s)")
 
 	rows = frappe.db.sql(
 		f"""
@@ -70,8 +76,8 @@ def get_done_subtasks(txt: str | None = None, limit: int = 200):
 			st.pic_subtask_name AS pic_subtask_name,
 			st.name AS subtask,
 			st.subtask_name AS subtask_title,
-			t.task_name AS task_title,
-			mt.maintask_name AS maintask_title,
+			st.tasks_name AS task_title,
+			st.maintask_name AS maintask_title,
 			st.value AS value,
 			st.priority AS priority,
 			st.target_time_minutes AS target_time_minutes,
@@ -80,19 +86,12 @@ def get_done_subtasks(txt: str | None = None, limit: int = 200):
 			st.tasks AS tasks,
 			st.maintask AS maintask
 		FROM `tabSubTask` st
-		JOIN `tabTasks` t ON t.name = st.tasks
-		JOIN `tabMainTask` mt ON mt.name = st.maintask
-		{assign_by_join}
+		{' '.join(joins)}
 		WHERE
-			st.status = 'Done' AND
-			({assign_by_where} OR {owner_where})
-			AND NOT EXISTS (
-				SELECT 1 FROM `tabEvaluation` ev WHERE ev.subtask = st.name
-			)
+			{' AND '.join(where_clauses)}
 			{search_cond}
 		GROUP BY st.name
 		ORDER BY st.creation DESC, st.name DESC
-		LIMIT %(limit)s
 	""",
 		params,
 		as_dict=True,

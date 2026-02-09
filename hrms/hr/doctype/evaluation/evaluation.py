@@ -106,6 +106,7 @@ class Evaluation(Document):
 def update_fields(doc, method):
 
 	if frappe.flags.in_update:
+		print("in update evaluation called")
 		# frappe.msgprint(f"In update Evaluation")
 		return
 	frappe.flags.in_update = True
