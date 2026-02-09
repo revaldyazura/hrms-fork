@@ -163,6 +163,14 @@ frappe.pages['evaluate-subtasks'].on_page_load = function (wrapper) {
 				focusable: false,
 			},
 			{
+				name: 'total_time',
+				id: 'total_time',
+				content: __('Total Time Minutes'),
+				width: 180,
+				editable: false,
+				focusable: false,
+			},
+			{
 				name: 'submission',
 				id: 'submission',
 				content: __('Submission'),
@@ -174,6 +182,22 @@ frappe.pages['evaluate-subtasks'].on_page_load = function (wrapper) {
 					return `<a class="btn btn-xs btn-default" data-action="view-submission" data-subtask="${frappe.utils.escape_html(value)}">${__('View')}</a>`;
 				},
 			},
+			{
+				name: 'status',
+				id: 'status',
+				content: __('Status'),
+				width: 100,
+				editable: false,
+				focusable: false,
+			},
+			{
+				name: 'subtask_done_date',
+				id: 'subtask_done_date',
+				content: __('SubTask Done Date'),
+				width: 150,
+				editable: false,
+				focusable: false,
+			}
 		].map((x) => ({ ...x, dropdown: true, align: x.align || 'left' }));
 		// Enable sorting on all columns by default
 		columns.forEach((c) => {

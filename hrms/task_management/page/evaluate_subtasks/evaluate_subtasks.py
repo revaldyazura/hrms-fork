@@ -81,10 +81,13 @@ def get_done_subtasks(txt: str | None = None, limit: int = 200):
 			st.value AS value,
 			st.priority AS priority,
 			st.target_time_minutes AS target_time_minutes,
+			st.total_time AS total_time,
 			st.attachment AS attachment,
 			st.submission_text AS submission_text,
 			st.tasks AS tasks,
-			st.maintask AS maintask
+			st.maintask AS maintask,
+			st.status AS status,
+			st.subtask_done_date AS subtask_done_date
 		FROM `tabSubTask` st
 		{' '.join(joins)}
 		WHERE

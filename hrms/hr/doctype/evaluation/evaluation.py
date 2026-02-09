@@ -258,6 +258,7 @@ def after_delete(doc, method):
 	subtask = frappe.get_doc("SubTask", doc.subtask)
 	if subtask.status == "Close":
 		subtask.status = "Done"
+		subtask.subtask_close_date = None
 		subtask.save()
 		subtask_route = f"/app/subtask/{subtask.name}"
 		eval_route = f"/app/evaluation/{doc.name}"
