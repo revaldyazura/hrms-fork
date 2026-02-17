@@ -211,7 +211,10 @@ def _configure_bot_commands(bot):
             types.BotCommand("unlink", "Unlink this private chat"),
         ]
 
-        group_commands = [
+        # By default, do NOT show any commands in group chats.
+        # We'll enable /aduan only for the configured group chat_id scope.
+        group_commands = []
+        group_commands_for_configured_chat = [
             types.BotCommand("aduan", "Create SubTask from complaint"),
         ]
 
@@ -250,16 +253,23 @@ def _configure_bot_commands(bot):
                 pass
 
             try:
-                bot.set_my_commands(group_commands, scope=types.BotCommandScopeChat(chat_id))
+                bot.set_my_commands(group_commands_for_configured_chat, scope=types.BotCommandScopeChat(chat_id))
             except Exception:
                 pass
             try:
-                bot.set_my_commands(group_commands, scope=types.BotCommandScopeChatAdministrators(chat_id))
+                bot.set_my_commands(
+                    group_commands_for_configured_chat,
+                    scope=types.BotCommandScopeChatAdministrators(chat_id),
+                )
             except Exception:
                 pass
 
-        _logger().info("Telegram bot commands configured: private=/start,/link,/unlink; group=/aduan")
-        print("Telegram bot commands configured: private=/start,/link,/unlink; group=/aduan")
+        _logger().info(
+            "Telegram bot commands configured: private=/start,/link,/unlink; group (all)=<none>; group (configured chat)=/aduan"
+        )
+        print(
+            "Telegram bot commands configured: private=/start,/link,/unlink; group (all)=<none>; group (configured chat)=/aduan"
+        )
         _debug_dump()
 
     except Exception as e:

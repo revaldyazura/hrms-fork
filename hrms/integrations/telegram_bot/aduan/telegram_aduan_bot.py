@@ -75,9 +75,9 @@ def _conf_default_settings() -> Dict[str, str]:
         "tasks": _conf_str("telegram_aduan_default_tasks", "T-202511-0000413"),
         "owner": _conf_str("telegram_aduan_default_owner", "renata@stellardata.ai"),
         "pic_subtask": _conf_str("telegram_aduan_default_pic_subtask", "HR-EMP-00413"),
-        "target_time": str(frappe.conf.get("telegram_aduan_default_target_time") or 1),
+        "target_time": int(frappe.conf.get("telegram_aduan_default_target_time") or 1),
         "unit_target_time": _conf_str("telegram_aduan_default_unit_target_time", "Hours"),
-        "value": str(frappe.conf.get("telegram_aduan_default_value") or 1),
+        "value": int(frappe.conf.get("telegram_aduan_default_value") or 1),
     }
 
 
@@ -243,12 +243,21 @@ def _build_message_link(message) -> Optional[str]:
     return None
 
 
-def _send(bot, chat_id: int, text: str, thread_id: Optional[int] = None, reply_to: Optional[int] = None):
+def _send(
+    bot,
+    chat_id: int,
+    text: str,
+    thread_id: Optional[int] = None,
+    reply_to: Optional[int] = None,
+    parse_mode: Optional[str] = None,
+):
     kwargs = {}
     if thread_id is not None:
         kwargs["message_thread_id"] = thread_id
     if reply_to is not None:
         kwargs["reply_to_message_id"] = reply_to
+    if parse_mode is not None:
+        kwargs["parse_mode"] = parse_mode
     return bot.send_message(chat_id, text, **kwargs)
 
 
@@ -406,11 +415,29 @@ def register_handlers(bot):
 
     @bot.message_handler(func=lambda m: _find_aduan_command_offset(getattr(m, "text", "") or "") is not None)
     def handle_aduan(message):
-        if not _is_allowed_group_topic(message):
+        allowed_chat_id = _conf_int("telegram_aduan_chat_id")
+        allowed_topic_id = _conf_int("telegram_aduan_topic_id")
+
+        if allowed_chat_id is None:
+            return
+
+        chat_id = getattr(getattr(message, "chat", None), "id", None)
+        if chat_id != allowed_chat_id:
+            return
+
+        thread_id = getattr(message, "message_thread_id", None)
+        if allowed_topic_id is not None and thread_id != allowed_topic_id:
+            _send(
+                bot,
+                chat_id,
+                "❌ Aduan hanya boleh di topic <b>ADUAN</b>",
+                thread_id=thread_id,
+                reply_to=getattr(message, "message_id", None),
+                parse_mode="HTML",
+            )
             return
 
         chat_id = message.chat.id
-        thread_id = getattr(message, "message_thread_id", None)
         raw_text = (message.text or "").strip()
         print('received message', raw_text)
         offset = _find_aduan_command_offset(raw_text)
