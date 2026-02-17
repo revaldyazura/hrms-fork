@@ -541,7 +541,7 @@ frappe.ui.form.on("SubTask", {
 					subtask: frm.doc.name
 				},
 				callback: function (r) {
-					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'administrator_done' 
+					if (r.message == 'maintask_owner_done' || r.message == 'pic_task_done' || r.message == 'administrator_done'
 						// || r.message == 'task_owner_done' 
 						|| r.message == 'assign_by_maintask_done') {
 						frm.add_custom_button("Evaluate This SubTask", () => {
@@ -959,6 +959,10 @@ frappe.ui.form.on("SubTask", {
 			frm.set_df_property("maintask", "hidden", 0);
 			frm.set_df_property("maintask", "reqd", 1);
 			frappe.show_alert({ message: __('Maintask can be selected manually now'), indicator: 'green' });
+			if (frm.doc.tasks) {
+				// jika choose_maintask_manually di-check, kita clear maintask karena user mau pilih manual
+				frm.set_value("tasks", "");
+			}
 			frm.set_query("tasks", function () {
 				return {
 					query: "hrms.hr.doctype.subtask.subtask.get_task_with_same_pic_and_maintask",
@@ -968,9 +972,10 @@ frappe.ui.form.on("SubTask", {
 		} else {
 			if (frm.doc.maintask) {
 				// jika choose_maintask_manually di-uncheck, kita set maintask ke fetch_from
-				frm.set_value("maintask", "");
-				frm.set_value("tasks", "");
+				// frm.set_value("maintask", "");
+				// frm.set_value("tasks", "");
 			}
+			// frm.set_value("maintask", "");
 			frm.set_df_property("maintask", "fetch_from", "tasks.maintask");
 			frm.set_df_property("maintask", "permlevel", 2);
 			frm.set_df_property("maintask", "read_only", 1);
@@ -986,10 +991,10 @@ frappe.ui.form.on("SubTask", {
 		// when maintask field changed in UI:
 		// - if user is in manual mode, clear the `tasks` field so it doesn't conflict
 		// - update sessionStorage prefill_fusion_maintask with the new value
-		if (frm.doc.choose_maintask_manually) {
-			// clear related task when maintask manually changed
-			frm.set_value('tasks', '');
-		}
+		// if (frm.doc.choose_maintask_manually) {
+		// 	// clear related task when maintask manually changed
+		// 	frm.set_value('tasks', '');
+		// }
 
 		if (frm.doc.maintask) {
 			sessionStorage.setItem('prefill_fusion_maintask', frm.doc.maintask);

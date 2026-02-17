@@ -1,0 +1,94 @@
+{
+  "General": ["@anwarhuda97", "@anwar_r_r"],
+  "Menu": ["@chndrafajar", "@anwar_r_r"],
+  "Theme Layout": ["@chndrafajar", "@biecodes"],
+  "Topic & Percolator": ["@chndrafajar", "@anwarhuda97"],
+  "API Handler": [
+    "@novandrisitinjak",
+    "@EgaSepyana",
+    "@rifqi_yusuf205",
+    "@anwarhuda97"
+  ],
+  "Server": ["@Meikelrizkyhartawan", "@ikuba91"],
+  "Domain": ["@justrenatta"],
+  "Data": ["@novandrisitinjak", "@Meikelrizkyhartawan", "@ikuba91"],
+  "Connection & Source": [
+    "@revalizaakbar",
+    "@justrenatta",
+    "@Meikelrizkyhartawan"
+  ],
+  "Query Catalog": ["@revalizaakbar", "@novandrisitinjak"],
+  "API Gateway": ["@anwar_r_r", "@doyze0", "@EgaSepyana"],
+  "AI Assistant": [
+    "@revalizaakbar",
+    "@rhenp0",
+    "@anwarhuda97",
+    "@novandrisitinjak",
+    "@rifqi_yusuf205",
+    "@mzaka99"
+  ],
+  "AI Canvas": [
+    "@revalizaakbar",
+    "@biecodes",
+    "@anwar_r_r",
+    "@rhenp0",
+    "@mzaka99"
+  ],
+  "AI Builder": ["@revalizaakbar", "@rhenp0", "@anwarhuda98"],
+  "AI Feedback Manager": ["@revalizaakbar", "@justrenatta", "@biecodes"],
+  "Maps": ["@anwarhuda97", "@jpngeekudin", "@rhenp0", "@anwar_r_r"],
+  "Network Graph": ["@nandolie", "@anwar_r_r", "@revalizaakbar"],
+  "Data Manager": ["@anwar_r_r", "@revalizaakbar", "@doyze0"],
+  "Filter & Sort": [
+    "@anwarhuda97",
+    "@rhenp0",
+    "@revalizaakbar",
+    "@biecodes",
+    "@chndrafajar"
+  ],
+  "Chart": ["@anwar_r_r", "@anwarhuda97", "@biecodes", "@doyze0"],
+  "Widget": ["@anwar_r_r", "@anwarhuda97"],
+  "Children Widget": ["@anwarhuda97", "@rhenp0", "@chndrafajar"],
+  "Campaign Robot": ["@anwar_r_r", "@revalizaakbar", "@nandolie"],
+  "DevTools": ["@doyze0", "@justrenatta", "@biecodes"],
+  "Design Slicing": ["@doyze0", "@justrenatta", "@biecodes"],
+  "Report Generator": [
+    "@anwar_r_r",
+    "@chndrafajar",
+    "@rhenp0",
+    "@valldy12",
+    "@aganyudistira"
+  ],
+  "QNA": ["@doyze0", "@justrenatta", "@biecodes"],
+  "Press Release": ["@doyze0", "@justrenatta", "@biecodes"],
+  "Daily Brief": ["@doyze0", "@justrenatta", "@biecodes"],
+  "Slicing": ["@doyze0", "@justrenatta", "@biecodes"],
+  "Redesign": ["@by2222"],
+  "Design Logo": ["@by2222"],
+  "Audit": ["@by2222", "@doyze0", "@justrenatta"],
+  "Audit Mobile": [
+    "@by2222",
+    "@mzaka99",
+    "@MyKobra20",
+    "@badrullaksamanadin",
+    "@amiracalapati"
+  ],
+  "Administrator": [
+    "@anwarhuda97",
+    "@revalizaakbar",
+    "@biecodes",
+    "@justrenatta",
+    "@doyze0"
+  ],
+  "Workspace Setting": ["@revalizaakbar", "@biecodes", "@anwar_r_r"],
+  "Download Manager": ["@rhenp0", "@doyze0", "@novandrisitinjak"],
+  "Dokma": ["@rhenp0", "@MaxDelta", "@EgaSepyana", "@biecodes"],
+  "Deploy & Build": [
+    "@chndrafajar",
+    "@justrenatta",
+    "@Meikelrizkyhartawan",
+    "@ikuba91"
+  ],
+  "Topic Comparison & Indicator": ["@chndrafajar", "@anwar_r_r"],
+  "Computer Vision": ["@anwar_r_r", "@rhenp0", "@biecodes"]
+}
