@@ -699,8 +699,9 @@ frappe.ui.form.on("SubTask", {
 				if (status === 'Done' || status === 'Cancel' || status === 'Resolved') {
 					try {
 						const fields = frm.fields_dict || {};
+						editableFields = ['status', 'maintask', 'tasks', 'choose_maintask_manually'];
 						Object.keys(fields).forEach((fn) => {
-							if (fn !== 'status') {
+							if (fn && !editableFields.includes(fn)) {
 								frm.set_df_property(fn, 'read_only', 1);
 							}
 						});
