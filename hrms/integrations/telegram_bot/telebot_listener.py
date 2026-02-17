@@ -6,16 +6,13 @@ from typing import Optional, Dict, Any
 import frappe
 
 from hrms.integrations.telegram_bot.aduan import telegram_aduan_bot
+from hrms.integrations.telegram_bot import utils as telegram_utils
 
 try:
     import telebot  # pyTelegramBotAPI
 except ImportError:
     telebot = None
 
-
-STATE_KEY_PREFIX = "telegram:state:"
-STATE_AWAITING_NIP = "AWAITING_NIP"
-MAX_NIP_ATTEMPTS = 3
 
 
 def _logger():
@@ -27,20 +24,8 @@ def _cache():
 
 
 def _state_key(chat_id: int) -> str:
-    return f"{STATE_KEY_PREFIX}{chat_id}"
+    return f"telegram_bot:state:{chat_id}"
 
-
-def get_state(chat_id: int) -> Optional[Dict[str, Any]]:
-    raw = _cache().get_value(_state_key(chat_id))
-    if not raw:
-        return None
-    try:
-        if isinstance(raw, dict):
-            return raw
-        import json
-        return json.loads(raw)
-    except Exception:
-        return None
 
 
 def set_state(chat_id: int, state: str, attempts: int = 0, ttl: int = 900):
@@ -61,61 +46,8 @@ def _get_token() -> str:
 
 
 def _get_site() -> str:
-    site = frappe.conf.get("default_site") or "frappe.revaldy"
+    site = frappe.conf.get("default_site") or "hrms.localhost"
     return site
-
-
-def _find_employee_by_username(username: Optional[str]):
-    if not username:
-        return None
-    # Strip leading @ if present
-    username = username.lstrip("@")
-    return frappe.db.get_value(
-        "Employee", {"user_telegram": username, "status": "Active"}, "employee_name"
-    )
-
-
-def _find_employee_by_nip(nip: str):
-    return frappe.db.get_value("Employee", {"nip": nip, "status": "Active"}, "employee_name")
-
-
-def _is_linked(chat_id: int) -> Optional[str]:
-    print(f"Checking link for chat_id={chat_id}")
-    return frappe.db.get_value("Employee", {"telegram_chat_id": str(chat_id)}, "employee_name")
-
-
-def _link_employee(employee_name: str, username:str, chat_id: int, method: str):
-    frappe.db.set_value(
-        "Employee",
-        employee_name,
-        {
-            "user_telegram": username,
-            "telegram_chat_id": str(chat_id),
-            "telegram_linked_at": frappe.utils.now(),
-            "telegram_link_method": method,
-        },
-    )
-    frappe.db.commit()
-    print(f"Linked chat_id={chat_id} employee={employee_name} via {method}")
-
-
-def _unlink(chat_id: int):
-    emp = _is_linked(chat_id)
-    if not emp:
-        return False
-    frappe.db.set_value(
-        "Employee", emp, {"telegram_chat_id": "", "telegram_link_method": "", "telegram_linked_at": ""}
-    )
-    frappe.db.commit()
-    print(f"Unlinked chat_id={chat_id} employee={emp}")
-    return True
-
-
-def _welcome(bot, chat_id: int, employee_name: str):
-    bot.send_message(
-        chat_id,
-        f"✅ Congratulations you're linked as: {employee_name}\nYou'll receive task notifications, have a nice day mate!",
-    )
 
 
 def _build_bot():
@@ -215,7 +147,9 @@ def _configure_bot_commands(bot):
         # We'll enable /aduan only for the configured group chat_id scope.
         group_commands = []
         group_commands_for_configured_chat = [
-            types.BotCommand("aduan", "Create SubTask from complaint"),
+            types.BotCommand(cmd, desc)
+            for cmd, desc in (telegram_aduan_bot.aduan_menu_commands() or [])
+            if cmd
         ]
 
         # Best-effort cleanup so old BotFather/default commands don't linger
@@ -235,14 +169,36 @@ def _configure_bot_commands(bot):
         bot.set_my_commands(group_commands, scope=types.BotCommandScopeAllGroupChats())
         bot.set_my_commands(group_commands, scope=types.BotCommandScopeAllChatAdministrators())
 
-        # Also set commands for the configured /aduan group specifically (overrides any chat-specific settings)
-        try:
-            chat_id = frappe.conf.get("telegram_aduan_chat_id")
-            chat_id = int(chat_id) if chat_id not in (None, "") else None
-        except Exception:
-            chat_id = None
+    
+        def _aduan_chat_ids() -> list[int]:
+            # Prefer advanced rules if present, else multi, else legacy.
+            raw_rules = frappe.conf.get("telegram_aduan_rules")
+            if raw_rules not in (None, ""):
+                try:
+                    if isinstance(raw_rules, str):
+                        import json
+                        raw_rules = json.loads(raw_rules)
+                except Exception:
+                    raw_rules = None
+            if isinstance(raw_rules, list):
+                ids = []
+                for rule in raw_rules:
+                    if isinstance(rule, dict):
+                        cid = telegram_utils._coerce_int(rule.get("chat_id"))
+                        if cid is not None:
+                            ids.append(cid)
+                if ids:
+                    return sorted(list(set(ids)))
 
-        if chat_id is not None:
+            ids = telegram_utils._coerce_int_list(frappe.conf.get("telegram_aduan_chat_ids"))
+            if ids:
+                return sorted(list(set(ids)))
+
+            legacy = telegram_utils._coerce_int(frappe.conf.get("telegram_aduan_chat_id"))
+            return [legacy] if legacy is not None else []
+
+        # Also set commands for configured /aduan group(s) specifically (overrides any chat-specific settings)
+        for chat_id in _aduan_chat_ids():
             try:
                 bot.delete_my_commands(scope=types.BotCommandScopeChat(chat_id))
             except Exception:
@@ -264,11 +220,12 @@ def _configure_bot_commands(bot):
             except Exception:
                 pass
 
+        configured_group_cmds = [c.command for c in group_commands_for_configured_chat]
         _logger().info(
-            "Telegram bot commands configured: private=/start,/link,/unlink; group (all)=<none>; group (configured chat)=/aduan"
+            f"Telegram bot commands configured: private=/start,/link,/unlink; group (all)=<none>; group (configured chat(s))={configured_group_cmds}"
         )
         print(
-            "Telegram bot commands configured: private=/start,/link,/unlink; group (all)=<none>; group (configured chat)=/aduan"
+            f"Telegram bot commands configured: private=/start,/link,/unlink; group (all)=<none>; group (configured chat(s))={configured_group_cmds}"
         )
         _debug_dump()
 
@@ -284,99 +241,6 @@ def _register_handlers(bot):
     # Register group/topic handler(s) in a separate module
     telegram_aduan_bot.register_handlers(bot)
 
-    @bot.message_handler(commands=["start"])
-    def handle_start(message):
-        if getattr(message.chat, "type", None) != "private":
-            return
-        chat_id = message.chat.id
-        username = message.from_user.username
-        print(f"Username telegram: {username} chat_id: {chat_id}")
-        bot.send_message(
-            chat_id,
-            f"Hello {username} \n- /link for connecting this chat to task management system\n- /unlink for disconnecting",
-        )
-
-    @bot.message_handler(commands=["link"])
-    def handle_link(message):
-        if getattr(message.chat, "type", None) != "private":
-            return
-        chat_id = message.chat.id
-        username = message.from_user.username
-        print(f"Username telegram: {username} chat_id: {chat_id}")
-        # Already linked?
-        emp = _is_linked(chat_id)
-        if emp:
-            print(f"Chat {chat_id} already linked to employee {emp}")
-            bot.send_message(chat_id, f"⚠️ This chat was linked, have a nice day {username}!")
-            return
-        employee_name = _find_employee_by_username(username)
-        print(f"Attempting link via USERNAME={username} found employee={employee_name}")
-        if employee_name:
-            _link_employee(employee_name, username, chat_id, "USERNAME")
-            _welcome(bot, chat_id, employee_name)
-        else:
-            set_state(chat_id, STATE_AWAITING_NIP, attempts=0)
-            bot.send_message(chat_id, "Send me your NIP with this format:\nNIP <number>")
-
-    @bot.message_handler(commands=["unlink"])
-    def handle_unlink(message):
-        if getattr(message.chat, "type", None) != "private":
-            return
-        chat_id = message.chat.id
-        username = message.from_user.username
-        if _unlink(chat_id):
-            bot.send_message(chat_id, f"✅ Success unlink your chat.\nHave a nice day {username}!")
-        else:
-            bot.send_message(chat_id, "⚠️ No active link for this chat mate!")
-
-    @bot.message_handler(func=lambda m: True)
-    def handle_any(message):
-        # Only handle private chat messages for link state-machine.
-        # Group/topic messages are handled by dedicated modules.
-        if getattr(message.chat, "type", None) != "private":
-            return
-        chat_id = message.chat.id
-        username = message.from_user.username
-        text = (message.text or "").strip()
-        state = get_state(chat_id)
-
-        # Check NIP flow
-        if state and state.get("state") == STATE_AWAITING_NIP:
-            m_nip = nip_regex.match(text)
-            if m_nip:
-                nip_value = m_nip.group(1)
-                employee_name = _find_employee_by_nip(nip_value)
-                print(f"{username} attempting link via NIP={nip_value} found employee={employee_name}")
-                if employee_name:
-                    _link_employee(employee_name, username, chat_id, "NIP")
-                    clear_state(chat_id)
-                    _welcome(bot, chat_id, employee_name)
-                    return
-                else:
-                    attempts = state.get("attempts", 0) + 1
-                    if attempts < MAX_NIP_ATTEMPTS:
-                        set_state(chat_id, STATE_AWAITING_NIP, attempts=attempts)
-                        bot.send_message(
-                            chat_id,
-                            f"NIP isn't found. Try again mate! ({attempts}/{MAX_NIP_ATTEMPTS}).\nSend me your NIP with this format:\nNIP <number>",
-                        )
-                    else:
-                        clear_state(chat_id)
-                        bot.send_message(
-                            chat_id,
-                            "You have reached your limits mate.\nContact admin for some help."
-                        )
-                    return
-            else:
-                # Has state but message not NIP pattern
-                bot.send_message(chat_id, "Wrong format mate. Please use this format:\nNIP <number>")
-                return
-
-        # No active state
-        if _is_linked(chat_id):
-            bot.send_message(chat_id, "Linked. Use /unlink for disconnecting.")
-        else:
-            bot.send_message(chat_id, "Unlinked. Send /start then /link for connecting.")
 
 
 def run_bot(blocking: bool = True):
@@ -408,10 +272,3 @@ def run_bot(blocking: bool = True):
         t = threading.Thread(target=_poll, name="telebot-poll", daemon=True)
         t.start()
         return t
-
-
-def link_status(chat_id: int) -> Dict[str, Any]:
-    """Utility function to inspect link status for debugging."""
-    emp = _is_linked(chat_id)
-    state = get_state(chat_id)
-    return {"employee": emp, "state": state}
