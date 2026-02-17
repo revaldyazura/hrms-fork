@@ -403,7 +403,9 @@ def _parse_aduan_fields(payload: str) -> Tuple[Dict[str, str], str]:
         value = telegram_utils._clean_field_value(m.group(2))
 
         if key in ("issue type", "issues"):
-            fields["issue_type"] = value.title()  # Normalize to title case for matching
+            # User input matches mapping label (e.g. "Menu"); database expects key (e.g. "APPS/MENU").
+            # Keep the original label here; we will map it later.
+            fields["issue_type"] = value
         elif key == "link dashboard":
             fields["link_dashboard"] = value
         elif key == "link maps":
@@ -447,21 +449,102 @@ def _resolve_subtask_type(type_label: str) -> str:
 
 def _resolve_issue_type(issue_label: str, maintask: str) -> str:
     """Return docname of Fusion Issue Types."""
-    issue_label = (issue_label or "").strip()
-    if not issue_label:
+    issue_input = (issue_label or "").strip()
+    if not issue_input:
         raise frappe.ValidationError("Issue Type is required")
 
-    filters = {"issue": issue_label}
+    issue_key = _issue_key_from_user_input(issue_input) or issue_input
+
+    filters = {"issue": issue_key}
     # If maintask is provided, narrow down to avoid ambiguity
     if maintask:
         filters["maintask"] = maintask
 
     name = frappe.db.get_value("Fusion Issue Types", filters, "name")
     if not name:
+        # Backward-friendly: if user typed a label and mapping exists but DB entry missing.
         raise frappe.DoesNotExistError(
-            f"Fusion Issue Types not found for issue='{issue_label}'" + (f" and maintask='{maintask}'" if maintask else "")
+            f"Fusion Issue Types not found for issue='{issue_key}'" + (f" and maintask='{maintask}'" if maintask else "")
         )
     return name
+
+
+def _load_issue_mapping() -> dict:
+    """Load mapping_pic_issue.json as a dict.
+
+    Expected shape:
+    {
+      "APPS/MENU": {"label": "Menu", "pic": ["@a", "@b"]},
+      ...
+    }
+    """
+    try:
+        raw = telegram_utils._load_json("mapping_pic_issue.json")
+        return raw if isinstance(raw, dict) else {}
+    except Exception:
+        return {}
+
+
+def _normalize_issue_label(label: str) -> str:
+    return re.sub(r"\s+", " ", (label or "").strip()).lower()
+
+
+def _issue_key_from_user_input(user_value: str) -> Optional[str]:
+    """Translate user-provided issue value (label or key) into DB issue key."""
+    v = (user_value or "").strip()
+    if not v:
+        return None
+
+    mapping = _load_issue_mapping()
+    if not mapping:
+        return None
+
+    # 1) If user already typed the key.
+    if v in mapping:
+        return v
+    v_upper = v.upper()
+    if v_upper in mapping:
+        return v_upper
+
+    # 2) Match by label (case-insensitive).
+    wanted = _normalize_issue_label(v)
+    for key, meta in mapping.items():
+        if not isinstance(meta, dict):
+            continue
+        lbl = meta.get("label")
+        if lbl in (None, ""):
+            continue
+        if _normalize_issue_label(str(lbl)) == wanted:
+            return str(key).strip()
+
+    return None
+
+
+def _pics_for_issue_user_input(user_value: str) -> list[str]:
+    """Return PIC mentions for an issue value provided by user (label or key)."""
+    issue_key = _issue_key_from_user_input(user_value)
+    mapping = _load_issue_mapping()
+    if not issue_key or issue_key not in mapping:
+        return []
+
+    meta = mapping.get(issue_key)
+    if not isinstance(meta, dict):
+        return []
+
+    pics = meta.get("pic")
+    if isinstance(pics, str):
+        pics = [pics]
+    if not isinstance(pics, list):
+        return []
+
+    out: list[str] = []
+    for p in pics:
+        if p in (None, ""):
+            continue
+        s = str(p).strip()
+        if s:
+            out.append(s)
+    return out
 
 def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
     settings = telegram_utils._conf_default_subtask_settings()
@@ -614,12 +697,9 @@ def register_handlers(bot):
 
         pic_issue = "@justrenatta"
         if fields.get("issue_type"):
-            issue_type_key = (fields["issue_type"] or "").strip().title()
-            mapping_raw = telegram_utils._load_json("mapping_pic_issue.json")
-            mapping = {str(k).strip(): v for k, v in (mapping_raw or {}).items()}
-            pic_issue = mapping.get(issue_type_key, "@justrenatta")
-            if isinstance(pic_issue, list):
-                pic_issue = ", ".join(pic_issue)
+            pics = _pics_for_issue_user_input(fields["issue_type"])
+            if pics:
+                pic_issue = ", ".join(pics)
 
         # Merge any unmatched lines into details if details already exists
         if freeform:
@@ -641,10 +721,11 @@ def register_handlers(bot):
 
         try:
             subtask_id = _create_subtask_from_aduan(fields, message)
+            telegram_aduan_site = frappe.conf.get("telegram_aduan_site") or "hris.ebdesk.com/app/subtask/"
             _send(
                 bot,
                 chat_id,
-                f"✅ Aduan telah dicatat dengan nomor hris.ebdesk.com/app/subtask/{subtask_id} dan dalam proses pengecekan, dibantu oleh tim kami  {pic_issue} Silakan tunggu update lebih lanjut dari tim kami",
+                f"✅ Aduan telah dicatat dengan nomor {telegram_aduan_site}{subtask_id} dan dalam proses pengecekan, dibantu oleh tim kami  {pic_issue} Silakan tunggu update lebih lanjut dari tim kami",
                 thread_id=thread_id,
                 reply_to=message.message_id,
             )
