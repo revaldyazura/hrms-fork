@@ -34,8 +34,10 @@
   "additional_tab",
   "type_section",
   "type",
+  "fusion_section",
   "issues_type",
   "requestor",
+  "root_cause",
   "section_break_tkdb",
   "created_by",
   "subtask_start_date",
@@ -327,12 +329,23 @@
    "fieldname": "maintask_owner",
    "fieldtype": "Data",
    "label": "MainTask Owner"
+  },
+  {
+   "fieldname": "root_cause",
+   "fieldtype": "Text",
+   "label": "Root Cause",
+   "max_height": "100px"
+  },
+  {
+   "fieldname": "fusion_section",
+   "fieldtype": "Section Break",
+   "label": "Fusion"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-31 11:53:07.968741",
+ "modified": "2026-02-18 17:03:42.588343",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask",

@@ -469,22 +469,6 @@ def _resolve_issue_type(issue_label: str, maintask: str) -> str:
     return name
 
 
-def _load_issue_mapping() -> dict:
-    """Load mapping_pic_issue.json as a dict.
-
-    Expected shape:
-    {
-      "APPS/MENU": {"label": "Menu", "pic": ["@a", "@b"]},
-      ...
-    }
-    """
-    try:
-        raw = telegram_utils._load_json("mapping_pic_issue.json")
-        return raw if isinstance(raw, dict) else {}
-    except Exception:
-        return {}
-
-
 def _normalize_issue_label(label: str) -> str:
     return re.sub(r"\s+", " ", (label or "").strip()).lower()
 
@@ -495,7 +479,7 @@ def _issue_key_from_user_input(user_value: str) -> Optional[str]:
     if not v:
         return None
 
-    mapping = _load_issue_mapping()
+    mapping = telegram_utils._load_issue_mapping()
     if not mapping:
         return None
 
@@ -523,7 +507,7 @@ def _issue_key_from_user_input(user_value: str) -> Optional[str]:
 def _pics_for_issue_user_input(user_value: str) -> list[str]:
     """Return PIC mentions for an issue value provided by user (label or key)."""
     issue_key = _issue_key_from_user_input(user_value)
-    mapping = _load_issue_mapping()
+    mapping = telegram_utils._load_issue_mapping()
     if not issue_key or issue_key not in mapping:
         return []
 
@@ -595,6 +579,102 @@ def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
     _insert_with_owner(doc, owner)
     frappe.db.commit()
     return doc.name
+
+def _subtask_issue_label(subtask_doc) -> str:
+    """Return best-effort issue label for a SubTask doc."""
+
+    issues = getattr(subtask_doc, "issues_type", None) or []
+    if not issues:
+        return "-"
+
+    first = issues[0]
+    issue_docname = getattr(first, "issue", None)
+    issue_key = None
+    if issue_docname:
+        try:
+            issue_key = frappe.db.get_value("Fusion Issue Types", issue_docname, "issue")
+        except Exception:
+            issue_key = None
+
+    # Fallback to child fetch_from field if available.
+    if not issue_key:
+        issue_key = getattr(first, "issue_name", None)
+
+    label = telegram_utils.issue_label_from_key(str(issue_key or "").strip())
+    return label or "-"
+
+
+def _subtask_progress_comments(subtask_name: str, limit: int = 10) -> list[str]:
+    """Return formatted progress update lines for a SubTask."""
+
+    rows = frappe.get_all(
+        "Comment",
+        filters={
+            "reference_doctype": "SubTask",
+            "reference_name": subtask_name,
+            "comment_type": "Comment",
+        },
+        fields=["content", "comment_email", "comment_by", "creation"],
+        order_by="creation desc",
+        limit_page_length=int(limit or 10),
+    )
+
+    out: list[str] = []
+    for r in rows or []:
+        text = telegram_utils._strip_html_to_text(r.get("content") or "")
+        if not text:
+            continue
+        # by = (r.get("comment_email") or r.get("comment_by") or "").strip() or "unknown"
+        out.append(f"- {text} ")
+    return out
+
+
+def format_aduan_info_response(subtask_name: str) -> str:
+    """Build response message for /aduan_info <SubTask ID>."""
+
+    name = (subtask_name or "").strip()
+    if not name:
+        raise frappe.ValidationError("SubTask ID is required")
+
+    doc = frappe.get_doc("SubTask", name)
+
+    issue_label = _subtask_issue_label(doc)
+    status = (getattr(doc, "status", "") or "").strip() or "-"
+    status_out = status.lower() if status != "-" else "-"
+
+    pic_name = (getattr(doc, "pic_subtask_name", "") or "").strip()
+    if not pic_name:
+        pic = getattr(doc, "pic_subtask", None)
+        if pic:
+            try:
+                pic_name = (frappe.db.get_value("Employee", pic, "employee_name") or "").strip()
+            except Exception:
+                pic_name = ""
+    if not pic_name:
+        pic_name = "-"
+
+    root_cause = (getattr(doc, "root_cause", "") or "").strip() or "-"
+    modified = getattr(doc, "modified", None) or "-"
+
+    progress_lines = _subtask_progress_comments(doc.name, limit=5)
+    if not progress_lines:
+        progress_lines = ["- (belum ada update)"]
+
+    hyperlink_subtask = telegram_utils._format_hyperlink(doc.name, frappe.conf.get("telegram_aduan_site") + doc.name)
+    
+    lines: list[str] = []
+    lines.append("📌 Task Update")
+    lines.append("")
+    lines.append(f"• Nomor Aduan: {hyperlink_subtask}")
+    lines.append(f"• Issue Type: {issue_label}")
+    lines.append(f"• Status          : {status_out}")
+    lines.append(f"• PIC             : {pic_name}")
+    lines.append(f"• Root Cause      : {root_cause}")
+    lines.append("• Progress Update :")
+    lines.extend([f"  {l}" for l in progress_lines])
+    lines.append("")
+    lines.append(f"🕒 Last Update: {modified}")
+    return "\n".join(lines).strip()
 
 
 def register_handlers(bot):
@@ -690,6 +770,41 @@ def register_handlers(bot):
             return
 
         payload = telegram_utils.extract_command_payload(raw_text, cmd)
+
+        # Separate flow for info-style commands, e.g. /aduan_info ST-...
+        if telegram_utils.is_info_command(cmd):
+            subtask_id = ((payload or "").strip().split() or [""])[0].strip()
+            if not subtask_id:
+                _send(
+                    bot,
+                    chat_id,
+                    f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd),
+                    thread_id=thread_id,
+                    reply_to=message.message_id,
+                    parse_mode="HTML",
+                )
+                return
+
+            try:
+                text = format_aduan_info_response(subtask_id)
+                _send(
+                    bot,
+                    chat_id,
+                    text,
+                    thread_id=thread_id,
+                    reply_to=message.message_id,
+                    parse_mode="HTML",
+                )
+            except Exception as e:
+                _logger().error(f"/aduan_info failed: {e}")
+                _send(
+                    bot,
+                    chat_id,
+                    f"❌ Failed fetching Aduan info: {e}",
+                    thread_id=thread_id,
+                    reply_to=message.message_id,
+                )
+            return
 
         fields, freeform = _parse_aduan_fields(payload or "")
 

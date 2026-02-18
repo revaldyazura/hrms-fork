@@ -383,3 +383,75 @@ def _build_description(fields: Dict[str, str], freeform: str, message) -> str:
         parts.append(freeform)
 
     return "\n".join([p for p in parts if p is not None and str(p).strip() != ""]).strip()
+
+
+def is_info_command(command_token: str) -> bool:
+    """Return True if command token represents an info-style command.
+
+    We treat commands whose menu name contains 'info' (e.g. 'aduan_info',
+    'aduan_info_staging') as the info flow.
+    """
+
+    name = command_for_menu(command_token)
+    if not name:
+        return False
+    return "info" in name
+
+
+def _strip_html_to_text(value: str) -> str:
+    """Best-effort HTML -> text for Comment.content."""
+
+    html = value or ""
+    try:
+        from frappe.utils import strip_html
+
+        text = strip_html(html)
+    except Exception:
+        text = re.sub(r"<[^>]+>", " ", html)
+    text = re.sub(r"\s+", " ", (text or "")).strip()
+    return text
+
+
+def _load_issue_mapping() -> dict:
+    """Load mapping_pic_issue.json as a dict.
+
+    Expected shape:
+    {
+      "APPS/MENU": {"label": "Menu", "pic": ["@a", "@b"]},
+      ...
+    }
+    """
+
+    try:
+        raw = _load_json("mapping_pic_issue.json")
+        return raw if isinstance(raw, dict) else {}
+    except Exception:
+        return {}
+
+
+def issue_label_from_key(issue_key: str) -> str:
+    """Return human label for an issue key if mapping exists; else issue_key."""
+
+    key = (issue_key or "").strip()
+    if not key:
+        return ""
+
+    mapping = _load_issue_mapping()
+    meta = mapping.get(key) or mapping.get(key.upper())
+    if isinstance(meta, dict):
+        lbl = meta.get("label")
+        if lbl not in (None, ""):
+            s = str(lbl).strip()
+            if s:
+                return s
+    return key
+
+def _format_hyperlink(text: str, url: str) -> str:
+    """Format text as a Telegram hyperlink if possible; else return text."""
+    t = (text or "").strip()
+    u = (url or "").strip()
+    if not t:
+        return ""
+    if not u:
+        return t
+    return f'<a href="{u}">{t}</a>'
