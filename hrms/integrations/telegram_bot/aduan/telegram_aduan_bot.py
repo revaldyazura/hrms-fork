@@ -614,12 +614,7 @@ def register_handlers(bot):
     - telegram_aduan_default_value
     """
 
-    @bot.message_handler(
-        func=lambda m: telegram_utils.find_command_offset(
-            getattr(m, "text", "") or "", _aduan_command_tokens()
-        )
-        is not None
-    )
+    @bot.message_handler(content_types=["text", "photo", "document", "video", "animation"])
     def handle_aduan(message):
         chat_id = getattr(getattr(message, "chat", None), "id", None)
         if chat_id is None:
@@ -671,7 +666,9 @@ def register_handlers(bot):
             return
 
         chat_id = message.chat.id
-        raw_text = (message.text or "").strip()
+        raw_text = ((getattr(message, "text", None) or getattr(message, "caption", None) or "")).strip()
+        if not raw_text:
+            return
         tokens = _aduan_command_tokens()
         matched = telegram_utils.match_command(raw_text, tokens)
         if not matched:
