@@ -639,30 +639,30 @@ def register_handlers(bot):
         allowed_topics: list[int] = matched_rule.get("topic_ids") or []
         # Only enforce topic restriction if topic_ids is configured (non-empty).
         if allowed_topics and thread_id not in allowed_topics:
-            # Build a more specific message if labels are provided in config.
-            topic_names: dict[int, str] = matched_rule.get("topic_names") or {}
-            chat_name = matched_rule.get("chat_name")
+        #     # Build a more specific message if labels are provided in config.
+        #     topic_names: dict[int, str] = matched_rule.get("topic_names") or {}
+        #     chat_name = matched_rule.get("chat_name")
 
-            allowed_topic_labels = [topic_names.get(tid) for tid in allowed_topics]
-            allowed_topic_labels = [t for t in allowed_topic_labels if t]
-            if allowed_topic_labels:
-                topic_label = " / ".join(dict.fromkeys(allowed_topic_labels))
-            else:
-                topic_label = "ADUAN"
+        #     allowed_topic_labels = [topic_names.get(tid) for tid in allowed_topics]
+        #     allowed_topic_labels = [t for t in allowed_topic_labels if t]
+        #     if allowed_topic_labels:
+        #         topic_label = " / ".join(dict.fromkeys(allowed_topic_labels))
+        #     else:
+        #         topic_label = "ADUAN"
 
-            if chat_name:
-                msg = f"❌ Aduan grup <b>{chat_name}</b> hanya boleh pada topic <b>{topic_label}</b>"
-            else:
-                msg = f"❌ Aduan hanya boleh di topic <b>{topic_label}</b>"
+        #     if chat_name:
+        #         msg = f"❌ Aduan grup <b>{chat_name}</b> hanya boleh pada topic <b>{topic_label}</b>"
+        #     else:
+        #         msg = f"❌ Aduan hanya boleh di topic <b>{topic_label}</b>"
 
-            _send(
-                bot,
-                chat_id,
-                msg,
-                thread_id=thread_id,
-                reply_to=getattr(message, "message_id", None),
-                parse_mode="HTML",
-            )
+        #     _send(
+        #         bot,
+        #         chat_id,
+        #         msg,
+        #         thread_id=thread_id,
+        #         reply_to=getattr(message, "message_id", None),
+        #         parse_mode="HTML",
+        #     )
             return
 
         chat_id = message.chat.id
@@ -685,6 +685,7 @@ def register_handlers(bot):
                 f"❌ Command {cmd} harus ditulis di awal pesan.\n\n" + _format_help(cmd),
                 thread_id=thread_id,
                 reply_to=message.message_id,
+                parse_mode="HTML",
             )
             return
 
@@ -713,6 +714,7 @@ def register_handlers(bot):
                 f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd),
                 thread_id=thread_id,
                 reply_to=message.message_id,
+                parse_mode="HTML",
             )
             return
 
