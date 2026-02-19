@@ -572,7 +572,7 @@ def _subtask_issue_label(subtask_doc) -> str:
     return label or "-"
 
 
-def _subtask_progress_comments(subtask_name: str, limit: int = 10) -> list[str]:
+def _subtask_progress_comments(subtask_name: str, limit: int = 5) -> list[str]:
     """Return formatted progress update lines for a SubTask (oldest -> newest)."""
 
     rows = frappe.get_all(
@@ -584,7 +584,7 @@ def _subtask_progress_comments(subtask_name: str, limit: int = 10) -> list[str]:
         },
         fields=["content", "comment_email", "comment_by", "creation"],
         order_by="creation asc",
-        limit_page_length=int(limit or 10),
+        limit_page_length=int(limit or 5),
     )
 
     out: list[str] = []
@@ -592,8 +592,7 @@ def _subtask_progress_comments(subtask_name: str, limit: int = 10) -> list[str]:
         text = _strip_html_to_text(r.get("content") or "")
         if not text:
             continue
-        by = (r.get("comment_email") or r.get("comment_by") or "").strip() or "unknown"
-        out.append(f"- {text} ({by})")
+        out.append(f"- {text}")
     return out
 
 
@@ -622,10 +621,10 @@ def format_aduan_info_response(subtask_name: str, command_token: Optional[str] =
     doc = frappe.get_doc("SubTask", name)
 
     issue_label = _subtask_issue_label(doc)
-    status_raw = (getattr(doc, "status", "") or "").strip() or "-"
-    status_out = status_raw.lower() if status_raw != "-" else "-"
+    status_raw = doc.status if hasattr(doc, "status") else "-"
+    status_out = status_raw.title() if status_raw != "-" else "-"
 
-    pic_name = (getattr(doc, "pic_subtask_name", "") or "").strip()
+    pic_name = doc.pic_subtask_name if hasattr(doc, "pic_subtask_name") else None
     if not pic_name:
         pic = getattr(doc, "pic_subtask", None)
         if pic:
@@ -636,10 +635,10 @@ def format_aduan_info_response(subtask_name: str, command_token: Optional[str] =
     if not pic_name:
         pic_name = "-"
 
-    root_cause = (getattr(doc, "root_cause", "") or "").strip() or "-"
-    modified = getattr(doc, "modified", None) or "-"
+    root_cause = doc.root_cause if hasattr(doc, "root_cause") else "-"
+    modified = doc.modified.strftime("%d-%m-%Y %H:%M") if hasattr(doc, "modified") and doc.modified else "-"
 
-    progress_lines = _subtask_progress_comments(doc.name, limit=10)
+    progress_lines = _subtask_progress_comments(doc.name, limit=5)
     progress_updates = "\n".join(["  " + l for l in (progress_lines or ["- (belum ada update)"])])
 
     base = (frappe.conf.get("telegram_aduan_site") or "").strip()
@@ -664,10 +663,10 @@ def format_aduan_info_response(subtask_name: str, command_token: Optional[str] =
 
     # Fallback default (built-in)
     lines: list[str] = []
-    lines.append("📌 Task Update")
+    lines.append("ℹ️ Progress Info")
     lines.append("")
-    lines.append(f"• nomor aduan: {doc.name}")
-    lines.append(f"• issue type: {issue_label}")
+    lines.append(f"• Nomor Aduan: {doc.name}")
+    lines.append(f"• Issue Type: {issue_label}")
     lines.append(f"• Status          : {status_out}")
     lines.append(f"• PIC             : {pic_name}")
     lines.append(f"• Root Cause      : {root_cause}")
