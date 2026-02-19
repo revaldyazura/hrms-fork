@@ -195,17 +195,17 @@ def _aduan_rules() -> list[dict]:
     Supported config shapes (backwards compatible):
     1) Legacy single:
        - telegram_aduan_chat_id
-       - telegram_aduan_topic_id (optional)
+       - telegram_aduan_thread_id (optional)
 
     2) Simple multi:
        - telegram_aduan_chat_ids: [..] or "-1001,-1002" etc
-       - telegram_aduan_topic_ids: [..] or "111,222" (optional)
+       - telegram_aduan_thread_ids: [..] or "111,222" (optional)
          (applies to all listed chats)
 
     3) Advanced per-chat rules:
        - telegram_aduan_rules: [
-           {"chat_id": -100..., "topic_ids": [111,222]},
-           {"chat_id": -100..., "topic_ids": []}  # empty => allow any topic
+           {"chat_id": -100..., "thread_ids": [111,222]},
+           {"chat_id": -100..., "thread_ids": []}  # empty => allow any thread
          ]
     """
 
@@ -225,7 +225,7 @@ def _aduan_rules() -> list[dict]:
             chat_id = telegram_utils._coerce_int(rule.get("chat_id"))
             if chat_id is None:
                 continue
-            topic_ids = telegram_utils._coerce_int_list(rule.get("topic_ids"))
+            thread_ids = telegram_utils._coerce_int_list(rule.get("thread_ids"))
 
             # Optional human-friendly labels (used only for messaging/logging)
             chat_name = rule.get("chat_name") or rule.get("group_name") or rule.get("chat_label")
@@ -234,59 +234,59 @@ def _aduan_rules() -> list[dict]:
             else:
                 chat_name = None
 
-            topic_names: dict[int, str] = {}
+            thread_names: dict[int, str] = {}
 
-            # Preferred format: topics=[{"id": 14665, "name": "Task Management"}, ...]
-            topics = rule.get("topics")
-            if isinstance(topics, list):
-                for t in topics:
+            # Preferred format: threads=[{"id": 14665, "name": "Task Management"}, ...]
+            threads = rule.get("threads")
+            if isinstance(threads, list):
+                for t in threads:
                     if not isinstance(t, dict):
                         continue
-                    tid = telegram_utils._coerce_int(t.get("id") or t.get("topic_id"))
-                    tname = t.get("name") or t.get("topic_name")
+                    tid = telegram_utils._coerce_int(t.get("id") or t.get("thread_id"))
+                    tname = t.get("name") or t.get("thread_name")
                     if tid is None or tname in (None, ""):
                         continue
-                    topic_names[tid] = str(tname).strip()
+                    thread_names[tid] = str(tname).strip()
 
-            # Backward-friendly format: topic_name can be string or list aligned with topic_ids
-            # Example: {"topic_ids": [14665], "topic_name": ["Task Management"]}
-            raw_topic_name = rule.get("topic_name")
-            if raw_topic_name not in (None, "") and topic_ids:
-                if isinstance(raw_topic_name, str):
-                    name = raw_topic_name.strip()
+            # Backward-friendly format: thread_name can be string or list aligned with thread_ids
+            # Example: {"thread_ids": [14665], "thread_name": ["Task Management"]}
+            raw_thread_name = rule.get("thread_name")
+            if raw_thread_name not in (None, "") and thread_ids:
+                if isinstance(raw_thread_name, str):
+                    name = raw_thread_name.strip()
                     if name:
-                        for tid in topic_ids:
-                            topic_names.setdefault(tid, name)
-                elif isinstance(raw_topic_name, list):
-                    names = [str(x).strip() for x in raw_topic_name if str(x).strip()]
-                    if len(names) == len(topic_ids):
-                        for tid, name in zip(topic_ids, names):
-                            topic_names.setdefault(tid, name)
+                        for tid in thread_ids:
+                            thread_names.setdefault(tid, name)
+                elif isinstance(raw_thread_name, list):
+                    names = [str(x).strip() for x in raw_thread_name if str(x).strip()]
+                    if len(names) == len(thread_ids):
+                        for tid, name in zip(thread_ids, names):
+                            thread_names.setdefault(tid, name)
                     elif len(names) == 1:
-                        for tid in topic_ids:
-                            topic_names.setdefault(tid, names[0])
+                        for tid in thread_ids:
+                            thread_names.setdefault(tid, names[0])
 
             normalized.append(
                 {
                     "chat_id": chat_id,
-                    "topic_ids": topic_ids,
+                    "thread_ids": thread_ids,
                     "chat_name": chat_name,
-                    "topic_names": topic_names,
+                    "thread_names": thread_names,
                 }
             )
         if normalized:
             return normalized
 
     chat_ids = telegram_utils._coerce_int_list(frappe.conf.get("telegram_aduan_chat_ids"))
-    topic_ids = telegram_utils._coerce_int_list(frappe.conf.get("telegram_aduan_topic_ids"))
+    thread_ids = telegram_utils._coerce_int_list(frappe.conf.get("telegram_aduan_thread_ids"))
     if chat_ids:
-        return [{"chat_id": cid, "topic_ids": topic_ids} for cid in chat_ids]
+        return [{"chat_id": cid, "thread_ids": thread_ids} for cid in chat_ids]
 
     legacy_chat_id = telegram_utils._conf_int("telegram_aduan_chat_id")
-    legacy_topic_id = telegram_utils._conf_int("telegram_aduan_topic_id")
+    legacy_thread_id = telegram_utils._conf_int("telegram_aduan_thread_id")
     if legacy_chat_id is None:
         return []
-    return [{"chat_id": legacy_chat_id, "topic_ids": ([legacy_topic_id] if legacy_topic_id is not None else [])}]
+    return [{"chat_id": legacy_chat_id, "thread_ids": ([legacy_thread_id] if legacy_thread_id is not None else [])}]
 
 
 def _insert_with_owner(doc, owner_user: str):
@@ -310,7 +310,7 @@ def _insert_with_owner(doc, owner_user: str):
             frappe.set_user(previous_user)
 
 
-def _is_allowed_group_topic(message) -> bool:
+def _is_allowed_group_thread(message) -> bool:
     chat_id = getattr(getattr(message, "chat", None), "id", None)
     if chat_id is None:
         return False
@@ -320,11 +320,11 @@ def _is_allowed_group_topic(message) -> bool:
     for rule in rules:
         if rule.get("chat_id") != chat_id:
             continue
-        allowed_topics: list[int] = rule.get("topic_ids") or []
-        # If topic_ids is empty/not provided, do NOT enforce topic restriction.
-        if not allowed_topics:
+        allowed_threads: list[int] = rule.get("thread_ids") or []
+        # If thread_ids is empty/not provided, do NOT enforce thread restriction.
+        if not allowed_threads:
             return True
-        return thread_id in allowed_topics
+        return thread_id in allowed_threads
 
     return False
 
@@ -447,7 +447,7 @@ def _resolve_subtask_type(type_label: str) -> str:
     return name
 
 
-def _resolve_issue_type(issue_label: str, maintask: str) -> str:
+def _resolve_issue_type(issue_label: str, maintask: str, maintask_name: str) -> str:
     """Return docname of Fusion Issue Types."""
     issue_input = (issue_label or "").strip()
     if not issue_input:
@@ -464,7 +464,7 @@ def _resolve_issue_type(issue_label: str, maintask: str) -> str:
     if not name:
         # Backward-friendly: if user typed a label and mapping exists but DB entry missing.
         raise frappe.DoesNotExistError(
-            f"Fusion Issue Types not found for issue='{issue_key}'" + (f" and maintask='{maintask}'" if maintask else "")
+            f"Fusion Issue Types not found for issue='{issue_key}'" + (f" and maintask='{maintask_name}'" if maintask else "")
         )
     return name
 
@@ -573,116 +573,20 @@ def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
         doc.append("type", {"subtask_type": type_name})
 
     if fields.get("issue_type"):
-        issue_name = _resolve_issue_type(fields["issue_type"], maintask)
+        issue_name = _resolve_issue_type(fields["issue_type"], maintask, settings["maintask_name"])
         doc.append("issues_type", {"issue": issue_name})
 
     _insert_with_owner(doc, owner)
     frappe.db.commit()
     return doc.name
 
-def _subtask_issue_label(subtask_doc) -> str:
-    """Return best-effort issue label for a SubTask doc."""
-
-    issues = getattr(subtask_doc, "issues_type", None) or []
-    if not issues:
-        return "-"
-
-    first = issues[0]
-    issue_docname = getattr(first, "issue", None)
-    issue_key = None
-    if issue_docname:
-        try:
-            issue_key = frappe.db.get_value("Fusion Issue Types", issue_docname, "issue")
-        except Exception:
-            issue_key = None
-
-    # Fallback to child fetch_from field if available.
-    if not issue_key:
-        issue_key = getattr(first, "issue_name", None)
-
-    label = telegram_utils.issue_label_from_key(str(issue_key or "").strip())
-    return label or "-"
-
-
-def _subtask_progress_comments(subtask_name: str, limit: int = 10) -> list[str]:
-    """Return formatted progress update lines for a SubTask."""
-
-    rows = frappe.get_all(
-        "Comment",
-        filters={
-            "reference_doctype": "SubTask",
-            "reference_name": subtask_name,
-            "comment_type": "Comment",
-        },
-        fields=["content", "comment_email", "comment_by", "creation"],
-        order_by="creation desc",
-        limit_page_length=int(limit or 10),
-    )
-
-    out: list[str] = []
-    for r in rows or []:
-        text = telegram_utils._strip_html_to_text(r.get("content") or "")
-        if not text:
-            continue
-        # by = (r.get("comment_email") or r.get("comment_by") or "").strip() or "unknown"
-        out.append(f"- {text} ")
-    return out
-
-
-def format_aduan_info_response(subtask_name: str) -> str:
-    """Build response message for /aduan_info <SubTask ID>."""
-
-    name = (subtask_name or "").strip()
-    if not name:
-        raise frappe.ValidationError("SubTask ID is required")
-
-    doc = frappe.get_doc("SubTask", name)
-
-    issue_label = _subtask_issue_label(doc)
-    status = (getattr(doc, "status", "") or "").strip() or "-"
-    status_out = status.lower() if status != "-" else "-"
-
-    pic_name = (getattr(doc, "pic_subtask_name", "") or "").strip()
-    if not pic_name:
-        pic = getattr(doc, "pic_subtask", None)
-        if pic:
-            try:
-                pic_name = (frappe.db.get_value("Employee", pic, "employee_name") or "").strip()
-            except Exception:
-                pic_name = ""
-    if not pic_name:
-        pic_name = "-"
-
-    root_cause = (getattr(doc, "root_cause", "") or "").strip() or "-"
-    modified = getattr(doc, "modified", None) or "-"
-
-    progress_lines = _subtask_progress_comments(doc.name, limit=5)
-    if not progress_lines:
-        progress_lines = ["- (belum ada update)"]
-
-    hyperlink_subtask = telegram_utils._format_hyperlink(doc.name, frappe.conf.get("telegram_aduan_site") + doc.name)
-    
-    lines: list[str] = []
-    lines.append("📌 Task Update")
-    lines.append("")
-    lines.append(f"• Nomor Aduan: {hyperlink_subtask}")
-    lines.append(f"• Issue Type: {issue_label}")
-    lines.append(f"• Status          : {status_out}")
-    lines.append(f"• PIC             : {pic_name}")
-    lines.append(f"• Root Cause      : {root_cause}")
-    lines.append("• Progress Update :")
-    lines.extend([f"  {l}" for l in progress_lines])
-    lines.append("")
-    lines.append(f"🕒 Last Update: {modified}")
-    return "\n".join(lines).strip()
-
 
 def register_handlers(bot):
-    """Register /aduan handler for a specific group+topic.
+    """Register /aduan handler for a specific group+thread.
 
     Configuration in site_config (frappe.conf):
     - telegram_aduan_chat_id: int (required)
-    - telegram_aduan_topic_id: int (optional)
+    - telegram_aduan_thread_id: int (optional)
 
     Defaults (optional overrides):
     - telegram_aduan_default_maintask
@@ -702,7 +606,7 @@ def register_handlers(bot):
 
         thread_id = getattr(message, "message_thread_id", None)
 
-        # Enforce allowed chats/topics from config.
+        # Enforce allowed chats/threads from config.
         rules = _aduan_rules()
         if not rules:
             return
@@ -716,24 +620,24 @@ def register_handlers(bot):
         if not matched_rule:
             return
 
-        allowed_topics: list[int] = matched_rule.get("topic_ids") or []
-        # Only enforce topic restriction if topic_ids is configured (non-empty).
-        if allowed_topics and thread_id not in allowed_topics:
+        allowed_threads: list[int] = matched_rule.get("thread_ids") or []
+        # Only enforce thread restriction if thread_ids is configured (non-empty).
+        if allowed_threads and thread_id not in allowed_threads:
         #     # Build a more specific message if labels are provided in config.
-        #     topic_names: dict[int, str] = matched_rule.get("topic_names") or {}
+        #     thread_names: dict[int, str] = matched_rule.get("thread_names") or {}
         #     chat_name = matched_rule.get("chat_name")
 
-        #     allowed_topic_labels = [topic_names.get(tid) for tid in allowed_topics]
-        #     allowed_topic_labels = [t for t in allowed_topic_labels if t]
-        #     if allowed_topic_labels:
-        #         topic_label = " / ".join(dict.fromkeys(allowed_topic_labels))
+        #     allowed_thread_labels = [thread_names.get(tid) for tid in allowed_threads]
+        #     allowed_thread_labels = [t for t in allowed_thread_labels if t]
+        #     if allowed_thread_labels:
+        #         thread_label = " / ".join(dict.fromkeys(allowed_thread_labels))
         #     else:
-        #         topic_label = "ADUAN"
+        #         thread_label = "ADUAN"
 
         #     if chat_name:
-        #         msg = f"❌ Aduan grup <b>{chat_name}</b> hanya boleh pada topic <b>{topic_label}</b>"
+        #         msg = f"❌ Aduan grup <b>{chat_name}</b> hanya boleh pada thread <b>{thread_label}</b>"
         #     else:
-        #         msg = f"❌ Aduan hanya boleh di topic <b>{topic_label}</b>"
+        #         msg = f"❌ Aduan hanya boleh di thread <b>{thread_label}</b>"
 
         #     _send(
         #         bot,
@@ -785,8 +689,20 @@ def register_handlers(bot):
                 )
                 return
 
+            subtask_id = subtask_id.upper()
+            if not re.match(r"^ST-\d{6}-\d{7}$", subtask_id):
+                _send(
+                    bot,
+                    chat_id,
+                    f"❌ Format {cmd} belum valid.\n\n" + _format_help(cmd),
+                    thread_id=thread_id,
+                    reply_to=message.message_id,
+                    parse_mode="HTML",
+                )
+                return
+
             try:
-                text = format_aduan_info_response(subtask_id)
+                text = telegram_utils.format_aduan_info_response(subtask_id, command_token=cmd)
                 _send(
                     bot,
                     chat_id,
@@ -835,13 +751,13 @@ def register_handlers(bot):
 
         try:
             subtask_id = _create_subtask_from_aduan(fields, message)
-            telegram_aduan_site = frappe.conf.get("telegram_aduan_site") or "hris.ebdesk.com/app/subtask/"
             _send(
                 bot,
                 chat_id,
-                f"✅ Aduan telah dicatat dengan nomor {telegram_aduan_site}{subtask_id} dan dalam proses pengecekan, dibantu oleh tim kami  {pic_issue} Silakan tunggu update lebih lanjut dari tim kami",
+                telegram_utils.format_aduan_success_response(cmd, subtask_id, pic_issue),
                 thread_id=thread_id,
                 reply_to=message.message_id,
+                parse_mode="HTML",
             )
         except Exception as e:
             _logger().error(f"/aduan create failed: {e}")

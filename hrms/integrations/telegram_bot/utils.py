@@ -2,6 +2,7 @@ import re
 from typing import Dict, Optional, Tuple
 import json
 import frappe
+import html
 
 
 
@@ -282,6 +283,7 @@ def extract_command_payload(text: str, command_token: object) -> Optional[str]:
 def _conf_default_subtask_settings() -> Dict[str, str]:
     return {
         "maintask": _conf_str("telegram_aduan_default_maintask", "MT-202511-0000073"),
+        "maintask_name": _conf_str("telegram_aduan_default_maintask_name", "FUSION_REVAMP"),
         "tasks": _conf_str("telegram_aduan_default_tasks", "T-202511-0000413"),
         "owner": _conf_str("telegram_aduan_default_owner", "renata@stellardata.ai"),
         "pic_subtask": _conf_str("telegram_aduan_default_pic_subtask", "HR-EMP-00413"),
@@ -455,3 +457,261 @@ def _format_hyperlink(text: str, url: str) -> str:
     if not u:
         return t
     return f'<a href="{u}">{t}</a>'
+
+
+def _escape_html(value: object) -> str:
+    s = "" if value in (None, "") else str(value)
+    try:
+        from frappe.utils import escape_html as frappe_escape_html
+
+        return frappe_escape_html(s)
+    except Exception:
+        return html.escape(s, quote=True)
+
+
+class _SafeFormatDict(dict):
+    def __missing__(self, key: str):
+        # Keep unknown placeholders as-is so templates don't crash.
+        return "{" + str(key) + "}"
+
+
+def _render_template(template: str, context: dict) -> str:
+    tpl = template or ""
+    try:
+        return tpl.format_map(_SafeFormatDict(context or {}))
+    except Exception:
+        # If template is malformed, fall back to raw.
+        return tpl
+
+
+def _aduan_response_template_map() -> dict[str, str]:
+    """Return response templates keyed by normalized command token.
+
+    Config (optional): telegram_aduan_response_texts
+    Accepts:
+    - dict (or JSON string of dict): {"/aduan": "...", "aduan_info": "..."}
+    - list (or JSON string of list) aligned with telegram_aduan_command tokens
+
+    Keys may be with or without leading '/'.
+    """
+
+    raw = frappe.conf.get("telegram_aduan_response_texts")
+    if raw in (None, ""):
+        return {}
+
+    try:
+        if isinstance(raw, str):
+            raw = json.loads(raw)
+    except Exception:
+        pass
+
+    normalized: dict[str, str] = {}
+
+    def _norm_key(k: object) -> Optional[str]:
+        if k in (None, ""):
+            return None
+        return normalize_command_token(k, default="/")
+
+    def _norm_val(v: object) -> Optional[str]:
+        if v in (None, ""):
+            return None
+        s = str(v)
+        return s if s.strip() else None
+
+    if isinstance(raw, dict):
+        for k, v in raw.items():
+            kk = _norm_key(k)
+            vv = _norm_val(v)
+            if kk and vv:
+                normalized[kk] = vv
+        return normalized
+
+    if isinstance(raw, list):
+        # Align with configured command tokens
+        tokens = normalize_command_tokens(frappe.conf.get("telegram_aduan_command"), default=[])
+        vals = [_norm_val(x) for x in raw]
+        if len(vals) == len(tokens):
+            for t, v in zip(tokens, vals):
+                if v:
+                    normalized[t] = v
+        elif len(vals) == 1 and vals[0]:
+            for t in tokens:
+                normalized[t] = vals[0]
+        return normalized
+
+    return {}
+
+
+def response_template_for_command(command_token: str) -> Optional[str]:
+    """Get configured response template for a given command token."""
+
+    cmd = normalize_command_token(command_token, default="/")
+    return _aduan_response_template_map().get(cmd)
+
+
+def _subtask_issue_label(subtask_doc) -> str:
+    """Return best-effort issue label for a SubTask doc."""
+
+    issues = getattr(subtask_doc, "issues_type", None) or []
+    if not issues:
+        return "-"
+
+    first = issues[0]
+    issue_docname = getattr(first, "issue", None)
+    issue_key = None
+    if issue_docname:
+        try:
+            issue_key = frappe.db.get_value("Fusion Issue Types", issue_docname, "issue")
+        except Exception:
+            issue_key = None
+
+    if not issue_key:
+        issue_key = getattr(first, "issue_name", None)
+
+    label = issue_label_from_key(str(issue_key or "").strip())
+    return label or "-"
+
+
+def _subtask_progress_comments(subtask_name: str, limit: int = 10) -> list[str]:
+    """Return formatted progress update lines for a SubTask (oldest -> newest)."""
+
+    rows = frappe.get_all(
+        "Comment",
+        filters={
+            "reference_doctype": "SubTask",
+            "reference_name": subtask_name,
+            "comment_type": "Comment",
+        },
+        fields=["content", "comment_email", "comment_by", "creation"],
+        order_by="creation asc",
+        limit_page_length=int(limit or 10),
+    )
+
+    out: list[str] = []
+    for r in rows or []:
+        text = _strip_html_to_text(r.get("content") or "")
+        if not text:
+            continue
+        by = (r.get("comment_email") or r.get("comment_by") or "").strip() or "unknown"
+        out.append(f"- {text} ({by})")
+    return out
+
+
+def format_aduan_info_response(subtask_name: str, command_token: Optional[str] = None) -> str:
+    """Build response message for /aduan_info <SubTask ID>.
+
+    If `telegram_aduan_response_texts` provides a template for the command,
+    this function will use it.
+
+    Available placeholders:
+    - {name}
+    - {issue}
+    - {status}
+    - {pic_subtask_name}
+    - {root_cause}
+    - {modified}
+    - {progress_updates}
+    - {subtask_url}
+    - {subtask_link}
+    """
+
+    name = (subtask_name or "").strip().upper()
+    if not name:
+        raise frappe.ValidationError("SubTask ID is required")
+
+    doc = frappe.get_doc("SubTask", name)
+
+    issue_label = _subtask_issue_label(doc)
+    status_raw = (getattr(doc, "status", "") or "").strip() or "-"
+    status_out = status_raw.lower() if status_raw != "-" else "-"
+
+    pic_name = (getattr(doc, "pic_subtask_name", "") or "").strip()
+    if not pic_name:
+        pic = getattr(doc, "pic_subtask", None)
+        if pic:
+            try:
+                pic_name = (frappe.db.get_value("Employee", pic, "employee_name") or "").strip()
+            except Exception:
+                pic_name = ""
+    if not pic_name:
+        pic_name = "-"
+
+    root_cause = (getattr(doc, "root_cause", "") or "").strip() or "-"
+    modified = getattr(doc, "modified", None) or "-"
+
+    progress_lines = _subtask_progress_comments(doc.name, limit=10)
+    progress_updates = "\n".join(["  " + l for l in (progress_lines or ["- (belum ada update)"])])
+
+    base = (frappe.conf.get("telegram_aduan_site") or "").strip()
+    subtask_url = (base + doc.name) if base else doc.name
+    subtask_link = _format_hyperlink(doc.name, subtask_url) if base else doc.name
+
+    context = {
+        "name": _escape_html(doc.name),
+        "issue": _escape_html(issue_label),
+        "status": _escape_html(status_out),
+        "pic_subtask_name": _escape_html(pic_name),
+        "root_cause": _escape_html(root_cause),
+        "modified": _escape_html(modified),
+        "progress_updates": _escape_html(progress_updates),
+        "subtask_url": _escape_html(subtask_url),
+        "subtask_link": subtask_link,
+    }
+
+    template = response_template_for_command(command_token) if command_token else None
+    if template:
+        return _render_template(template, context).strip()
+
+    # Fallback default (built-in)
+    lines: list[str] = []
+    lines.append("📌 Task Update")
+    lines.append("")
+    lines.append(f"• nomor aduan: {doc.name}")
+    lines.append(f"• issue type: {issue_label}")
+    lines.append(f"• Status          : {status_out}")
+    lines.append(f"• PIC             : {pic_name}")
+    lines.append(f"• Root Cause      : {root_cause}")
+    lines.append("• Progress Update :")
+    lines.extend(["  " + l for l in (progress_lines or ["- (belum ada update)"])])
+    lines.append("")
+    lines.append(f"🕒 Last Update: {modified}")
+    return "\n".join(lines).strip()
+
+
+def format_aduan_success_response(
+    command_token: str,
+    subtask_id: str,
+    pic_issue: str,
+) -> str:
+    """Build success response for /aduan-style commands.
+
+    Placeholders:
+    - {subtask_id}
+    - {subtask_url}
+    - {subtask_link}
+    - {pic_issue}
+    - {cmd}
+    """
+
+    cmd = normalize_command_token(command_token, default="/aduan")
+    sid = (subtask_id or "").strip()
+    base = (frappe.conf.get("telegram_aduan_site") or "hris.ebdesk.com/app/subtask/").strip()
+    subtask_url = (base + sid) if base else sid
+    subtask_link = _format_hyperlink(sid, subtask_url) if base else sid
+
+    context = {
+        "cmd": _escape_html(cmd),
+        "subtask_id": _escape_html(sid),
+        "subtask_url": _escape_html(subtask_url),
+        "subtask_link": subtask_link,
+        "pic_issue": _escape_html(pic_issue or ""),
+    }
+
+    template = response_template_for_command(cmd)
+    if template:
+        return _render_template(template, context).strip()
+
+    return (
+        f"✅ Aduan telah dicatat dengan nomor {subtask_url} dan dalam proses pengecekan, "
+        f"dibantu oleh tim kami {pic_issue} Silakan tunggu update lebih lanjut dari tim kami"
+    ).strip()
