@@ -618,7 +618,15 @@ def format_aduan_info_response(subtask_name: str, command_token: Optional[str] =
     if not name:
         raise frappe.ValidationError("SubTask ID is required")
 
+    # TeleBot listener is a long-running process. Reset the current DB transaction
+    # so reads don't get stuck on an old REPEATABLE READ snapshot.
+    try:
+        frappe.db.rollback()
+    except Exception:
+        pass
+
     doc = frappe.get_doc("SubTask", name)
+    print(f"Fetched SubTask {name} for /aduan_info: {doc.as_dict() if doc else 'Not found'}")
 
     issue_label = _subtask_issue_label(doc)
     status_raw = doc.status if hasattr(doc, "status") else "-"

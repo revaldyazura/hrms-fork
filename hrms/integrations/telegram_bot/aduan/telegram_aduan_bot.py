@@ -600,6 +600,20 @@ def register_handlers(bot):
 
     @bot.message_handler(content_types=["text", "photo", "document", "video", "animation"])
     def handle_aduan(message):
+        # TeleBot runs as a long-lived process; make sure we don't keep a long
+        # DB transaction around (InnoDB REPEATABLE READ can otherwise show stale
+        # snapshots across multiple messages).
+        try:
+            frappe.db.rollback()
+            # Clear per-transaction value cache that can otherwise persist
+            # across messages in a long-running process.
+            try:
+                frappe.db.value_cache.clear()
+            except Exception:
+                pass
+        except Exception:
+            pass
+
         chat_id = getattr(getattr(message, "chat", None), "id", None)
         if chat_id is None:
             return
@@ -768,3 +782,14 @@ def register_handlers(bot):
                 thread_id=thread_id,
                 reply_to=message.message_id,
             )
+        finally:
+            # Always end the transaction for this message to avoid holding
+            # stale snapshots / locks in a long-running bot process.
+            try:
+                frappe.db.rollback()
+                try:
+                    frappe.db.value_cache.clear()
+                except Exception:
+                    pass
+            except Exception:
+                pass
