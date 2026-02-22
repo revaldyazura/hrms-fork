@@ -2,6 +2,17 @@ import frappe
 from typing import Optional
 from hrms.integrations.telegram_bot import utils as telegram_utils
 
+def is_info_command(command_token: str) -> bool:
+    """Return True if command token represents an info-style command.
+
+    We treat commands whose menu name contains 'info' (e.g. 'aduan_info',
+    'aduan_info_staging') as the info flow.
+    """
+
+    name = telegram_utils.command_for_menu(command_token)
+    if not name:
+        return False
+    return "info" in name
 
 def _subtask_issue_label(subtask_doc) -> str:
     """Return best-effort issue label for a SubTask doc."""
@@ -121,10 +132,18 @@ def aduan_info_response(subtask_name: str, command_token: Optional[str] = None) 
         "subtask_url": telegram_utils._escape_html(subtask_url),
         "subtask_link": subtask_link,
     }
-
-    template = telegram_utils.response_template_for_command(command_token) if command_token else None
+    
+    default = "ℹ️ Progress Info\n\n• Nomor Aduan: {subtask_link}\n• Issue Type: {issue}\n• Status          : {status}\n• PIC             : {pic_subtask_name}\n• Root Cause      : {root_cause}\n• Progress Update :\n{progress_updates}\n\n🕒 Last Update: {modified}"
+    
+    template = telegram_utils._render_response_text(
+		"aduan_info",  # command_token may be None or not match a menu, so we use the base command as key for config lookup with a sensible default template.
+		default,
+		context
+	)
+    # template = telegram_utils.response_template_for_command(command_token) if command_token else None
     if template:
-        return telegram_utils._render_template(template, context).strip()
+        return template.strip()
+        # return telegram_utils._render_template(template, context).strip()
 
     # Fallback default (built-in)
     lines: list[str] = []

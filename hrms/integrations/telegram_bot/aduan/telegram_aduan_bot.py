@@ -7,6 +7,7 @@ import json
 from hrms.integrations.telegram_bot import utils as telegram_utils
 from hrms.integrations.telegram_bot.aduan import aduan_info 
 from hrms.integrations.telegram_bot.aduan import aduan
+from hrms.integrations.telegram_bot.aduan import aduan_update
 
 ADUAN_COMMAND = "/aduan"
 
@@ -20,6 +21,32 @@ def _aduan_command_tokens() -> list[str]:
 
     raw = frappe.conf.get("telegram_aduan_command")
     return telegram_utils.normalize_command_tokens(raw, default=[ADUAN_COMMAND])
+
+
+def _aduan_update_status_tokens() -> list[str]:
+    """Return configured update-status command tokens.
+
+    Config (optional): telegram_aduan_update_status_command
+    - "/aduan_update_status" or ["/aduan_update_status", "/aduan_update_status_staging"]
+
+    Default: ["/aduan_update_status"]
+    """
+
+    raw = frappe.conf.get("telegram_aduan_update_status_command")
+    return telegram_utils.normalize_command_tokens(raw, default=[aduan_update.DEFAULT_UPDATE_STATUS_COMMAND])
+
+
+def _aduan_update_issues_tokens() -> list[str]:
+    """Return configured update-issues command tokens.
+
+    Config (optional): telegram_aduan_update_issues_command
+    - "/aduan_update_issues" or ["/aduan_update_issues", "/aduan_update_issues_staging"]
+
+    Default: ["/aduan_update_issues"]
+    """
+
+    raw = frappe.conf.get("telegram_aduan_update_issues_command")
+    return telegram_utils.normalize_command_tokens(raw, default=[aduan_update.DEFAULT_UPDATE_ISSUES_COMMAND])
 
 
 def _aduan_command_token() -> str:
@@ -309,6 +336,23 @@ def _is_allowed_group_thread(message) -> bool:
 def _format_help(cmd: Optional[str] = None) -> str:
     cmd = cmd or _aduan_command_token()
 
+    # Special built-in help for update issues command.
+    # if aduan_update._command_is_update_issues(cmd):
+    #     return (
+    #         "Format {cmd} untuk update issue type:\n\n"
+    #         "{cmd} ST-202602-0000016 AI Assistant\n\n"
+    #         "Catatan: Issue Type harus sesuai label yang tersedia."
+    #     ).replace("{cmd}", cmd)
+
+    # # Special built-in help for update status command.
+    # if aduan_update._command_is_update_status(cmd):
+    #     return (
+    #         "Format {cmd} untuk update status:\n\n"
+    #         "{cmd} ST-202602-0000016 resolved\n"
+    #         "{cmd} ST-202602-0000016 done\n\n"
+    #         "Catatan: hanya boleh status 'resolved' atau 'done'."
+    #     ).replace("{cmd}", cmd)
+
     # 1) Try per-command configured help text.
     help_map = _aduan_help_text_map()
     if help_map:
@@ -445,7 +489,12 @@ def register_handlers(bot):
         raw_text = ((getattr(message, "text", None) or getattr(message, "caption", None) or "")).strip()
         if not raw_text:
             return
-        tokens = _aduan_command_tokens()
+        # Match against both aduan create/info commands and update-status commands.
+        tokens = (
+            (_aduan_command_tokens() or [])
+            + (_aduan_update_status_tokens() or [])
+            + (_aduan_update_issues_tokens() or [])
+        )
         matched = telegram_utils.match_command(raw_text, tokens)
         if not matched:
             return
@@ -467,8 +516,113 @@ def register_handlers(bot):
 
         payload = telegram_utils.extract_command_payload(raw_text, cmd)
 
+        # Update-status flow: /aduan_update_status ST-... resolved|done ...
+        if aduan_update._command_is_update_status(cmd):
+            try:
+                if not payload:
+                    _send(
+                        bot,
+                        chat_id,
+                        f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd),
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                    )
+                    return
+                res = aduan_update.aduan_update_status_response(payload, message, command_token=cmd)
+                _send(
+                    bot,
+                    chat_id,
+                    res,
+                    thread_id=thread_id,
+                    reply_to=message.message_id,
+                    parse_mode="HTML",
+                )
+            except Exception as e:
+                telegram_utils._logger().error(f"/aduan_update_status failed: {e}")
+                # For validation-like errors, show help to match existing flows.
+                if isinstance(e, frappe.ValidationError):
+                    _send(
+                        bot,
+                        chat_id,
+                        f"❌ {e}.\n\n" + _format_help(cmd),
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                    )
+                else:
+                    _send(
+                        bot,
+                        chat_id,
+                        f"❌ Gagal mengupdate Aduan status: {e}",
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                    )
+            finally:
+                try:
+                    frappe.db.rollback()
+                    try:
+                        frappe.db.value_cache.clear()
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+            return
+
+        # Update-issues flow: /aduan_update_issues ST-... <Issue Label...>
+        if aduan_update._command_is_update_issues(cmd):
+            try:
+                if not payload:
+                    _send(
+                        bot,
+                        chat_id,
+                        f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd),
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                    )
+                    return
+                res = aduan_update.aduan_update_issues_response(payload, message, command_token=cmd)
+                _send(
+                    bot,
+                    chat_id,
+                    res,
+                    thread_id=thread_id,
+                    reply_to=message.message_id,
+                    parse_mode="HTML",
+                )
+            except Exception as e:
+                telegram_utils._logger().error(f"/aduan_update_issues failed: {e}")
+                if isinstance(e, frappe.ValidationError):
+                    _send(
+                        bot,
+                        chat_id,
+                        f"❌ {e}.\n\n" + _format_help(cmd),
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                    )
+                else:
+                    _send(
+                        bot,
+                        chat_id,
+                        f"❌ Gagal mengupdate Aduan issue type: {e}",
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                    )
+            finally:
+                try:
+                    frappe.db.rollback()
+                    try:
+                        frappe.db.value_cache.clear()
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+            return
+
         # Separate flow for info-style commands, e.g. /aduan_info ST-...
-        if telegram_utils.is_info_command(cmd):
+        if aduan_info.is_info_command(cmd):
             subtask_id = ((payload or "").strip().split() or [""])[0].strip()
             if not subtask_id:
                 _send(

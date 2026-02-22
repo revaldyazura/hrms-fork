@@ -65,64 +65,6 @@ def _missing_required_fields(fields: Dict[str, str]) -> list[str]:
     return missing
 
 
-def _issue_key_from_user_input(user_value: str) -> Optional[str]:
-    """Translate user-provided issue value (label or key) into DB issue key."""
-    v = (user_value or "").strip()
-    if not v:
-        return None
-
-    mapping = telegram_utils._load_issue_mapping()
-    if not mapping:
-        return None
-
-    # 1) If user already typed the key.
-    if v in mapping:
-        return v
-    v_upper = v.upper()
-    if v_upper in mapping:
-        return v_upper
-
-    # 2) Match by label (case-insensitive).
-    wanted = telegram_utils._normalize_issue_label(v)
-    for key, meta in mapping.items():
-        if not isinstance(meta, dict):
-            continue
-        lbl = meta.get("label")
-        if lbl in (None, ""):
-            continue
-        if telegram_utils._normalize_issue_label(str(lbl)) == wanted:
-            return str(key).strip()
-
-    return None
-
-
-def _pics_for_issue_user_input(user_value: str) -> list[str]:
-    """Return PIC mentions for an issue value provided by user (label or key)."""
-    issue_key = _issue_key_from_user_input(user_value)
-    mapping = telegram_utils._load_issue_mapping()
-    if not issue_key or issue_key not in mapping:
-        return []
-
-    meta = mapping.get(issue_key)
-    if not isinstance(meta, dict):
-        return []
-
-    pics = meta.get("pic")
-    if isinstance(pics, str):
-        pics = [pics]
-    if not isinstance(pics, list):
-        return []
-
-    out: list[str] = []
-    for p in pics:
-        if p in (None, ""):
-            continue
-        s = str(p).strip()
-        if s:
-            out.append(s)
-    return out
-
-
 def _insert_with_owner(doc, owner_user: str):
     """Insert doc so that `owner` becomes `owner_user`.
 
@@ -156,32 +98,32 @@ def _resolve_subtask_type(type_label: str) -> str:
     name = frappe.db.get_value("SubTask Types", {"type": type_label}, "name")
     if not name:
         raise frappe.DoesNotExistError(
-            f"SubTask Types not found for type='{type_label}'"
+            f"SubTask Type tidak ditemukan untuk type='{type_label}'"
         )
     return name
 
 
-def _resolve_issue_type(issue_label: str, maintask: str, maintask_name: str) -> str:
-    """Return docname of Fusion Issue Types."""
-    issue_input = (issue_label or "").strip()
-    if not issue_input:
-        raise frappe.ValidationError("Issue Type is required")
+# def _resolve_issue_type(issue_label: str, maintask: str, maintask_name: str) -> str:
+#     """Return docname of Fusion Issue Types."""
+#     issue_input = (issue_label or "").strip()
+#     if not issue_input:
+#         raise frappe.ValidationError("Issue Type is required")
 
-    issue_key = _issue_key_from_user_input(issue_input) or issue_input
+#     issue_key = telegram_utils._issue_key_from_user_input(issue_input) or issue_input
 
-    filters = {"issue": issue_key}
-    # If maintask is provided, narrow down to avoid ambiguity
-    if maintask:
-        filters["maintask"] = maintask
+#     filters = {"issue": issue_key}
+#     # If maintask is provided, narrow down to avoid ambiguity
+#     if maintask:
+#         filters["maintask"] = maintask
 
-    name = frappe.db.get_value("Fusion Issue Types", filters, "name")
-    if not name:
-        # Backward-friendly: if user typed a label and mapping exists but DB entry missing.
-        raise frappe.DoesNotExistError(
-            f"Fusion Issue Types not found for issue='{issue_key}'"
-            + (f" and maintask='{maintask_name}'" if maintask else "")
-        )
-    return name
+#     name = frappe.db.get_value("Fusion Issue Types", filters, "name")
+#     if not name:
+#         # Backward-friendly: if user typed a label and mapping exists but DB entry missing.
+#         raise frappe.DoesNotExistError(
+#             f"Issue Types tidak ditemukan untuk issue='{issue_key}'"
+#             + (f" di maintask='{maintask_name}'" if maintask else "")
+#         )
+#     return name
 
 
 def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
@@ -227,7 +169,7 @@ def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
         doc.append("type", {"subtask_type": type_name})
 
     if fields.get("issue_type"):
-        issue_name = _resolve_issue_type(
+        issue_name, issue_label = telegram_utils._resolve_issue_type(
             fields["issue_type"], maintask, settings["maintask_name"]
         )
         doc.append("issues_type", {"issue": issue_name})
@@ -258,7 +200,7 @@ def aduan_success_response(command_token: str, fields: Dict[str, str], message) 
 
     pic_issue = "@justrenatta"
     if fields.get("issue_type"):
-        pics = _pics_for_issue_user_input(fields["issue_type"])
+        pics = telegram_utils._pics_for_issue_user_input(fields["issue_type"])
         if pics:
             pic_issue = ", ".join(pics)
 
@@ -269,10 +211,13 @@ def aduan_success_response(command_token: str, fields: Dict[str, str], message) 
         "subtask_link": subtask_link,
         "pic_issue": telegram_utils._escape_html(pic_issue or ""),
     }
+    default = "✅ Aduan dicatat dengan nomor: {subtask_url}\ndan dalam proses pengecekan, dibantu oleh tim kami:\n{pic_issue}\nSilakan tunggu update lebih lanjut dari tim kami"
 
-    template = telegram_utils.response_template_for_command(cmd)
+    template = telegram_utils._render_response_text("aduan", default, context)
+    # template = telegram_utils.response_template_for_command(cmd)
     if template:
-        return telegram_utils._render_template(template, context).strip()
+        return template.strip()
+        # return telegram_utils._render_template(template, context).strip()
 
     return (
         f"✅ Aduan telah dicatat dengan nomor {subtask_url} dan dalam proses pengecekan, "

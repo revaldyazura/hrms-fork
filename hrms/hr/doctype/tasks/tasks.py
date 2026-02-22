@@ -284,7 +284,8 @@ def ensure_employee_in_maintask_child_table(doc: Document | str):
 @frappe.whitelist()
 def user_edit_tasks(task_name):
 	user = frappe.session.user
-
+	if user == "Administrator":
+		return "admin"
 	doc = frappe.get_doc("Tasks", task_name)
 	maintask = frappe.get_doc("MainTask", doc.maintask)
 	employee_id = frappe.get_value("Employee", {"user_id": user}, "name")
