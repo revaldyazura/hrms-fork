@@ -1,0 +1,74 @@
+[
+    {
+        "topic": "Savine",
+        "chat_id": -1003427729420,
+        "thread_id": 2,
+        "maintask": "MT-202511-0000104",
+        "maintask_name": "DIVTIK / SAVINE",
+        "tasks": "T-202511-0000528"
+    },
+    {
+        "topic": "Vortex",
+        "chat_id": -1003427729420,
+        "thread_id": 5,
+        "maintask": "MT-202511-0000105",
+        "maintask_name": "DIVTIK / VORTEX",
+        "tasks": "T-202511-0000540"
+    },
+    {
+        "topic": "Territorial",
+        "chat_id": -1003427729420,
+        "thread_id": 7,
+        "maintask": "MT-202511-0000106",
+        "maintask_name": "DIVTIK / TERRITORIAL",
+        "tasks": "T-202511-0000552"
+    },
+    {
+        "topic": "Portal Data",
+        "chat_id": -1003427729420,
+        "thread_id": 12,
+        "maintask": "MT-202511-0000107",
+        "maintask_name": "DIVTIK / PORTAL DATA",
+        "tasks": "T-202511-0000564"
+    },
+    {
+        "topic": "Enigma Socio",
+        "chat_id": -1003427729420,
+        "thread_id": 14,
+        "maintask": "MT-202511-0000108",
+        "maintask_name": "DIVTIK / ENIGMA SOCIO",
+        "tasks": "T-202511-0000576"
+    },
+    {
+        "topic": "Enigma Media",
+        "chat_id": -1003427729420,
+        "thread_id": 16,
+        "maintask": "MT-202511-0000109",
+        "maintask_name": "DIVTIK / ENIGMA MEDIA",
+        "tasks": "T-202511-0000588"
+    },
+    {
+        "topic": "Enigma Network",
+        "chat_id": -1003427729420,
+        "thread_id": 18,
+        "maintask": "MT-202511-0000110",
+        "maintask_name": "DIVTIK / ENIGMA NETWORK",
+        "tasks": "T-202511-0000600"
+    },
+    {
+        "topic": "Enigma Centralize",
+        "chat_id": -1003427729420,
+        "thread_id": 136,
+        "maintask": "MT-202511-0000111",
+        "maintask_name": "DIVTIK / ENIGMA CENTRALIZE",
+        "tasks": "T-202511-0000612"
+    },
+    {
+        "topic": "Geostrategic",
+        "chat_id": -1003427729420,
+        "thread_id": 9,
+        "maintask": "MT-202512-0000056",
+        "maintask_name": "DIVTIK / GEOSTRATEGIC",
+        "tasks": "T-202512-0000420"
+    }
+]

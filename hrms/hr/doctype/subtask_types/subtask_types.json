@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "field:type",
  "creation": "2025-07-21 20:18:51.441184",
@@ -19,7 +20,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-07-31 17:24:53.380864",
+ "modified": "2026-02-22 13:10:13.556872",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "SubTask Types",
