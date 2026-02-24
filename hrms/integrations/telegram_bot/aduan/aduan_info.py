@@ -2,6 +2,8 @@ import frappe
 from typing import Optional
 from hrms.integrations.telegram_bot import utils as telegram_utils
 
+ADUAN_INFO_COMMAND = "/aduan_info"
+
 def is_info_command(command_token: str) -> bool:
     """Return True if command token represents an info-style command.
 

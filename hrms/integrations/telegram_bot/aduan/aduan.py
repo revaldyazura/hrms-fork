@@ -4,7 +4,7 @@ import html
 from typing import Dict, Optional, Tuple
 import re
 
-
+ADUAN_COMMAND = "/aduan"
 
 def _parse_aduan_fields(payload: str) -> Tuple[Dict[str, str], str]:
     """Parse a structured /aduan payload.

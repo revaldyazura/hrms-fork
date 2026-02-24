@@ -8,8 +8,11 @@ from hrms.integrations.telegram_bot import utils as telegram_utils
 from hrms.integrations.telegram_bot.aduan import aduan_info 
 from hrms.integrations.telegram_bot.aduan import aduan
 from hrms.integrations.telegram_bot.aduan import aduan_update
+from hrms.integrations.telegram_bot.aduan import aduan_statistic
 
-ADUAN_COMMAND = "/aduan"
+
+ADUAN_COMMAND = aduan.ADUAN_COMMAND
+
 
 
 def _aduan_command_tokens() -> list[str]:
@@ -20,33 +23,42 @@ def _aduan_command_tokens() -> list[str]:
     """
 
     raw = frappe.conf.get("telegram_aduan_command")
-    return telegram_utils.normalize_command_tokens(raw, default=[ADUAN_COMMAND])
+    return telegram_utils.normalize_command_tokens(
+        raw,
+        default=[
+            aduan.ADUAN_COMMAND,
+            aduan_info.ADUAN_INFO_COMMAND,
+            aduan_update.DEFAULT_UPDATE_STATUS_COMMAND,
+            aduan_update.DEFAULT_UPDATE_ISSUES_COMMAND,
+            aduan_statistic.DEFAULT_STATISTIC_COMMAND,
+        ],
+    )
 
 
-def _aduan_update_status_tokens() -> list[str]:
-    """Return configured update-status command tokens.
+# def _aduan_update_status_tokens() -> list[str]:
+#     """Return configured update-status command tokens.
 
-    Config (optional): telegram_aduan_update_status_command
-    - "/aduan_update_status" or ["/aduan_update_status", "/aduan_update_status_staging"]
+#     Config (optional): telegram_aduan_update_status_command
+#     - "/aduan_update_status" or ["/aduan_update_status", "/aduan_update_status_staging"]
 
-    Default: ["/aduan_update_status"]
-    """
+#     Default: ["/aduan_update_status"]
+#     """
 
-    raw = frappe.conf.get("telegram_aduan_update_status_command")
-    return telegram_utils.normalize_command_tokens(raw, default=[aduan_update.DEFAULT_UPDATE_STATUS_COMMAND])
+#     raw = frappe.conf.get("telegram_aduan_update_status_command")
+#     return telegram_utils.normalize_command_tokens(raw, default=[aduan_update.DEFAULT_UPDATE_STATUS_COMMAND])
 
 
-def _aduan_update_issues_tokens() -> list[str]:
-    """Return configured update-issues command tokens.
+# def _aduan_update_issues_tokens() -> list[str]:
+#     """Return configured update-issues command tokens.
 
-    Config (optional): telegram_aduan_update_issues_command
-    - "/aduan_update_issues" or ["/aduan_update_issues", "/aduan_update_issues_staging"]
+#     Config (optional): telegram_aduan_update_issues_command
+#     - "/aduan_update_issues" or ["/aduan_update_issues", "/aduan_update_issues_staging"]
 
-    Default: ["/aduan_update_issues"]
-    """
+#     Default: ["/aduan_update_issues"]
+#     """
 
-    raw = frappe.conf.get("telegram_aduan_update_issues_command")
-    return telegram_utils.normalize_command_tokens(raw, default=[aduan_update.DEFAULT_UPDATE_ISSUES_COMMAND])
+#     raw = frappe.conf.get("telegram_aduan_update_issues_command")
+#     return telegram_utils.normalize_command_tokens(raw, default=[aduan_update.DEFAULT_UPDATE_ISSUES_COMMAND])
 
 
 def _aduan_command_token() -> str:
@@ -490,11 +502,14 @@ def register_handlers(bot):
         if not raw_text:
             return
         # Match against both aduan create/info commands and update-status commands.
-        tokens = (
-            (_aduan_command_tokens() or [])
-            + (_aduan_update_status_tokens() or [])
-            + (_aduan_update_issues_tokens() or [])
-        )
+        tokens = _aduan_command_tokens() or []
+        # Backward/alias support: if the configured commands include a statistic
+        # token (e.g. /aduan_statistic_staging), also accept /aduan_statistic.
+        if (
+            any(aduan_statistic.is_statistic_command(t) for t in tokens)
+            and aduan_statistic.DEFAULT_STATISTIC_COMMAND not in tokens
+        ):
+            tokens = list(tokens) + [aduan_statistic.DEFAULT_STATISTIC_COMMAND]
         matched = telegram_utils.match_command(raw_text, tokens)
         if not matched:
             return
@@ -666,6 +681,58 @@ def register_handlers(bot):
                     thread_id=thread_id,
                     reply_to=message.message_id,
                 )
+            return
+
+        # Statistic flow: /aduan_statistic MT-...
+        if aduan_statistic.is_statistic_command(cmd):
+            try:
+                if not payload:
+                    _send(
+                        bot,
+                        chat_id,
+                        f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd),
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                    )
+                    return
+                res = aduan_statistic.aduan_statistic_response(payload, command_token=cmd)
+                _send(
+                    bot,
+                    chat_id,
+                    res,
+                    thread_id=thread_id,
+                    reply_to=message.message_id,
+                    parse_mode="HTML",
+                )
+            except Exception as e:
+                telegram_utils._logger().error(f"/aduan_statistic failed: {e}")
+                if isinstance(e, frappe.ValidationError):
+                    _send(
+                        bot,
+                        chat_id,
+                        f"❌ {e}.\n\n" + _format_help(cmd),
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                    )
+                else:
+                    _send(
+                        bot,
+                        chat_id,
+                        f"❌ Gagal mengambil statistik: {e}",
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                    )
+            finally:
+                try:
+                    frappe.db.rollback()
+                    try:
+                        frappe.db.value_cache.clear()
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
             return
 
         fields, freeform = aduan._parse_aduan_fields(payload or "")
