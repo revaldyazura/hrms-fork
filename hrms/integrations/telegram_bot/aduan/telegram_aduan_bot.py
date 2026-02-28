@@ -503,13 +503,7 @@ def register_handlers(bot):
             return
         # Match against both aduan create/info commands and update-status commands.
         tokens = _aduan_command_tokens() or []
-        # Backward/alias support: if the configured commands include a statistic
-        # token (e.g. /aduan_statistic_staging), also accept /aduan_statistic.
-        if (
-            any(aduan_statistic.is_statistic_command(t) for t in tokens)
-            and aduan_statistic.DEFAULT_STATISTIC_COMMAND not in tokens
-        ):
-            tokens = list(tokens) + [aduan_statistic.DEFAULT_STATISTIC_COMMAND]
+            
         matched = telegram_utils.match_command(raw_text, tokens)
         if not matched:
             return
