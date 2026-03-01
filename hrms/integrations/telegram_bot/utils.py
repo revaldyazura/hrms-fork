@@ -219,7 +219,131 @@ def _settings_override_for_thread(chat_id: Optional[int], thread_id: Optional[in
 		out["maintask_name"] = maintask_name
 	return out
 
-	return {}
+
+def _maintask_mapping_row_for_message(chat_id: Optional[int], thread_id: Optional[int]) -> Optional[dict[str, Any]]:
+	"""Return the best matching row from mapping_maintask.json for chat/thread.
+
+	This is used by /aduan_bulk to access per-maintask issue + PIC mapping.
+	Scoring rules match _settings_override_for_thread: prefer exact chat+thread,
+	then chat-only/thread-only, then wildcard.
+	"""
+
+	if chat_id is None and thread_id is None:
+		return None
+
+	mapping = _load_maintask_thread_mapping()
+	if not mapping:
+		return None
+
+	best_row: Optional[dict[str, Any]] = None
+	best_score = -1
+
+	for row in mapping:
+		if not isinstance(row, dict):
+			continue
+
+		cid = _coerce_int(row.get("chat_id"))
+		tid = _coerce_int(row.get("thread_id"))
+
+		# Missing cid/tid in mapping => wildcard.
+		if cid is not None:
+			if chat_id is None or cid != chat_id:
+				continue
+		if tid is not None:
+			if thread_id is None or tid != thread_id:
+				continue
+
+		score = (1 if cid is not None else 0) + (1 if tid is not None else 0)
+		if score > best_score:
+			best_row = row
+			best_score = score
+
+	return best_row
+
+
+def _maintask_mapping_row_for_message_obj(message: object) -> Optional[dict[str, Any]]:
+	chat_id = _coerce_int(getattr(getattr(message, "chat", None), "id", None))
+	thread_id = _coerce_int(getattr(message, "message_thread_id", None))
+	return _maintask_mapping_row_for_message(chat_id, thread_id)
+
+
+def _resolve_issue_type_from_maintask_mapping(
+	issue_label: str,
+	mapping_row: dict[str, Any],
+	maintask: str,
+	maintask_name: str,
+) -> Tuple[str, str, list[str]]:
+	"""Resolve issue based on mapping_maintask.json for the current chat/thread.
+
+	Returns (Fusion Issue Types docname, canonical label, pic_mentions).
+	"""
+
+	issue_input = (issue_label or "").strip()
+	if not issue_input:
+		raise frappe.ValidationError("Issue Type is required")
+
+	issues = mapping_row.get("issues")
+	if not isinstance(issues, dict) or not issues:
+		raise frappe.ValidationError("Mapping issues tidak ditemukan untuk chat ini")
+
+	# 1) Match by key (case-insensitive).
+	key_match: Optional[str] = None
+	if issue_input in issues:
+		key_match = issue_input
+	else:
+		wanted_key = issue_input.upper()
+		for k in issues.keys():
+			if str(k).strip().upper() == wanted_key:
+				key_match = str(k).strip()
+				break
+
+	# 2) Match by label (case-insensitive).
+	if not key_match:
+		wanted = _normalize_issue_label(issue_input)
+		for k, meta in issues.items():
+			if not isinstance(meta, dict):
+				continue
+			lbl = meta.get("label")
+			if lbl in (None, ""):
+				continue
+			if _normalize_issue_label(str(lbl)) == wanted:
+				key_match = str(k).strip()
+				break
+
+	if not key_match:
+		raise frappe.ValidationError("Input issue tidak sesuai dengan pilihan yang tersedia")
+
+	filters = {"issue": key_match}
+	if maintask:
+		filters["maintask"] = maintask
+
+	name = frappe.db.get_value("Fusion Issue Types", filters, "name")
+	if not name:
+		raise frappe.DoesNotExistError(
+			f"Fusion Issue Types tidak ditemukan untuk issue=\"{key_match}\""
+			+ (f" and maintask=\"{maintask_name}\"" if maintask else "")
+		)
+
+	meta = issues.get(key_match)
+	label = issue_input
+	pics: list[str] = []
+	if isinstance(meta, dict):
+		lbl = meta.get("label")
+		if lbl not in (None, "") and str(lbl).strip():
+			label = str(lbl).strip()
+
+		raw_pics = meta.get("pic")
+		if isinstance(raw_pics, str):
+			raw_pics = [raw_pics]
+		if isinstance(raw_pics, list):
+			for p in raw_pics:
+				if p in (None, ""):
+					continue
+				s = str(p).strip()
+				if s:
+					pics.append(s)
+
+	return str(name), label, pics
 
 
 def _clean_field_value(value: str) -> str:
@@ -634,8 +758,8 @@ def _resolve_issue_type(issue_label: str, maintask: str, maintask_name: str) -> 
 	name = frappe.db.get_value("Fusion Issue Types", filters, "name")
 	if not name:
 		raise frappe.DoesNotExistError(
-			f"Fusion Issue Types tidak ditemukan untuk issue='{issue_key}'"
-			+ (f" and maintask='{maintask_name}'" if maintask else "")
+			f"Fusion Issue Types tidak ditemukan untuk issue=\"{issue_key}\""
+			+ (f" and maintask=\"{maintask_name}\"" if maintask else "")
 		)
 
 	label = issue_label_from_key(issue_key) or issue_input

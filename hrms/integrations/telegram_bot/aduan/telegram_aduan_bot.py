@@ -7,6 +7,7 @@ import json
 from hrms.integrations.telegram_bot import utils as telegram_utils
 from hrms.integrations.telegram_bot.aduan import aduan_info 
 from hrms.integrations.telegram_bot.aduan import aduan
+from hrms.integrations.telegram_bot.aduan import aduan_bulk
 from hrms.integrations.telegram_bot.aduan import aduan_update
 from hrms.integrations.telegram_bot.aduan import aduan_statistic
 
@@ -27,6 +28,7 @@ def _aduan_command_tokens() -> list[str]:
         raw,
         default=[
             aduan.ADUAN_COMMAND,
+            aduan_bulk.DEFAULT_BULK_COMMAND,
             aduan_info.ADUAN_INFO_COMMAND,
             aduan_update.DEFAULT_UPDATE_STATUS_COMMAND,
             aduan_update.DEFAULT_UPDATE_ISSUES_COMMAND,
@@ -345,27 +347,11 @@ def _is_allowed_group_thread(message) -> bool:
     return False
 
 
-def _format_help(cmd: Optional[str] = None) -> str:
+def _format_help(cmd: Optional[str] = None, chat_id: Optional[str] = None) -> str:
     cmd = cmd or _aduan_command_token()
-
-    # Special built-in help for update issues command.
-    # if aduan_update._command_is_update_issues(cmd):
-    #     return (
-    #         "Format {cmd} untuk update issue type:\n\n"
-    #         "{cmd} ST-202602-0000016 AI Assistant\n\n"
-    #         "Catatan: Issue Type harus sesuai label yang tersedia."
-    #     ).replace("{cmd}", cmd)
-
-    # # Special built-in help for update status command.
-    # if aduan_update._command_is_update_status(cmd):
-    #     return (
-    #         "Format {cmd} untuk update status:\n\n"
-    #         "{cmd} ST-202602-0000016 resolved\n"
-    #         "{cmd} ST-202602-0000016 done\n\n"
-    #         "Catatan: hanya boleh status 'resolved' atau 'done'."
-    #     ).replace("{cmd}", cmd)
-
-    # 1) Try per-command configured help text.
+    issue_help_link = frappe.conf.get("telegram_aduan_issues_help_links", "https://bit.ly/fusion-issue-type")   
+    help_link = issue_help_link.get(chat_id) if isinstance(issue_help_link, dict) else issue_help_link
+    
     help_map = _aduan_help_text_map()
     if help_map:
         chosen = help_map.get(cmd)
@@ -373,7 +359,7 @@ def _format_help(cmd: Optional[str] = None) -> str:
             # Allow fallback by first token if caller passed an alias token.
             chosen = help_map.get(_aduan_command_token())
         if chosen:
-            return chosen.replace("{cmd}", cmd)
+            return chosen.replace("{cmd}", cmd).replace("{issue_help_link}", help_link or "") if help_link else chosen.replace("{cmd}", cmd)
 
     # 2) Default built-in help.
     return (
@@ -393,10 +379,13 @@ def _format_help(cmd: Optional[str] = None) -> str:
 def _send(
     bot,
     chat_id: int,
-    text: str,
+    text: Optional[str] = None,
     thread_id: Optional[int] = None,
     reply_to: Optional[int] = None,
     parse_mode: Optional[str] = None,
+    caption: Optional[str] = None,
+    send_document: Optional[bool] = None,
+    file_path: Optional[str] = None,
 ):
     kwargs = {}
     if thread_id is not None:
@@ -405,6 +394,12 @@ def _send(
         kwargs["reply_to_message_id"] = reply_to
     if parse_mode is not None:
         kwargs["parse_mode"] = parse_mode
+    if caption is not None:
+        kwargs["caption"] = caption
+    
+    if send_document and file_path:
+        with open(file_path, 'rb') as f:
+            return bot.send_document(chat_id, f, **kwargs)
     return bot.send_message(chat_id, text, **kwargs)
 
 
@@ -516,7 +511,7 @@ def register_handlers(bot):
             _send(
                 bot,
                 chat_id,
-                f"❌ Command {cmd} harus ditulis di awal pesan.\n\n" + _format_help(cmd),
+                f"❌ Command {cmd} harus ditulis di awal pesan.\n\n" + _format_help(cmd, str(chat_id)),
                 thread_id=thread_id,
                 reply_to=message.message_id,
                 parse_mode="HTML",
@@ -524,6 +519,63 @@ def register_handlers(bot):
             return
 
         payload = telegram_utils.extract_command_payload(raw_text, cmd)
+        print(f"Received command: chat_id={chat_id}, thread_id={thread_id}")
+        # Bulk flow: /aduan_bulk with an attached .xlsx document
+        if aduan_bulk.is_bulk_command(cmd):
+            try:
+                res, report_path = aduan_bulk.handle_aduan_bulk_with_report(bot, message, command_token=cmd)
+                if report_path:
+                    _send(
+                        bot,
+                        chat_id,
+                        caption=res,
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                        send_document=True,
+                        file_path=report_path,
+                    )
+                else:
+                    _send(
+                        bot,
+                        chat_id,
+                        res,
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                    )
+            except Exception as e:
+                print(f"/aduan_bulk failed: {e}")
+                if isinstance(e, frappe.ValidationError):
+                    print(f"/aduan_bulk failed: {e}")
+                    _send(
+                        bot,
+                        chat_id,
+                        caption=f"❌ {e}.\n\n" + _format_help(cmd, str(chat_id)),
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                        send_document=True,
+                        file_path=aduan_bulk.template_file_path(),
+                    )
+                else:
+                    _send(
+                        bot,
+                        chat_id,
+                        f"❌ Gagal memproses Aduan bulk: {e}",
+                        thread_id=thread_id,
+                        reply_to=message.message_id,
+                    )
+            finally:
+                try:
+                    frappe.db.rollback()
+                    try:
+                        frappe.db.value_cache.clear()
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+            return
 
         # Update-status flow: /aduan_update_status ST-... resolved|done ...
         if aduan_update._command_is_update_status(cmd):
@@ -532,7 +584,7 @@ def register_handlers(bot):
                     _send(
                         bot,
                         chat_id,
-                        f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd),
+                        f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd, str(chat_id)),
                         thread_id=thread_id,
                         reply_to=message.message_id,
                         parse_mode="HTML",
@@ -554,7 +606,7 @@ def register_handlers(bot):
                     _send(
                         bot,
                         chat_id,
-                        f"❌ {e}.\n\n" + _format_help(cmd),
+                        f"❌ {e}.\n\n" + _format_help(cmd, str(chat_id)),
                         thread_id=thread_id,
                         reply_to=message.message_id,
                         parse_mode="HTML",
@@ -585,7 +637,7 @@ def register_handlers(bot):
                     _send(
                         bot,
                         chat_id,
-                        f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd),
+                        f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd, str(chat_id)),
                         thread_id=thread_id,
                         reply_to=message.message_id,
                         parse_mode="HTML",
@@ -606,7 +658,7 @@ def register_handlers(bot):
                     _send(
                         bot,
                         chat_id,
-                        f"❌ {e}.\n\n" + _format_help(cmd),
+                        f"❌ {e}.\n\n" + _format_help(cmd, str(chat_id)),
                         thread_id=thread_id,
                         reply_to=message.message_id,
                         parse_mode="HTML",
@@ -637,7 +689,7 @@ def register_handlers(bot):
                 _send(
                     bot,
                     chat_id,
-                    f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd),
+                    f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd, str(chat_id)),
                     thread_id=thread_id,
                     reply_to=message.message_id,
                     parse_mode="HTML",
@@ -649,7 +701,7 @@ def register_handlers(bot):
                 _send(
                     bot,
                     chat_id,
-                    f"❌ Format {cmd} belum valid.\n\n" + _format_help(cmd),
+                    f"❌ Format {cmd} belum valid.\n\n" + _format_help(cmd, str(chat_id)),
                     thread_id=thread_id,
                     reply_to=message.message_id,
                     parse_mode="HTML",
@@ -684,7 +736,7 @@ def register_handlers(bot):
                     _send(
                         bot,
                         chat_id,
-                        f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd),
+                        f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd, str(chat_id)),
                         thread_id=thread_id,
                         reply_to=message.message_id,
                         parse_mode="HTML",
@@ -705,7 +757,7 @@ def register_handlers(bot):
                     _send(
                         bot,
                         chat_id,
-                        f"❌ {e}.\n\n" + _format_help(cmd),
+                        f"❌ {e}.\n\n" + _format_help(cmd, str(chat_id)),
                         thread_id=thread_id,
                         reply_to=message.message_id,
                         parse_mode="HTML",
@@ -743,7 +795,7 @@ def register_handlers(bot):
             _send(
                 bot,
                 chat_id,
-                f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd),
+                f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd, str(chat_id)),
                 thread_id=thread_id,
                 reply_to=message.message_id,
                 parse_mode="HTML",
