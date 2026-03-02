@@ -88,44 +88,6 @@ def _insert_with_owner(doc, owner_user: str):
             frappe.set_user(previous_user)
 
 
-def _resolve_subtask_type(type_label: str) -> str:
-    """Return docname of SubTask Types."""
-    type_label = (type_label or "").strip()
-    if not type_label:
-        raise frappe.ValidationError("Type is required")
-
-    # SubTask Types autoname=field:type, so name typically equals type
-    name = frappe.db.get_value("SubTask Types", {"type": type_label}, "name")
-    if not name:
-        raise frappe.DoesNotExistError(
-            f"SubTask Type tidak ditemukan untuk type='{type_label}'"
-        )
-    return name
-
-
-# def _resolve_issue_type(issue_label: str, maintask: str, maintask_name: str) -> str:
-#     """Return docname of Fusion Issue Types."""
-#     issue_input = (issue_label or "").strip()
-#     if not issue_input:
-#         raise frappe.ValidationError("Issue Type is required")
-
-#     issue_key = telegram_utils._issue_key_from_user_input(issue_input) or issue_input
-
-#     filters = {"issue": issue_key}
-#     # If maintask is provided, narrow down to avoid ambiguity
-#     if maintask:
-#         filters["maintask"] = maintask
-
-#     name = frappe.db.get_value("Fusion Issue Types", filters, "name")
-#     if not name:
-#         # Backward-friendly: if user typed a label and mapping exists but DB entry missing.
-#         raise frappe.DoesNotExistError(
-#             f"Issue Types tidak ditemukan untuk issue='{issue_key}'"
-#             + (f" di maintask='{maintask_name}'" if maintask else "")
-#         )
-#     return name
-
-
 def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
     settings = telegram_utils._conf_default_subtask_settings(message)
 
@@ -139,6 +101,10 @@ def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
         raise frappe.ValidationError("Subject is required")
 
     priority = telegram_utils._normalize_priority(fields.get("priority"))
+    chat_id = telegram_utils._coerce_int(getattr(getattr(message, "chat", None), "id", None))
+    thread_id = telegram_utils._coerce_int(getattr(message, "message_thread_id", None))
+ 
+    mapping_row = telegram_utils._maintask_mapping_row_for_message(chat_id, thread_id)
 
     description = telegram_utils._build_description(fields, "", message)
 
@@ -165,13 +131,21 @@ def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
 
     # Child tables
     if fields.get("type"):
-        type_name = _resolve_subtask_type(fields["type"])
+        type_name = telegram_utils._resolve_subtask_type(fields["type"])
         doc.append("type", {"subtask_type": type_name})
 
     if fields.get("issue_type"):
-        issue_name, issue_label = telegram_utils._resolve_issue_type(
-            fields["issue_type"], maintask, settings["maintask_name"]
-        )
+        if mapping_row:
+            issue_name, issue_label, pics = telegram_utils._resolve_issue_type_from_maintask_mapping(
+                fields.get("issue_type") or "",
+                mapping_row,
+                maintask,
+                settings.get("maintask_name") or "",
+            )
+        else:
+            issue_name, issue_label = telegram_utils._resolve_issue_type(
+                fields["issue_type"], maintask, settings["maintask_name"]
+            )
         doc.append("issues_type", {"issue": issue_name})
 
     _insert_with_owner(doc, owner)

@@ -14,28 +14,8 @@ except ImportError:
     telebot = None
 
 
-
 def _logger():
     return frappe.logger("telegram")
-
-
-def _cache():
-    return frappe.cache()
-
-
-def _state_key(chat_id: int) -> str:
-    return f"telegram_bot:state:{chat_id}"
-
-
-
-def set_state(chat_id: int, state: str, attempts: int = 0, ttl: int = 900):
-    import json
-    data = json.dumps({"state": state, "attempts": attempts, "ts": int(time.time())})
-    _cache().set_value(_state_key(chat_id), data, expires_in_sec=ttl)
-
-
-def clear_state(chat_id: int):
-    _cache().delete_value(_state_key(chat_id))
 
 
 def _get_token() -> str:
@@ -52,7 +32,9 @@ def _get_site() -> str:
 
 def _build_bot():
     if telebot is None:
-        raise RuntimeError("pyTelegramBotAPI is not installed. Jalankan: bench pip install pyTelegramBotAPI")
+        raise RuntimeError(
+            "pyTelegramBotAPI is not installed. Jalankan: bench pip install pyTelegramBotAPI"
+        )
     token = _get_token()
     # Gunakan threaded=False agar semua handler dieksekusi di thread polling tunggal dengan context Frappe global.
     bot = telebot.TeleBot(token, parse_mode=None, threaded=False)
@@ -143,6 +125,25 @@ def _configure_bot_commands(bot):
             types.BotCommand("unlink", "Unlink this private chat"),
         ]
 
+        # Also expose aduan commands in private chats (keep existing commands intact).
+        private_aduan_commands = [
+            types.BotCommand(cmd, desc)
+            for cmd, desc in (
+                telegram_aduan_bot.aduan_menu_commands(is_private=True) or []
+            )
+            if cmd
+        ]
+        if private_aduan_commands:
+            # De-duplicate while preserving order (first occurrence wins).
+            seen = set()
+            merged = []
+            for c in private_commands + private_aduan_commands:
+                if c.command in seen:
+                    continue
+                seen.add(c.command)
+                merged.append(c)
+            private_commands = merged
+
         # By default, do NOT show any commands in group chats.
         # We'll enable /aduan only for the configured group chat_id scope.
         group_commands = []
@@ -165,11 +166,14 @@ def _configure_bot_commands(bot):
             except Exception:
                 pass
 
-        bot.set_my_commands(private_commands, scope=types.BotCommandScopeAllPrivateChats())
+        bot.set_my_commands(
+            private_commands, scope=types.BotCommandScopeAllPrivateChats()
+        )
         bot.set_my_commands(group_commands, scope=types.BotCommandScopeAllGroupChats())
-        bot.set_my_commands(group_commands, scope=types.BotCommandScopeAllChatAdministrators())
+        bot.set_my_commands(
+            group_commands, scope=types.BotCommandScopeAllChatAdministrators()
+        )
 
-    
         def _aduan_chat_ids() -> list[int]:
             # Prefer advanced rules if present, else multi, else legacy.
             raw_rules = frappe.conf.get("telegram_aduan_rules")
@@ -177,6 +181,7 @@ def _configure_bot_commands(bot):
                 try:
                     if isinstance(raw_rules, str):
                         import json
+
                         raw_rules = json.loads(raw_rules)
                 except Exception:
                     raw_rules = None
@@ -190,11 +195,15 @@ def _configure_bot_commands(bot):
                 if ids:
                     return sorted(list(set(ids)))
 
-            ids = telegram_utils._coerce_int_list(frappe.conf.get("telegram_aduan_chat_ids"))
+            ids = telegram_utils._coerce_int_list(
+                frappe.conf.get("telegram_aduan_chat_ids")
+            )
             if ids:
                 return sorted(list(set(ids)))
 
-            legacy = telegram_utils._coerce_int(frappe.conf.get("telegram_aduan_chat_id"))
+            legacy = telegram_utils._coerce_int(
+                frappe.conf.get("telegram_aduan_chat_id")
+            )
             return [legacy] if legacy is not None else []
 
         # Also set commands for configured /aduan group(s) specifically (overrides any chat-specific settings)
@@ -204,12 +213,17 @@ def _configure_bot_commands(bot):
             except Exception:
                 pass
             try:
-                bot.delete_my_commands(scope=types.BotCommandScopeChatAdministrators(chat_id))
+                bot.delete_my_commands(
+                    scope=types.BotCommandScopeChatAdministrators(chat_id)
+                )
             except Exception:
                 pass
 
             try:
-                bot.set_my_commands(group_commands_for_configured_chat, scope=types.BotCommandScopeChat(chat_id))
+                bot.set_my_commands(
+                    group_commands_for_configured_chat,
+                    scope=types.BotCommandScopeChat(chat_id),
+                )
             except Exception:
                 pass
             try:
@@ -221,11 +235,12 @@ def _configure_bot_commands(bot):
                 pass
 
         configured_group_cmds = [c.command for c in group_commands_for_configured_chat]
+        configured_private_commands = [c.command for c in private_commands]
         _logger().info(
-            f"Telegram bot commands configured: private=/start,/link,/unlink; group (all)=<none>; group (configured chat(s))={configured_group_cmds}"
+            f"Telegram bot commands configured: private={configured_private_commands} group (all)=<none>; group (configured chat(s))={configured_group_cmds}"
         )
         print(
-            f"Telegram bot commands configured: private=/start,/link,/unlink; group (all)=<none>; group (configured chat(s))={configured_group_cmds}"
+            f"Telegram bot commands configured: private={configured_private_commands} group (all)=<none>; group (configured chat(s))={configured_group_cmds}"
         )
         _debug_dump()
 
@@ -235,12 +250,64 @@ def _configure_bot_commands(bot):
         _debug_dump()
 
 
+def _send(
+    bot,
+    chat_id: int,
+    text: Optional[str] = None,
+    thread_id: Optional[int] = None,
+    reply_to: Optional[int] = None,
+    parse_mode: Optional[str] = None,
+    caption: Optional[str] = None,
+    send_document: Optional[bool] = None,
+    file_path: Optional[str] = None,
+):
+    kwargs = {}
+    if thread_id is not None:
+        kwargs["message_thread_id"] = thread_id
+    if reply_to is not None:
+        kwargs["reply_to_message_id"] = reply_to
+    if parse_mode is not None:
+        kwargs["parse_mode"] = parse_mode
+    if caption is not None:
+        kwargs["caption"] = caption
+
+    if send_document and file_path:
+        with open(file_path, "rb") as f:
+            return bot.send_document(chat_id, f, **kwargs)
+    return bot.send_message(chat_id, text, **kwargs)
+
+
 def _register_handlers(bot):
-    nip_regex = re.compile(r"^NIP\s+(\d+)$", re.IGNORECASE)
+
+    @bot.message_handler(commands=["start"])
+    def handle_start(message):
+        if getattr(message.chat, "type", None) != "private":
+            return
+        chat_id = message.chat.id
+        username = message.from_user.username
+        print(f"Username telegram: {username} chat_id: {chat_id}")
+        default = f"Welcome {username} to the HRIS Telegram Bot!"
+        context = {
+            "username": username,
+        }
+        template = telegram_utils._render_response_text(
+            "start",  # command_token may be None or not match a menu, so we use the base command as key for config lookup with a sensible default template.
+            default,
+            context,
+        )
+        if template:
+            response_text = template.strip()
+        else:
+            response_text = default
+        _send(
+            bot,
+            chat_id,
+            response_text
+        )
 
     # Register group/topic handler(s) in a separate module
+    telegram_aduan_bot.register_private_handlers(bot)
     telegram_aduan_bot.register_handlers(bot)
-
 
 
 def run_bot(blocking: bool = True):

@@ -261,12 +261,6 @@ def _maintask_mapping_row_for_message(chat_id: Optional[int], thread_id: Optiona
 	return best_row
 
 
-def _maintask_mapping_row_for_message_obj(message: object) -> Optional[dict[str, Any]]:
-	chat_id = _coerce_int(getattr(getattr(message, "chat", None), "id", None))
-	thread_id = _coerce_int(getattr(message, "message_thread_id", None))
-	return _maintask_mapping_row_for_message(chat_id, thread_id)
-
-
 def _resolve_issue_type_from_maintask_mapping(
 	issue_label: str,
 	mapping_row: dict[str, Any],
@@ -554,7 +548,7 @@ def _conf_default_subtask_settings(message: object = None) -> Dict[str, Any]:
 	if message is not None:
 		chat_id = _coerce_int(getattr(getattr(message, "chat", None), "id", None))
 		thread_id = _coerce_int(getattr(message, "message_thread_id", None))
-		override = _settings_override_for_thread(chat_id, thread_id)
+		override = _maintask_mapping_row_for_message(chat_id, thread_id)
 		if override:
 			settings.update(override)
 
@@ -701,6 +695,36 @@ def issue_label_from_key(issue_key: str) -> str:
 			s = str(lbl).strip()
 			if s:
 				return s
+	return None
+
+def issue_label_maintask_mapping_from_key(issue_key: str, maintask: str) -> str:
+	"""Return human label for an issue key based on mapping_maintask.json if mapping exists; else issue_key."""
+
+	key = (issue_key or "").strip()
+	if not key:
+		return ""
+
+	mapping = _load_maintask_thread_mapping()
+	if not mapping:
+		return {}
+
+	for row in mapping:
+		if not isinstance(row, dict):
+			continue
+		mt = (row.get("maintask") or "").strip()
+		if mt != maintask:
+			continue
+		issues = row.get("issues")
+		if not isinstance(issues, dict):
+			continue
+		meta = issues.get(key) or issues.get(key.upper())
+		if isinstance(meta, dict):
+			lbl = meta.get("label")
+			if lbl not in (None, ""):
+				s = str(lbl).strip()
+				if s:
+					return s
+	
 	return key
 
 def _issue_key_from_user_input(user_value: str) -> Optional[str]:
@@ -766,6 +790,20 @@ def _resolve_issue_type(issue_label: str, maintask: str, maintask_name: str) -> 
 	return str(name), str(label).strip()
 
 
+def _resolve_subtask_type(type_label: str) -> str:
+    """Return docname of SubTask Types."""
+    type_label = (type_label or "").strip()
+    if not type_label:
+        raise frappe.ValidationError("Type is required")
+
+    # SubTask Types autoname=field:type, so name typically equals type
+    name = frappe.db.get_value("SubTask Types", {"type": type_label}, "name")
+    if not name:
+        raise frappe.DoesNotExistError(
+            f"SubTask Type tidak ditemukan untuk type='{type_label}'"
+        )
+    return name
+
 def _pics_for_issue_user_input(user_value: str) -> list[str]:
     """Return PIC mentions for an issue value provided by user (label or key)."""
     issue_key = _issue_key_from_user_input(user_value)
@@ -826,71 +864,6 @@ def _render_template(template: str, context: dict) -> str:
 	except Exception:
 		# If template is malformed, fall back to raw.
 		return tpl
-
-
-# def _aduan_response_template_map() -> dict[str, str]:
-# 	"""Return response templates keyed by normalized command token.
-
-# 	Config (optional): telegram_aduan_response_texts
-# 	Accepts:
-# 	- dict (or JSON string of dict): {"/aduan": "...", "aduan_info": "..."}
-# 	- list (or JSON string of list) aligned with telegram_aduan_command tokens
-
-# 	Keys may be with or without leading '/'.
-# 	"""
-
-# 	raw = frappe.conf.get("telegram_aduan_response_texts")
-# 	if raw in (None, ""):
-# 		return {}
-
-# 	try:
-# 		if isinstance(raw, str):
-# 			raw = json.loads(raw)
-# 	except Exception:
-# 		pass
-
-# 	normalized: dict[str, str] = {}
-
-# 	def _norm_key(k: object) -> Optional[str]:
-# 		if k in (None, ""):
-# 			return None
-# 		return normalize_command_token(k, default="/")
-
-# 	def _norm_val(v: object) -> Optional[str]:
-# 		if v in (None, ""):
-# 			return None
-# 		s = str(v)
-# 		return s if s.strip() else None
-
-# 	if isinstance(raw, dict):
-# 		for k, v in raw.items():
-# 			kk = _norm_key(k)
-# 			vv = _norm_val(v)
-# 			if kk and vv:
-# 				normalized[kk] = vv
-# 		return normalized
-
-# 	if isinstance(raw, list):
-# 		# Align with configured command tokens
-# 		tokens = normalize_command_tokens(frappe.conf.get("telegram_aduan_command"), default=[])
-# 		vals = [_norm_val(x) for x in raw]
-# 		if len(vals) == len(tokens):
-# 			for t, v in zip(tokens, vals):
-# 				if v:
-# 					normalized[t] = v
-# 		elif len(vals) == 1 and vals[0]:
-# 			for t in tokens:
-# 				normalized[t] = vals[0]
-# 		return normalized
-
-# 	return {}
-
-
-# def response_template_for_command(command_token: str) -> Optional[str]:
-# 	"""Get configured response template for a given command token."""
-
-# 	cmd = normalize_command_token(command_token, default="/")
-# 	return _aduan_response_template_map().get(cmd)
 
 
 def _conf_response_text_map() -> dict:

@@ -1,5 +1,10 @@
+from __future__ import annotations
+
+from datetime import datetime
+import tempfile
+from typing import Optional, Any
+
 import frappe
-from typing import Optional
 from hrms.integrations.telegram_bot import utils as telegram_utils
 
 ADUAN_INFO_COMMAND = "/aduan_info"
@@ -34,9 +39,11 @@ def _subtask_issue_label(subtask_doc) -> str:
 
     if not issue_key:
         issue_key = getattr(first, "issue_name", None)
-
-    label = telegram_utils.issue_label_from_key(str(issue_key or "").strip())
-    return label or "-"
+    
+    issue_label = telegram_utils.issue_label_from_key(str(issue_key or "").strip())
+    if not issue_label:
+        issue_label = telegram_utils.issue_label_maintask_mapping_from_key(str(issue_key or "").strip(), subtask_doc.maintask)
+    return issue_label or "-"
 
 
 
@@ -161,3 +168,148 @@ def aduan_info_response(subtask_name: str, command_token: Optional[str] = None) 
     lines.append("")
     lines.append(f"🕒 Last Update: {modified}")
     return "\n".join(lines).strip()
+
+
+def _subtask_type_from_doc(doc: Any) -> str:
+    types = getattr(doc, "type", None) or []
+    if not types:
+        return "-"
+    first = types[0]
+    val = getattr(first, "subtask_type", None) or getattr(first, "type", None)
+    s = ("" if val in (None, "") else str(val)).strip()
+    return s or "-"
+
+def aduan_saya_response(message):
+    """Return message text + optional .txt report path for /aduan_saya.
+
+    `requestor` must match the value stored in SubTask.requestor.
+    In our telegram flows this is typically `telegram_utils._telegram_user_label(message)`.
+
+    Returns:
+    - message_text_html: str (safe for parse_mode="HTML")
+    - report_file_path: Optional[str] (full detail in .txt when message exceeds Telegram limits)
+    """
+
+    requestor = telegram_utils._telegram_user_label(message)
+
+    if not requestor:
+        raise frappe.ValidationError("Requestor is required")
+
+    telegram_utils.ensure_db_connection()
+
+    # TeleBot listener is a long-running process. Reset the current DB transaction
+    # so reads don't get stuck on an old REPEATABLE READ snapshot.
+    try:
+        frappe.db.rollback()
+    except Exception:
+        pass
+
+    # Keep it bounded; this is a chat response.
+    # limit = 10
+
+    rows = frappe.get_all(
+        "SubTask",
+        filters={"requestor": requestor, "status": ["!=", ["Closed", "Done"]]},  # Only show non-closed/cancelled tickets
+        fields=["name", "subtask_name", "priority", "modified", "status", "subtask_open_date"],
+        order_by="modified desc",
+        # limit_page_length=limit,
+    )
+
+    if not rows:
+        empty_default = "Anda belum memiliki tiket aduan."
+        msg = telegram_utils._render_response_text(
+            "aduan_saya_empty",
+            empty_default,
+            {"requestor": telegram_utils._escape_html(requestor)},
+        ).strip()
+        return msg, None
+
+    ticket_blocks_html: list[str] = []
+    ticket_blocks_raw: list[str] = []
+
+    for r in rows:
+        name = (r.get("name") or "").strip()
+        if not name:
+            continue
+
+        # Need child tables (type/issues_type), so load the doc.
+        doc = frappe.get_doc("SubTask", name)
+
+        subtask_name = (getattr(doc, "subtask_name", None) or "-").strip() or "-"
+        subtask_type = _subtask_type_from_doc(doc)
+        issue_label = _subtask_issue_label(doc)
+        priority = (getattr(doc, "priority", None) or "-").strip() or "-"
+        status = (getattr(doc, "status", None) or "-").strip() or "-"
+        open_date = doc.subtask_open_date.strftime("%d-%m-%Y") if getattr(doc, "subtask_open_date", None) else "-"
+
+        ticket_blocks_raw.append(
+            "\n".join(
+                [
+                    f"{name}",
+                    f"Subject : {subtask_name}",
+                    f"Type  : {subtask_type}",
+                    f"Issues   : {issue_label}",
+                    f"Priority: {priority}",
+                    f"Status  : {status}",
+                    f"Open Date: {open_date}",
+                ]
+            ).rstrip()
+        )
+
+        ticket_blocks_html.append(
+            "\n".join(
+                [
+                    telegram_utils._escape_html(name),
+                    f"Subject : {telegram_utils._escape_html(subtask_name)}",
+                    f"Type  : {telegram_utils._escape_html(subtask_type)}",
+                    f"Issues   : {telegram_utils._escape_html(issue_label)}",
+                    f"Priority: {telegram_utils._escape_html(priority)}",
+                    f"Status  : {telegram_utils._escape_html(status)}",
+                    f"Open Date: {telegram_utils._escape_html(open_date)}",
+                ]
+            ).rstrip()
+        )
+
+    sep = "━━━━━━━━━━━━━━━━"
+    blocks_raw = f"\n{sep}\n".join([b for b in ticket_blocks_raw if b])
+    blocks_html = f"\n{sep}\n".join([b for b in ticket_blocks_html if b])
+
+    ctx = {
+        "requestor": telegram_utils._escape_html(requestor),
+        "ticket_count": str(len(ticket_blocks_html)),
+        "ticket_blocks": blocks_html,
+    }
+
+    default = f"📋 TICKET LIST\n{sep}\n{{ticket_blocks}}"
+    full_html = (telegram_utils._render_response_text("aduan_saya", default, ctx) or "").strip()
+    full_raw = (f"📋 TICKET LIST\n{sep}\n" + blocks_raw).strip() + "\n"
+
+    # Telegram message limit is ~4096 chars. Keep safe margin.
+    max_len = 3800
+    if len(full_html) <= max_len:
+        return full_html, None
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        suffix=".txt",
+        prefix=f"aduan_{requestor}_{ts}_",
+        delete=False,
+    ) as f:
+        f.write(full_raw)
+        report_path = f.name
+
+    # Keep preview short to avoid breaking any HTML in configured templates.
+    ids = [str((r.get("name") or "")).strip() for r in (rows or []) if str((r.get("name") or "")).strip()]
+    shown = "\n".join([telegram_utils._escape_html(x) for x in ids[:10]]).strip()
+    shown = shown + ("\n..." if len(ids) > 10 else "")
+    preview_default = "📋 TICKET LIST terlalu panjang untuk ditampilkan di chat.\n\n{shown}\n\n📎 Detail lengkap dikirim sebagai file .txt"
+    preview = telegram_utils._render_response_text(
+        "aduan_saya_overflow",
+        preview_default,
+        {"shown": shown, "ticket_count": str(len(ids))},
+    ).strip()
+    return preview, report_path
+    
+    

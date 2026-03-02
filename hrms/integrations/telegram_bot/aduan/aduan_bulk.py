@@ -113,8 +113,10 @@ def handle_aduan_bulk_with_report(
                 base_context,
             )
         )
-
-    mapping_row = telegram_utils._maintask_mapping_row_for_message_obj(message)
+    chat_id = telegram_utils._coerce_int(getattr(getattr(message, "chat", None), "id", None))
+    thread_id = telegram_utils._coerce_int(getattr(message, "message_thread_id", None))
+ 
+    mapping_row = telegram_utils._maintask_mapping_row_for_message(chat_id, thread_id)
 
     settings = telegram_utils._conf_default_subtask_settings(message)
     base = (frappe.conf.get("telegram_aduan_site") or "hris.ebdesk.com/app/subtask/").strip()
@@ -485,7 +487,7 @@ def _create_subtask_from_bulk(
     )
 
     if fields.get("type"):
-        type_name = aduan._resolve_subtask_type(fields["type"])
+        type_name = telegram_utils._resolve_subtask_type(fields["type"])
         doc.append("type", {"subtask_type": type_name})
 
     doc.append("issues_type", {"issue": issue_docname})
