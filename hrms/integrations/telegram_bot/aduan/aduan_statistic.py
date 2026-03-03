@@ -66,13 +66,12 @@ def _format_id_date(dt: datetime) -> str:
 
 
 def _previous_monday_window(now: datetime) -> tuple[datetime, datetime]:
-	# Rule: always start from the Monday of the previous week.
-	# Example: called on Mon 23 Feb 2026 -> start Mon 16 Feb 2026 00:00.
+	# Rule: start from the most recent Monday before/at `now` (start of current week).
+	# Example: called on Tue 3 Mar 2026 -> start Mon 2 Mar 2026 00:00.
 	start_of_this_week = (now - timedelta(days=now.weekday())).replace(
 		hour=0, minute=0, second=0, microsecond=0
 	)
-	start_prev_week = start_of_this_week - timedelta(days=7)
-	return start_prev_week, now
+	return start_of_this_week, now
 
 
 def _status_counts_by_maintask(maintask_id: str) -> dict[str, int]:

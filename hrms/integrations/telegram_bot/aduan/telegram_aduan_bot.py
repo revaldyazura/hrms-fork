@@ -764,7 +764,7 @@ def register_private_handlers(bot):
                 pass
         return
     
-    @bot.message_handler(commands=["aduan_info"])
+    @bot.message_handler(commands=["aduan_info_ticket"])
     def handle_aduan_info(message):
         if getattr(message.chat, "type", None) != "private":
             return
