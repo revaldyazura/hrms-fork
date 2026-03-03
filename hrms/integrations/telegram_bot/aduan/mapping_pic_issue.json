@@ -20,6 +20,15 @@
       "@biecodes"
     ]
   },
+  "APPS/THEMES": {
+    "label": "Application Themes",
+    "pic": [
+      "@chndrafajar",
+      "@anwarhuda97",
+      "@biecodes",
+      "@anwar_r_r"
+    ]
+  },
   "ADMINISTRATOR/TOPIC": {
     "label": "Topic Management",
     "pic": [

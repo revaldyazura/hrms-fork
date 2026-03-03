@@ -209,7 +209,10 @@ def aduan_saya_response(message):
 
     rows = frappe.get_all(
         "SubTask",
-        filters={"requestor": requestor, "status": ["!=", ["Closed", "Done"]]},  # Only show non-closed/cancelled tickets
+        filters={
+            "requestor": requestor,
+            "status": ["not in", ["Close", "Done"]],
+        },  # Only show non-closed tickets  # Only show non-closed/cancelled tickets
         fields=["name", "subtask_name", "priority", "modified", "status", "subtask_open_date"],
         order_by="modified desc",
         # limit_page_length=limit,

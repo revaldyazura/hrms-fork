@@ -25,3 +25,4 @@ hrms/hr/report/report_evaluation/data_report_eval.json
 hrms/hr/report/report_subtask/notes_pages.txt
 hrms/hr/page/task_management_summary/raw_data_page.json
 hrms/hr/doctype/maintask/generate_task_template.json
+hrms/integrations/telegram_bot/aduan/mapping_pic_issue.json
