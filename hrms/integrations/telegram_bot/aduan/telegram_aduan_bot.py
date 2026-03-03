@@ -57,14 +57,14 @@ def _aduan_command_map(is_private: Optional[bool] = None) -> dict[str, str]:
         out[token] = desc
     return out
 
-def _aduan_command_tokens() -> list[str]:
+def _aduan_command_tokens(is_private: Optional[bool] = None) -> list[str]:
     """Return configured command tokens (each with leading '/').
 
     Config:
     - telegram_aduan_command: {"/aduan": "...", "/aduan_info": "...", ...}
     """
 
-    return list(_aduan_command_map().keys())
+    return list(_aduan_command_map(is_private=is_private).keys())
 
 
 def aduan_menu_commands(is_private: Optional[bool] = None) -> list[tuple[str, str]]:
@@ -698,6 +698,7 @@ def register_handlers(bot):
                 pass
 
 def register_private_handlers(bot):
+    
     @bot.message_handler(commands=["aduan_saya"])
     def handle_aduan_saya(message):
         if getattr(message.chat, "type", None) != "private":
@@ -762,5 +763,92 @@ def register_private_handlers(bot):
             except Exception:
                 pass
         return
+    
+    @bot.message_handler(commands=["aduan_info"])
+    def handle_aduan_info(message):
+        if getattr(message.chat, "type", None) != "private":
+            return
+        chat_id = message.chat.id
+        username = message.from_user.username
+        print(f"Username telegram: {username} chat_id: {chat_id}")
+        try:
+            telegram_utils.ensure_db_connection()
+        except Exception:
+            pass
+
+        # TeleBot runs as a long-lived process; make sure we don't keep a long
+        # DB transaction around (InnoDB REPEATABLE READ can otherwise show stale
+        # snapshots across multiple messages).
+        try:
+            frappe.db.rollback()
+            # Clear per-transaction value cache that can otherwise persist
+            # across messages in a long-running process.
+            try:
+                frappe.db.value_cache.clear()
+            except Exception:
+                pass
+        except Exception:
+            pass
         
+        tokens = _aduan_command_tokens(is_private=True) or []
+        raw_text = ((getattr(message, "text", None) or getattr(message, "caption", None) or "")).strip()
+            
+        matched = telegram_utils.match_command(raw_text, tokens)
+        if not matched:
+            return
+
+        matched_cmd, offset = matched
+        cmd = matched_cmd
+
+        # Telegram best-practice: command should be at start of message.
+        if offset is not None and offset > 0:
+            telegram_listener._send(
+                bot,
+                chat_id,
+                f"❌ Command {cmd} harus ditulis di awal pesan.\n\n" + _format_help(cmd, str(chat_id)),
+                reply_to=message.message_id,
+                parse_mode="HTML",
+            )
+            return
         
+        payload = telegram_utils.extract_command_payload(raw_text, cmd)
+        subtask_id = ((payload or "").strip().split() or [""])[0].strip()
+        if not subtask_id:
+            telegram_listener._send(
+                bot,
+                chat_id,
+                f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd, str(chat_id)),
+                reply_to=message.message_id,
+                parse_mode="HTML",
+            )
+            return
+
+        subtask_id = subtask_id.upper()
+        if not re.match(r"^ST-\d{6}-\d{7}$", subtask_id):
+            telegram_listener._send(
+                bot,
+                chat_id,
+                f"❌ Format {cmd} belum valid.\n\n" + _format_help(cmd, str(chat_id)),
+                reply_to=message.message_id,
+                parse_mode="HTML",
+            )
+            return
+
+        try:
+            aduan_info_res = aduan_info.aduan_info_response(subtask_id, command_token=cmd)
+            telegram_listener._send(
+                bot,
+                chat_id,
+                aduan_info_res,
+                reply_to=message.message_id,
+                parse_mode="HTML",
+            )
+        except Exception as e:
+            telegram_utils._logger().error(f"/aduan_info failed: {e}")
+            telegram_listener._send(
+                bot,
+                chat_id,
+                f"❌ Failed fetching Aduan info: {e}",
+                reply_to=message.message_id,
+            )
+        return
