@@ -59,7 +59,7 @@ def execute(filters=None):
 
     data = frappe.db.sql(query, {"user": user, "employee_id": employee_id,
                                  "maintask": filters.get("maintask")}, as_dict=True)
-    print(f'data report eval {data}')
+    print(f'data report eval {len(data)} rows')
 
     chart = get_chart_data(data)
     report_summary = get_report_summary(data)
@@ -136,8 +136,6 @@ def get_chart_data(data):
             "name": pic,
             "values": dataset_values
         })
-        
-        print(f'Contribution for {pic}: {dataset_values}')
 
 
     return {
