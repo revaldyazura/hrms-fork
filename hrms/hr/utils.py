@@ -601,6 +601,47 @@ def get_holiday_dates_for_employee(employee, start_date, end_date):
 	return [cstr(h.holiday_date) for h in holidays]
 
 
+def calculate_working_hours_by_holiday_list(from_date, to_date, holiday_list_name: str = "Annual Holiday"):
+	"""Calculate working hours (8h/day) between dates, excluding Holiday rows.
+
+	Notes:
+	- Counts every day in the range that is not in `tabHoliday` for the given Holiday List.
+	- Does not apply weekend logic unless weekends are present in the Holiday List.
+	- Range is inclusive of both ends.
+
+	Returns: (total_working_hours, total_holiday)
+	"""
+	if not from_date or not to_date:
+		return 0, 0
+
+	from_d = get_datetime(from_date).date()
+	to_d = get_datetime(to_date).date()
+	if from_d > to_d:
+		from_d, to_d = to_d, from_d
+
+	holiday_dates = set(
+		frappe.get_all(
+			"Holiday",
+			filters={
+				"parent": holiday_list_name,
+				"holiday_date": ("between", [from_d, to_d]),
+			},
+			pluck="holiday_date",
+		)
+	)
+
+	from datetime import timedelta
+
+	total_working_hours = 0
+	day = from_d
+	while day <= to_d:
+		if day not in holiday_dates:
+			total_working_hours += 8
+		day += timedelta(days=1)
+
+	return total_working_hours, len(holiday_dates)
+
+
 def get_holidays_for_employee(employee, start_date, end_date, raise_exception=True, only_non_weekly=False):
 	"""Get Holidays for a given employee
 

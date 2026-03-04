@@ -2,6 +2,38 @@ import frappe
 
 from frappe.utils import add_days, get_datetime, now_datetime
 
+from hrms.hr.utils import calculate_working_hours_by_holiday_list
+
+
+def _parse_statuses(status):
+    if not status:
+        return []
+
+    # Support JSON array string from client
+    if isinstance(status, str):
+        status_str = status.strip()
+        if not status_str:
+            return []
+        try:
+            parsed = frappe.parse_json(status_str)
+            if isinstance(parsed, (list, tuple, set)):
+                return [str(s).strip() for s in parsed if str(s).strip()]
+        except Exception:
+            pass
+
+        # Support comma/newline separated string
+        parts = []
+        for chunk in status_str.replace("\n", ",").split(","):
+            v = chunk.strip()
+            if v:
+                parts.append(v)
+        return parts
+
+    if isinstance(status, (list, tuple, set)):
+        return [str(s).strip() for s in status if str(s).strip()]
+
+    return [str(status).strip()] if str(status).strip() else []
+
 
 def _get_team_label(team: str) -> str:
     row = frappe.get_value("Team", team, ["team_name"], as_dict=True)
@@ -9,32 +41,9 @@ def _get_team_label(team: str) -> str:
 
 
 def _calculate_working_hours(start_dt, end_dt, holiday_list_name: str = "Annual Holiday"):
-    # Holiday.holiday_date is a Date field
-    start_date = get_datetime(start_dt).date()
-    end_date = get_datetime(end_dt).date()
-
-    holiday_dates = set(
-        frappe.get_all(
-            "Holiday",
-            filters={
-                "parent": holiday_list_name,
-                "holiday_date": ["between", [start_date, end_date]],
-            },
-            pluck="holiday_date",
-        )
+    total_working_hours, total_holiday = calculate_working_hours_by_holiday_list(
+        start_dt, end_dt, holiday_list_name=holiday_list_name
     )
-
-    total_working_hours = 0
-    day = start_date
-    # Import locally to keep module import surface small
-    from datetime import timedelta
-
-    while day <= end_date:
-        if day not in holiday_dates:
-            total_working_hours += 8
-        day += timedelta(days=1)
-
-    total_holiday = len(holiday_dates)
     working_days = total_working_hours / 8 if total_working_hours else 0
     return {
         "working_days": working_days,
@@ -70,7 +79,7 @@ def get_subtasks_from_employee(employee_id, start_date=None, end_date=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_subtask_summary_total_hour_by_team(team, start_date=None, end_date=None):
+def get_subtask_summary_total_hour_by_team(team, start_date=None, end_date=None, status=None):
     if not team:
         frappe.throw("team is required")
 
@@ -121,11 +130,13 @@ def get_subtask_summary_total_hour_by_team(team, start_date=None, end_date=None)
     working_days = working_meta.get("working_days") or 0
 
     # Fetch subtasks in one query and aggregate in Python
+    statuses = _parse_statuses(status)
     rows = frappe.get_all(
         "SubTask",
         filters={
             "pic_subtask": ["in", emp_ids],
             "subtask_open_date": ["between", [start_dt, end_dt]],
+            **({"status": ["in", statuses]} if statuses else {}),
         },
         fields=["pic_subtask", "maintask", "tasks", "target_time_minutes"],
         order_by="pic_subtask asc",
@@ -135,7 +146,7 @@ def get_subtask_summary_total_hour_by_team(team, start_date=None, end_date=None)
         e.get("name"): {
             "employee_id": e.get("name"),
             "employee_name": e.get("employee_name") or "-",
-            "division": team_label,
+            "team": team_label,
             "total_main_task": 0,
             "total_task": 0,
             "total_sub_task": 0,
@@ -172,6 +183,7 @@ def get_subtask_summary_total_hour_by_team(team, start_date=None, end_date=None)
         summary["total_task"] = len(summary.pop("_task_set"))
         total_minutes = summary.pop("_total_minutes")
         total_hours = total_minutes / 60.0
+        summary["total_minutes"] = total_minutes
         summary["total_hour"] = round(total_hours, 2)
         summary["total_hour_avg_daily"] = round((total_hours / working_days), 2) if working_days else 0.0
         out.append(summary)

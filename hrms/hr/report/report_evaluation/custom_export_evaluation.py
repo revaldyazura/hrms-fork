@@ -6,6 +6,8 @@ from io import BytesIO
 from datetime import datetime, timedelta
 from itertools import groupby
 
+from hrms.hr.utils import calculate_working_hours_by_holiday_list
+
 def get_subtask_type_map():
     types_data = frappe.db.sql("""
                               SELECT stype.parent                                   AS subtask,
@@ -19,25 +21,8 @@ def get_subtask_type_map():
     return data
 
 def calculate_working_hours(from_date_str, to_date_str, holiday_list_name):
-    from_date = datetime.strptime(from_date_str, "%Y-%m-%d").date()
-    to_date = datetime.strptime(to_date_str, "%Y-%m-%d").date()
-
-    holiday_dates = set(
-        frappe.get_all("Holiday", filters={
-            "parent": holiday_list_name,
-            "holiday_date": ["between", [from_date, to_date]]
-        }, pluck="holiday_date")
-    )
-
-    total_holiday = len(holiday_dates)
-    total_hours = 0
-    day = from_date
-    while day <= to_date:
-        if day not in holiday_dates:
-            total_hours += 8
-        day += timedelta(days=1)
-
-    return total_hours, total_holiday
+    # Backward-compatible wrapper; implementation centralized in hrms.hr.utils
+    return calculate_working_hours_by_holiday_list(from_date_str, to_date_str, holiday_list_name)
 
 
 def date_change_format(date_source, date_format="%d %B %Y"):
@@ -92,8 +77,9 @@ def export_individual_evaluation(filters=None):
     for row in data:
         row["subtask_types"] = subtask_type_map.get(row["subtask"], "")
 
-    total_working_hours, total_holiday = calculate_working_hours(from_date, to_date,
-                                                                 'Annual Holiday') if to_date and from_date else 0
+    total_working_hours, total_holiday = calculate_working_hours(
+        from_date, to_date, 'Annual Holiday'
+    ) if to_date and from_date else (0, 0)
 
     output = BytesIO()
     workbook = xlsxwriter.Workbook(output, {'in_memory': True})
@@ -269,8 +255,9 @@ def export_team_evaluation(filters=None):
         row["subtask_types"] = subtask_type_map.get(row["subtask"], "")
     team_filename = data[0].get('team') if data else filters.get('team')
 
-    total_working_hours, total_holiday = calculate_working_hours(from_date, to_date,
-                                                                 'Annual Holiday') if to_date and from_date else 0
+    total_working_hours, total_holiday = calculate_working_hours(
+        from_date, to_date, 'Annual Holiday'
+    ) if to_date and from_date else (0, 0)
 
     output = BytesIO()
     workbook = xlsxwriter.Workbook(output, {'in_memory': True})
