@@ -852,3 +852,101 @@ def register_private_handlers(bot):
                 reply_to=message.message_id,
             )
         return
+    
+    @bot.message_handler(commands=["aduan_saya_update_status"])
+    def handle_aduan_update_status(message):
+        if getattr(message.chat, "type", None) != "private":
+            return
+        chat_id = message.chat.id
+        username = message.from_user.username
+        print(f"Username telegram: {username} chat_id: {chat_id}")
+        is_private = True
+        try:
+            telegram_utils.ensure_db_connection()
+        except Exception:
+            pass
+
+        # TeleBot runs as a long-lived process; make sure we don't keep a long
+        # DB transaction around (InnoDB REPEATABLE READ can otherwise show stale
+        # snapshots across multiple messages).
+        try:
+            frappe.db.rollback()
+            # Clear per-transaction value cache that can otherwise persist
+            # across messages in a long-running process.
+            try:
+                frappe.db.value_cache.clear()
+            except Exception:
+                pass
+        except Exception:
+            pass
+        
+        tokens = _aduan_command_tokens(is_private=is_private) or []
+        raw_text = ((getattr(message, "text", None) or getattr(message, "caption", None) or "")).strip()
+            
+        matched = telegram_utils.match_command(raw_text, tokens)
+        if not matched:
+            return
+
+        matched_cmd, offset = matched
+        cmd = matched_cmd
+
+        # Telegram best-practice: command should be at start of message.
+        if offset is not None and offset > 0:
+            telegram_listener._send(
+                bot,
+                chat_id,
+                f"❌ Command {cmd} harus ditulis di awal pesan.\n\n" + _format_help(cmd, str(chat_id)),
+                reply_to=message.message_id,
+                parse_mode="HTML",
+            )
+            return
+        
+        payload = telegram_utils.extract_command_payload(raw_text, cmd)
+        
+        if aduan_update._command_is_update_status(cmd):
+            try:
+                if not payload:
+                    telegram_listener._send(
+                        bot,
+                        chat_id,
+                        f"❌ Format {cmd} belum lengkap.\n\n" + _format_help(cmd, str(chat_id)),
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                    )
+                    return
+                res = aduan_update.aduan_update_status_response(payload, message, command_token=cmd, is_private=is_private)
+                telegram_listener._send(
+                    bot,
+                    chat_id,
+                    res,
+                    reply_to=message.message_id,
+                    parse_mode="HTML",
+                )
+            except Exception as e:
+                telegram_utils._logger().error(f"/aduan_update_status failed: {e}")
+                # For validation-like errors, show help to match existing flows.
+                if isinstance(e, frappe.ValidationError):
+                    telegram_listener._send(
+                        bot,
+                        chat_id,
+                        f"❌ {e}.\n\n" + _format_help(cmd, str(chat_id)),
+                        reply_to=message.message_id,
+                        parse_mode="HTML",
+                    )
+                else:
+                    telegram_listener._send(
+                        bot,
+                        chat_id,
+                        f"❌ Gagal mengupdate Aduan status: {e}",
+                        reply_to=message.message_id,
+                    )
+            finally:
+                try:
+                    frappe.db.rollback()
+                    try:
+                        frappe.db.value_cache.clear()
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+            return
