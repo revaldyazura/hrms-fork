@@ -1,5 +1,4 @@
 import frappe
-from frappe.query_builder.functions import Count
 
 def get_team_members_map():
     team_data = frappe.db.sql("""
@@ -48,17 +47,17 @@ def get_task_report_data():
             WHERE
                 mt.owner = %(user)s
                 OR mt.assigned_by = %(employee_id)s
-                OR mt.name IN (
-                    SELECT mt2.name
-                    FROM `tabMainTask` mt2
-                    LEFT JOIN `tabMainTask Team` mteam2 ON mt2.name = mteam2.parent
-                    WHERE mt2.owner = %(user)s
-                    OR mteam2.employee = %(employee_id)s
+                OR EXISTS (
+                    SELECT 1
+                    FROM `tabMainTask Team` mteam2
+                    WHERE mteam2.parent = mt.name
+                      AND mteam2.employee = %(employee_id)s
                 )
-                OR mt.name IN (
-                    SELECT mt2.name FROM `tabMainTask` mt2
-                    LEFT JOIN `tabMainTask Assign By` m_assign_by2 ON mt2.name = m_assign_by2.parent
-                    WHERE m_assign_by2.employee = %(employee_id)s
+                OR EXISTS (
+                    SELECT 1
+                    FROM `tabMainTask Assign By` m_assign_by2
+                    WHERE m_assign_by2.parent = mt.name
+                      AND m_assign_by2.employee = %(employee_id)s
                 )
         """
 
@@ -99,11 +98,12 @@ def get_task_report_data():
 
     team_map = get_team_members_map()
     assign_by_map = get_assign_by_map()
+    subtask_type_map = get_subtask_type_map()
 
     for row in raw_data:
         row["team_members"] = team_map.get(row["mt_name"], "")
         row["assign_by_members"] = assign_by_map.get(row["mt_name"], "")
-        row["subtask_types"] = get_subtask_type_map().get(row["st_name"], "")
+        row["subtask_types"] = subtask_type_map.get(row["st_name"], "")
     
 
     return raw_data

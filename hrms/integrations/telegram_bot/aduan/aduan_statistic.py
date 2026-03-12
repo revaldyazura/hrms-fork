@@ -113,18 +113,25 @@ def _closed_count_in_window(maintask_id: str, start: datetime, end: datetime) ->
 
 
 def _open_issue_counts_by_type(maintask_id: str) -> list[tuple[str, int]]:
-	# Aggregate issue rows across Open subtasks.
+	# Count issue rows on Open subtasks, including Open subtasks with no issue.
 	rows = frappe.db.sql(
 		"""
 		select
-			ifnull(fit.issue, sti.issue_name) as issue_key,
+			case
+				when sti.name is null then ''
+				else ifnull(fit.issue, sti.issue_name)
+			end as issue_key,
 			count(*) as cnt
-		from `tabSubTask Issues` sti
-		join `tabSubTask` st on st.name = sti.parent
+		from `tabSubTask` st
+		left join `tabSubTask Issues` sti on sti.parent = st.name
 		left join `tabFusion Issue Types` fit on fit.name = sti.issue
 		where st.maintask = %s
 		  and st.status = 'Open'
-		group by ifnull(fit.issue, sti.issue_name)
+		group by
+			case
+				when sti.name is null then ''
+				else ifnull(fit.issue, sti.issue_name)
+			end
 		order by cnt desc
 		""",
 		(maintask_id,),
@@ -135,10 +142,11 @@ def _open_issue_counts_by_type(maintask_id: str) -> list[tuple[str, int]]:
 	for r in rows or []:
 		key = (r.get("issue_key") or "").strip()
 		if not key:
+			label = "Not Set"
+			agg[label] += int(r.get("cnt") or 0)
 			continue
 		label = telegram_utils.issue_label_from_key(key) or key
 		agg[label] += int(r.get("cnt") or 0)
-
 	# stable-ish ordering: count desc then label asc
 	out = sorted(agg.items(), key=lambda x: (-x[1], x[0].lower()))
 	return [(k, int(v)) for k, v in out]
