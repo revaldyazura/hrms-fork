@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 import frappe
 
-from hrms.integrations.telegram_bot import utils as telegram_utils
+from hrms.integrations.telegram_bot.utils import helper
 from hrms.integrations.telegram_bot.aduan import aduan
 
 DEFAULT_BULK_COMMAND = "aduan_bulk"
@@ -17,11 +17,11 @@ TEMPLATE_BASENAME = "aduan_bulk_template.xlsx"
 def _bulk_text(key: str, default: str, context: Optional[dict] = None) -> str:
     """Render a templated text via telegram_aduan_response_texts (if configured)."""
 
-    return (telegram_utils._render_response_text(key, default, context or {}) or "").strip()
+    return (helper._render_response_text(key, default, context or {}) or "").strip()
 
 
 def is_bulk_command(command_token: str) -> bool:
-    name = telegram_utils.command_for_menu(command_token)
+    name = helper.command_for_menu(command_token)
     if not name:
         return False
     if name.lower().startswith(DEFAULT_BULK_COMMAND):
@@ -56,9 +56,9 @@ def handle_aduan_bulk_with_report(
       Generated only when successes or failures exceed `list_limit`.
     """
 
-    cmd_norm = telegram_utils.normalize_command_token(command_token, default="/aduan_bulk")
+    cmd_norm = helper.normalize_command_token(command_token, default="/aduan_bulk")
     base_context = {
-        "cmd": telegram_utils._escape_html(cmd_norm)
+        "cmd": helper._escape_html(cmd_norm)
     }
 
     doc = getattr(message, "document", None)
@@ -77,7 +77,7 @@ def handle_aduan_bulk_with_report(
             _bulk_text(
                 "aduan_bulk_err_invalid_extension",
                 "File harus berformat .xlsx",
-                {**base_context, "filename": telegram_utils._escape_html(filename)},
+                {**base_context, "filename": helper._escape_html(filename)},
             )
         )
 
@@ -100,7 +100,7 @@ def handle_aduan_bulk_with_report(
             _bulk_text(
                 "aduan_bulk_err_download_failed",
                 "Gagal mengunduh file: {error}",
-                {**base_context, "error": telegram_utils._escape_html(str(e))},
+                {**base_context, "error": helper._escape_html(str(e))},
             )
         )
 
@@ -113,12 +113,12 @@ def handle_aduan_bulk_with_report(
                 base_context,
             )
         )
-    chat_id = telegram_utils._coerce_int(getattr(getattr(message, "chat", None), "id", None))
-    thread_id = telegram_utils._coerce_int(getattr(message, "message_thread_id", None))
+    chat_id = helper._coerce_int(getattr(getattr(message, "chat", None), "id", None))
+    thread_id = helper._coerce_int(getattr(message, "message_thread_id", None))
  
-    mapping_row = telegram_utils._maintask_mapping_row_for_message(chat_id, thread_id)
+    mapping_row = helper._maintask_mapping_row_for_message(chat_id, thread_id)
 
-    settings = telegram_utils._conf_default_subtask_settings(message)
+    settings = helper._conf_default_subtask_settings(message)
     base = (frappe.conf.get("telegram_aduan_site") or "hris.ebdesk.com/app/subtask/").strip()
 
     ok: list[dict[str, str]] = []
@@ -144,24 +144,24 @@ def handle_aduan_bulk_with_report(
             issue_label = ""
 
             if mapping_row:
-                issue_docname, issue_label, pics = telegram_utils._resolve_issue_type_from_maintask_mapping(
+                issue_docname, issue_label, pics = helper._resolve_issue_type_from_maintask_mapping(
                     fields.get("issue_type") or "",
                     mapping_row,
                     settings.get("maintask") or "",
                     settings.get("maintask_name") or "",
                 )
             else:
-                issue_docname, issue_label = telegram_utils._resolve_issue_type(
+                issue_docname, issue_label = helper._resolve_issue_type(
                     fields.get("issue_type") or "",
                     settings.get("maintask") or "",
                     settings.get("maintask_name") or "",
                 )
-                pics = telegram_utils._pics_for_issue_user_input(fields.get("issue_type") or "")
+                pics = helper._pics_for_issue_user_input(fields.get("issue_type") or "")
 
             subtask_id = _create_subtask_from_bulk(fields, message, settings, issue_docname, freeform=freeform)
 
             subtask_url = (base + subtask_id) if base else subtask_id
-            subtask_link = telegram_utils._format_hyperlink(subtask_id, subtask_url) if base else subtask_id
+            subtask_link = helper._format_hyperlink(subtask_id, subtask_url) if base else subtask_id
             pic_text = ", ".join(pics) if pics else ""
 
             ok.append(
@@ -170,8 +170,8 @@ def handle_aduan_bulk_with_report(
                     "subtask_id": subtask_id,
                     "subtask_url": subtask_url,
                     "subtask_link": subtask_link,
-                    "issue": telegram_utils._escape_html(issue_label or ""),
-                    "pic": telegram_utils._escape_html(pic_text or ""),
+                    "issue": helper._escape_html(issue_label or ""),
+                    "pic": helper._escape_html(pic_text or ""),
                 }
             )
         except Exception as e:
@@ -241,7 +241,7 @@ def _build_summary_message(
             "\t".join(
                 [
                     (item.get("row") or "").strip(),
-                    telegram_utils._escape_html((item.get("error") or "").strip()),
+                    helper._escape_html((item.get("error") or "").strip()),
                 ]
             ).rstrip()
             for item in failed_shown
@@ -395,7 +395,7 @@ def _read_excel_rows(file_bytes: bytes) -> list[dict[str, str]]:
 
         for idx, raw_val in enumerate(row_values):
             val = "" if raw_val in (None, "") else str(raw_val).strip()
-            val = telegram_utils._clean_field_value(val)
+            val = helper._clean_field_value(val)
             if val:
                 any_value = True
 
@@ -464,8 +464,8 @@ def _create_subtask_from_bulk(
     if not subtask_name:
         raise frappe.ValidationError("Subject is required")
 
-    priority = telegram_utils._normalize_priority(fields.get("priority"))
-    description = telegram_utils._build_description(fields, freeform or "", message)
+    priority = helper._normalize_priority(fields.get("priority"))
+    description = helper._build_description(fields, freeform or "", message)
 
     doc = frappe.get_doc(
         {
@@ -474,8 +474,8 @@ def _create_subtask_from_bulk(
             "tasks": tasks,
             "subtask_name": subtask_name,
             "description": description,
-            "requestor": telegram_utils._telegram_user_label(message),
-            "created_by": telegram_utils._telegram_user_label(message),
+            "requestor": helper._telegram_user_label(message),
+            "created_by": helper._telegram_user_label(message),
             "priority": priority,
             "status": "Open",
             "pic_subtask": pic_subtask,
@@ -487,7 +487,7 @@ def _create_subtask_from_bulk(
     )
 
     if fields.get("type"):
-        type_name = telegram_utils._resolve_subtask_type(fields["type"])
+        type_name = helper._resolve_subtask_type(fields["type"])
         doc.append("type", {"subtask_type": type_name})
 
     doc.append("issues_type", {"issue": issue_docname})

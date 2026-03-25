@@ -445,6 +445,163 @@ def command_for_menu(command_token: str) -> str:
 	return (command_token or "").lstrip("/").strip().lower()
 
 
+def conf_command_map(
+	command_key: str,
+	*,
+	is_private: Optional[bool] = None,
+	private_command_key: Optional[str] = None,
+	default: Optional[dict[str, str]] = None,
+) -> dict[str, str]:
+	"""Return configured command map: {"/cmd": "Description", ...}.
+
+	Config values supported:
+	- dict
+	- JSON string of dict
+
+	Notes:
+	- Keys are normalized via `normalize_command_token`.
+	- Values are trimmed; missing values become "".
+	- If config is missing/invalid, returns `default` (normalized) or {}.
+	- If `is_private=True` and `private_command_key` is set, will prefer the
+	  private config when it is truthy.
+	"""
+
+	raw = frappe.conf.get(command_key)
+	if is_private and private_command_key:
+		private_raw = frappe.conf.get(private_command_key)
+		if private_raw:
+			raw = private_raw
+
+	if raw in (None, ""):
+		raw = default or {}
+		if not raw:
+			return {}
+
+	# Allow JSON-string configs.
+	if isinstance(raw, str):
+		try:
+			raw = json.loads(raw)
+		except Exception:
+			return {}
+
+	if not isinstance(raw, dict):
+		return {}
+
+	out: dict[str, str] = {}
+	for k, v in raw.items():
+		token = normalize_command_token(k, default="/")
+		if not token or token == "/":
+			continue
+		desc = "" if v in (None, "") else str(v).strip()
+		out[token] = desc
+	return out
+
+
+def conf_command_tokens(
+	command_key: str,
+	*,
+	is_private: Optional[bool] = None,
+	private_command_key: Optional[str] = None,
+	default: Optional[dict[str, str]] = None,
+) -> list[str]:
+	"""Return command tokens from `conf_command_map` (each with leading '/')."""
+
+	return list(
+		conf_command_map(
+			command_key,
+			is_private=is_private,
+			private_command_key=private_command_key,
+			default=default,
+		).keys()
+	)
+
+
+def menu_commands_from_map(
+	command_map: dict[str, str],
+	*,
+	strip_slash: bool = True,
+) -> list[tuple[str, str]]:
+	"""Convert command_map into Telegram menu tuples.
+
+	If strip_slash=True, returns ("cmd", "desc"); else returns ("/cmd", "desc").
+	"""
+
+	out: list[tuple[str, str]] = []
+	for token, desc in (command_map or {}).items():
+		if strip_slash:
+			cmd = command_for_menu(token)
+			if not cmd:
+				continue
+			out.append((cmd, desc))
+		else:
+			if token:
+				out.append((str(token).strip(), desc))
+	return out
+
+
+def conf_help_text_map(
+	help_key: str,
+	*,
+	command_tokens: list[str],
+	default_command: str,
+) -> dict[str, str]:
+	"""Return normalized help text map keyed by command token.
+
+	Config values supported:
+	- dict (or JSON string of dict): {"/cmd": "...", "cmd": "..."}
+	- list (or JSON string of list) aligned with `command_tokens`
+
+	Notes:
+	- Keys may be with or without leading '/'.
+	- Values may include '{cmd}' placeholder (caller may replace as needed).
+	"""
+
+	raw = frappe.conf.get(help_key)
+	if raw in (None, ""):
+		return {}
+
+	try:
+		if isinstance(raw, str):
+			raw = json.loads(raw)
+	except Exception:
+		pass
+
+	normalized: dict[str, str] = {}
+
+	def _norm_key(k: object) -> Optional[str]:
+		if k in (None, ""):
+			return None
+		return normalize_command_token(k, default=default_command)
+
+	def _norm_val(v: object) -> Optional[str]:
+		if v in (None, ""):
+			return None
+		s = str(v)
+		return s if s.strip() else None
+
+	if isinstance(raw, dict):
+		for k, v in raw.items():
+			kk = _norm_key(k)
+			vv = _norm_val(v)
+			if kk and vv:
+				normalized[kk] = vv
+		return normalized
+
+	if isinstance(raw, list):
+		tokens = list(command_tokens or [])
+		vals = [_norm_val(x) for x in raw]
+		if len(vals) == len(tokens):
+			for t, v in zip(tokens, vals):
+				if v:
+					normalized[t] = v
+		elif len(vals) == 1 and vals[0] and tokens:
+			for t in tokens:
+				normalized[t] = vals[0]
+		return normalized
+
+	return {}
+
+
 def _find_command_offset_single(text: str, command_token: str) -> Optional[int]:
 	if not text:
 		return None
@@ -869,11 +1026,11 @@ def _render_template(template: str, context: dict) -> str:
 def _conf_response_text_map() -> dict:
 	"""Return update message templates from config.
 
-	Config (optional): telegram_aduan_response_texts
+	Config (optional): telegram_response_texts
 	Expected shape: dict (or JSON string of dict)
 	"""
 
-	raw = frappe.conf.get("telegram_aduan_response_texts")
+	raw = frappe.conf.get("telegram_response_texts")
 	if raw in (None, ""):
 		return {}
 

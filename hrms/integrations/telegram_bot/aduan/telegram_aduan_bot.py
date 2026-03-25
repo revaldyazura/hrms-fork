@@ -4,7 +4,7 @@ from typing import Dict, Optional, Tuple
 import frappe
 import json
 
-from hrms.integrations.telegram_bot import utils as telegram_utils
+from hrms.integrations.telegram_bot.utils import helper
 from hrms.integrations.telegram_bot.aduan import aduan_info 
 from hrms.integrations.telegram_bot.aduan import aduan
 from hrms.integrations.telegram_bot.aduan import aduan_bulk
@@ -30,32 +30,11 @@ def _aduan_command_map(is_private: Optional[bool] = None) -> dict[str, str]:
       config is missing/invalid, an empty dict is returned.
     """
 
-    raw = frappe.conf.get("telegram_aduan_command")
-    if is_private:
-        private_raw = frappe.conf.get("telegram_aduan_private_command")
-        if private_raw:
-            raw = private_raw
-    if raw in (None, ""):
-        return {}
-
-    # Site config usually yields dict already; allow JSON-string of the same dict shape.
-    if isinstance(raw, str):
-        try:
-            raw = json.loads(raw)
-        except Exception:
-            return {}
-
-    if not isinstance(raw, dict):
-        return {}
-
-    out: dict[str, str] = {}
-    for k, v in raw.items():
-        token = telegram_utils.normalize_command_token(k, default="/")
-        if not token or token == "/":
-            continue
-        desc = "" if v in (None, "") else str(v).strip()
-        out[token] = desc
-    return out
+    return helper.conf_command_map(
+        "telegram_aduan_command",
+        is_private=is_private,
+        private_command_key="telegram_aduan_private_command",
+    )
 
 def _aduan_command_tokens(is_private: Optional[bool] = None) -> list[str]:
     """Return configured command tokens (each with leading '/').
@@ -64,7 +43,11 @@ def _aduan_command_tokens(is_private: Optional[bool] = None) -> list[str]:
     - telegram_aduan_command: {"/aduan": "...", "/aduan_info": "...", ...}
     """
 
-    return list(_aduan_command_map(is_private=is_private).keys())
+    return helper.conf_command_tokens(
+        "telegram_aduan_command",
+        is_private=is_private,
+        private_command_key="telegram_aduan_private_command",
+    )
 
 
 def aduan_menu_commands(is_private: Optional[bool] = None) -> list[tuple[str, str]]:
@@ -73,13 +56,10 @@ def aduan_menu_commands(is_private: Optional[bool] = None) -> list[tuple[str, st
     Returns list of (command_without_slash, description).
     """
 
-    out: list[tuple[str, str]] = []
-    for token, desc in _aduan_command_map(is_private=is_private).items():
-        cmd = telegram_utils.command_for_menu(token)
-        if not cmd:
-            continue
-        out.append((cmd, desc))
-    return out
+    return helper.menu_commands_from_map(
+        _aduan_command_map(is_private=is_private),
+        strip_slash=True,
+    )
 
 
 def _aduan_help_text_map() -> dict[str, str]:
@@ -95,50 +75,11 @@ def _aduan_help_text_map() -> dict[str, str]:
     - Values may include '{cmd}' which will be replaced at runtime.
     """
 
-    raw = frappe.conf.get("telegram_aduan_help_texts")
-    if raw in (None, ""):
-        return {}
-
-    try:
-        if isinstance(raw, str):
-            raw = json.loads(raw)
-    except Exception:
-        pass
-
-    normalized: dict[str, str] = {}
-
-    def _norm_key(k: object) -> Optional[str]:
-        if k in (None, ""):
-            return None
-        return telegram_utils.normalize_command_token(k, default=ADUAN_COMMAND)
-
-    def _norm_val(v: object) -> Optional[str]:
-        if v in (None, ""):
-            return None
-        s = str(v)
-        return s if s.strip() else None
-
-    if isinstance(raw, dict):
-        for k, v in raw.items():
-            kk = _norm_key(k)
-            vv = _norm_val(v)
-            if kk and vv:
-                normalized[kk] = vv
-        return normalized
-
-    if isinstance(raw, list):
-        tokens = _aduan_command_tokens()
-        vals = [_norm_val(x) for x in raw]
-        if len(vals) == len(tokens):
-            for t, v in zip(tokens, vals):
-                if v:
-                    normalized[t] = v
-        elif len(vals) == 1 and vals[0]:
-            for t in tokens:
-                normalized[t] = vals[0]
-        return normalized
-
-    return {}
+    return helper.conf_help_text_map(
+        "telegram_aduan_help_texts",
+        command_tokens=_aduan_command_tokens(),
+        default_command=ADUAN_COMMAND,
+    )
 
 
 def _aduan_rules() -> list[dict]:
@@ -174,10 +115,10 @@ def _aduan_rules() -> list[dict]:
         for rule in raw_rules:
             if not isinstance(rule, dict):
                 continue
-            chat_id = telegram_utils._coerce_int(rule.get("chat_id"))
+            chat_id = helper._coerce_int(rule.get("chat_id"))
             if chat_id is None:
                 continue
-            thread_ids = telegram_utils._coerce_int_list(rule.get("thread_ids"))
+            thread_ids = helper._coerce_int_list(rule.get("thread_ids"))
 
             # Optional human-friendly labels (used only for messaging/logging)
             chat_name = rule.get("chat_name") or rule.get("group_name") or rule.get("chat_label")
@@ -194,7 +135,7 @@ def _aduan_rules() -> list[dict]:
                 for t in threads:
                     if not isinstance(t, dict):
                         continue
-                    tid = telegram_utils._coerce_int(t.get("id") or t.get("thread_id"))
+                    tid = helper._coerce_int(t.get("id") or t.get("thread_id"))
                     tname = t.get("name") or t.get("thread_name")
                     if tid is None or tname in (None, ""):
                         continue
@@ -229,13 +170,13 @@ def _aduan_rules() -> list[dict]:
         if normalized:
             return normalized
 
-    chat_ids = telegram_utils._coerce_int_list(frappe.conf.get("telegram_aduan_chat_ids"))
-    thread_ids = telegram_utils._coerce_int_list(frappe.conf.get("telegram_aduan_thread_ids"))
+    chat_ids = helper._coerce_int_list(frappe.conf.get("telegram_aduan_chat_ids"))
+    thread_ids = helper._coerce_int_list(frappe.conf.get("telegram_aduan_thread_ids"))
     if chat_ids:
         return [{"chat_id": cid, "thread_ids": thread_ids} for cid in chat_ids]
 
-    legacy_chat_id = telegram_utils._conf_int("telegram_aduan_chat_id")
-    legacy_thread_id = telegram_utils._conf_int("telegram_aduan_thread_id")
+    legacy_chat_id = helper._conf_int("telegram_aduan_chat_id")
+    legacy_thread_id = helper._conf_int("telegram_aduan_thread_id")
     if legacy_chat_id is None:
         return []
     return [{"chat_id": legacy_chat_id, "thread_ids": ([legacy_thread_id] if legacy_thread_id is not None else [])}]
@@ -288,7 +229,7 @@ def register_handlers(bot):
     def handle_aduan(message):
         # Bot is long-running; DB connections can be dropped after idle.
         try:
-            telegram_utils.ensure_db_connection()
+            helper.ensure_db_connection()
         except Exception:
             pass
 
@@ -305,7 +246,10 @@ def register_handlers(bot):
                 pass
         except Exception:
             pass
-
+        
+        if getattr(message.chat, "type", None) == "private":
+            return
+        
         chat_id = getattr(getattr(message, "chat", None), "id", None)
         if chat_id is None:
             return
@@ -362,12 +306,14 @@ def register_handlers(bot):
         # Match against both aduan create/info commands and update-status commands.
         tokens = _aduan_command_tokens() or []
             
-        matched = telegram_utils.match_command(raw_text, tokens)
+        matched = helper.match_command(raw_text, tokens)
+        
         if not matched:
             return
 
         matched_cmd, offset = matched
         cmd = matched_cmd
+        print(f"Received command: cmd {cmd} chat_id={chat_id}, thread_id={thread_id}")
 
         # Telegram best-practice: command should be at start of message.
         if offset is not None and offset > 0:
@@ -381,8 +327,7 @@ def register_handlers(bot):
             )
             return
 
-        payload = telegram_utils.extract_command_payload(raw_text, cmd)
-        print(f"Received command: chat_id={chat_id}, thread_id={thread_id}")
+        payload = helper.extract_command_payload(raw_text, cmd)
         # Bulk flow: /aduan_bulk with an attached .xlsx document
         if aduan_bulk.is_bulk_command(cmd):
             try:
@@ -463,7 +408,7 @@ def register_handlers(bot):
                     parse_mode="HTML",
                 )
             except Exception as e:
-                telegram_utils._logger().error(f"/aduan_update_status failed: {e}")
+                helper._logger().error(f"/aduan_update_status failed: {e}")
                 # For validation-like errors, show help to match existing flows.
                 if isinstance(e, frappe.ValidationError):
                     telegram_listener._send(
@@ -516,7 +461,7 @@ def register_handlers(bot):
                     parse_mode="HTML",
                 )
             except Exception as e:
-                telegram_utils._logger().error(f"/aduan_update_issues failed: {e}")
+                helper._logger().error(f"/aduan_update_issues failed: {e}")
                 if isinstance(e, frappe.ValidationError):
                     telegram_listener._send(
                         bot,
@@ -582,7 +527,7 @@ def register_handlers(bot):
                     parse_mode="HTML",
                 )
             except Exception as e:
-                telegram_utils._logger().error(f"/aduan_info failed: {e}")
+                helper._logger().error(f"/aduan_info failed: {e}")
                 telegram_listener._send(
                     bot,
                     chat_id,
@@ -615,7 +560,7 @@ def register_handlers(bot):
                     parse_mode="HTML",
                 )
             except Exception as e:
-                telegram_utils._logger().error(f"/aduan_statistic failed: {e}")
+                helper._logger().error(f"/aduan_statistic failed: {e}")
                 if isinstance(e, frappe.ValidationError):
                     telegram_listener._send(
                         bot,
@@ -677,7 +622,7 @@ def register_handlers(bot):
                 parse_mode="HTML",
             )
         except Exception as e:
-            telegram_utils._logger().error(f"/aduan create failed: {e}")
+            helper._logger().error(f"/aduan create failed: {e}")
             telegram_listener._send(
                 bot,
                 chat_id,
@@ -707,7 +652,7 @@ def register_private_handlers(bot):
         username = message.from_user.username
         print(f"Username telegram: {username} chat_id: {chat_id}")
         try:
-            telegram_utils.ensure_db_connection()
+            helper.ensure_db_connection()
         except Exception:
             pass
 
@@ -726,7 +671,7 @@ def register_private_handlers(bot):
             pass
         
         try:
-            requestor = telegram_utils._telegram_user_label(message)
+            requestor = helper._telegram_user_label(message)
             
             aduan_saya_res, report_path = aduan_info.aduan_saya_response(message)
 
@@ -747,7 +692,7 @@ def register_private_handlers(bot):
                     file_path=report_path,
                 )
         except Exception as e:
-            telegram_utils._logger().error(f"/aduan_saya failed: {e}")
+            helper._logger().error(f"/aduan_saya failed: {e}")
             telegram_listener._send(
                 bot,
                 chat_id,
@@ -772,7 +717,7 @@ def register_private_handlers(bot):
         username = message.from_user.username
         print(f"Username telegram: {username} chat_id: {chat_id}")
         try:
-            telegram_utils.ensure_db_connection()
+            helper.ensure_db_connection()
         except Exception:
             pass
 
@@ -793,7 +738,7 @@ def register_private_handlers(bot):
         tokens = _aduan_command_tokens(is_private=True) or []
         raw_text = ((getattr(message, "text", None) or getattr(message, "caption", None) or "")).strip()
             
-        matched = telegram_utils.match_command(raw_text, tokens)
+        matched = helper.match_command(raw_text, tokens)
         if not matched:
             return
 
@@ -811,7 +756,7 @@ def register_private_handlers(bot):
             )
             return
         
-        payload = telegram_utils.extract_command_payload(raw_text, cmd)
+        payload = helper.extract_command_payload(raw_text, cmd)
         subtask_id = ((payload or "").strip().split() or [""])[0].strip()
         if not subtask_id:
             telegram_listener._send(
@@ -844,7 +789,7 @@ def register_private_handlers(bot):
                 parse_mode="HTML",
             )
         except Exception as e:
-            telegram_utils._logger().error(f"/aduan_info failed: {e}")
+            helper._logger().error(f"/aduan_info failed: {e}")
             telegram_listener._send(
                 bot,
                 chat_id,
@@ -862,7 +807,7 @@ def register_private_handlers(bot):
         print(f"Username telegram: {username} chat_id: {chat_id}")
         is_private = True
         try:
-            telegram_utils.ensure_db_connection()
+            helper.ensure_db_connection()
         except Exception:
             pass
 
@@ -883,7 +828,7 @@ def register_private_handlers(bot):
         tokens = _aduan_command_tokens(is_private=is_private) or []
         raw_text = ((getattr(message, "text", None) or getattr(message, "caption", None) or "")).strip()
             
-        matched = telegram_utils.match_command(raw_text, tokens)
+        matched = helper.match_command(raw_text, tokens)
         if not matched:
             return
 
@@ -901,7 +846,7 @@ def register_private_handlers(bot):
             )
             return
         
-        payload = telegram_utils.extract_command_payload(raw_text, cmd)
+        payload = helper.extract_command_payload(raw_text, cmd)
         
         if aduan_update._command_is_update_status(cmd):
             try:
@@ -923,7 +868,7 @@ def register_private_handlers(bot):
                     parse_mode="HTML",
                 )
             except Exception as e:
-                telegram_utils._logger().error(f"/aduan_update_status failed: {e}")
+                helper._logger().error(f"/aduan_update_status failed: {e}")
                 # For validation-like errors, show help to match existing flows.
                 if isinstance(e, frappe.ValidationError):
                     telegram_listener._send(
