@@ -5,7 +5,7 @@ import tempfile
 from typing import Optional, Any
 
 import frappe
-from hrms.integrations.telegram_bot import utils as telegram_utils
+from hrms.integrations.telegram_bot.utils import helper
 
 ADUAN_INFO_COMMAND = "/aduan_info"
 
@@ -16,7 +16,7 @@ def is_info_command(command_token: str) -> bool:
     'aduan_info_staging') as the info flow.
     """
 
-    name = telegram_utils.command_for_menu(command_token)
+    name = helper.command_for_menu(command_token)
     if not name:
         return False
     return "info" in name
@@ -40,9 +40,9 @@ def _subtask_issue_label(subtask_doc) -> str:
     if not issue_key:
         issue_key = getattr(first, "issue_name", None)
     
-    issue_label = telegram_utils.issue_label_from_key(str(issue_key or "").strip())
+    issue_label = helper.issue_label_from_key(str(issue_key or "").strip())
     if not issue_label:
-        issue_label = telegram_utils.issue_label_maintask_mapping_from_key(str(issue_key or "").strip(), subtask_doc.maintask)
+        issue_label = helper.issue_label_maintask_mapping_from_key(str(issue_key or "").strip(), subtask_doc.maintask)
     return issue_label or "-"
 
 
@@ -64,7 +64,7 @@ def _subtask_progress_comments(subtask_name: str, limit: int = 5) -> list[str]:
 
     out: list[str] = []
     for r in rows or []:
-        text = telegram_utils._strip_html_to_text(r.get("content") or "")
+        text = helper._strip_html_to_text(r.get("content") or "")
         if not text:
             continue
         out.append(f"- {text}")
@@ -93,7 +93,7 @@ def aduan_info_response(subtask_name: str, command_token: Optional[str] = None) 
         raise frappe.ValidationError("SubTask ID is required")
 
     # Ensure DB connection is alive (bot may be idle for hours).
-    telegram_utils.ensure_db_connection()
+    helper.ensure_db_connection()
 
     # TeleBot listener is a long-running process. Reset the current DB transaction
     # so reads don't get stuck on an old REPEATABLE READ snapshot.
@@ -128,31 +128,31 @@ def aduan_info_response(subtask_name: str, command_token: Optional[str] = None) 
 
     base = (frappe.conf.get("telegram_aduan_site") or "").strip()
     subtask_url = (base + doc.name) if base else doc.name
-    subtask_link = telegram_utils._format_hyperlink(doc.name, subtask_url) if base else doc.name
+    subtask_link = helper._format_hyperlink(doc.name, subtask_url) if base else doc.name
 
     context = {
-        "name": telegram_utils._escape_html(doc.name),
-        "issue": telegram_utils._escape_html(issue_label),
-        "status": telegram_utils._escape_html(status_out),
-        "pic_subtask_name": telegram_utils._escape_html(pic_name),
-        "root_cause": telegram_utils._escape_html(root_cause),
-        "modified": telegram_utils._escape_html(modified),
-        "progress_updates": telegram_utils._escape_html(progress_updates),
-        "subtask_url": telegram_utils._escape_html(subtask_url),
+        "name": helper._escape_html(doc.name),
+        "issue": helper._escape_html(issue_label),
+        "status": helper._escape_html(status_out),
+        "pic_subtask_name": helper._escape_html(pic_name),
+        "root_cause": helper._escape_html(root_cause),
+        "modified": helper._escape_html(modified),
+        "progress_updates": helper._escape_html(progress_updates),
+        "subtask_url": helper._escape_html(subtask_url),
         "subtask_link": subtask_link,
     }
     
     default = "ℹ️ Progress Info\n\n• Nomor Aduan: {subtask_link}\n• Issue Type: {issue}\n• Status          : {status}\n• PIC             : {pic_subtask_name}\n• Root Cause      : {root_cause}\n• Progress Update :\n{progress_updates}\n\n🕒 Last Update: {modified}"
     
-    template = telegram_utils._render_response_text(
+    template = helper._render_response_text(
 		"aduan_info",  # command_token may be None or not match a menu, so we use the base command as key for config lookup with a sensible default template.
 		default,
 		context
 	)
-    # template = telegram_utils.response_template_for_command(command_token) if command_token else None
+    # template = helper.response_template_for_command(command_token) if command_token else None
     if template:
         return template.strip()
-        # return telegram_utils._render_template(template, context).strip()
+        # return helper._render_template(template, context).strip()
 
     # Fallback default (built-in)
     lines: list[str] = []
@@ -183,19 +183,19 @@ def aduan_saya_response(message):
     """Return message text + optional .txt report path for /aduan_saya.
 
     `requestor` must match the value stored in SubTask.requestor.
-    In our telegram flows this is typically `telegram_utils._telegram_user_label(message)`.
+    In our telegram flows this is typically `helper._telegram_user_label(message)`.
 
     Returns:
     - message_text_html: str (safe for parse_mode="HTML")
     - report_file_path: Optional[str] (full detail in .txt when message exceeds Telegram limits)
     """
 
-    requestor = telegram_utils._telegram_user_label(message)
+    requestor = helper._telegram_user_label(message)
 
     if not requestor:
         raise frappe.ValidationError("Requestor is required")
 
-    telegram_utils.ensure_db_connection()
+    helper.ensure_db_connection()
 
     # TeleBot listener is a long-running process. Reset the current DB transaction
     # so reads don't get stuck on an old REPEATABLE READ snapshot.
@@ -220,10 +220,10 @@ def aduan_saya_response(message):
 
     if not rows:
         empty_default = "Anda belum memiliki tiket aduan."
-        msg = telegram_utils._render_response_text(
+        msg = helper._render_response_text(
             "aduan_saya_empty",
             empty_default,
-            {"requestor": telegram_utils._escape_html(requestor)},
+            {"requestor": helper._escape_html(requestor)},
         ).strip()
         return msg, None
 
@@ -262,13 +262,13 @@ def aduan_saya_response(message):
         ticket_blocks_html.append(
             "\n".join(
                 [
-                    telegram_utils._escape_html(name),
-                    f"Subject : {telegram_utils._escape_html(subtask_name)}",
-                    f"Type  : {telegram_utils._escape_html(subtask_type)}",
-                    f"Issues   : {telegram_utils._escape_html(issue_label)}",
-                    f"Priority: {telegram_utils._escape_html(priority)}",
-                    f"Status  : {telegram_utils._escape_html(status)}",
-                    f"Open Date: {telegram_utils._escape_html(open_date)}",
+                    helper._escape_html(name),
+                    f"Subject : {helper._escape_html(subtask_name)}",
+                    f"Type  : {helper._escape_html(subtask_type)}",
+                    f"Issues   : {helper._escape_html(issue_label)}",
+                    f"Priority: {helper._escape_html(priority)}",
+                    f"Status  : {helper._escape_html(status)}",
+                    f"Open Date: {helper._escape_html(open_date)}",
                 ]
             ).rstrip()
         )
@@ -278,13 +278,13 @@ def aduan_saya_response(message):
     blocks_html = f"\n{sep}\n".join([b for b in ticket_blocks_html if b])
 
     ctx = {
-        "requestor": telegram_utils._escape_html(requestor),
+        "requestor": helper._escape_html(requestor),
         "ticket_count": str(len(ticket_blocks_html)),
         "ticket_blocks": blocks_html,
     }
 
     default = f"📋 TICKET LIST\n{sep}\n{{ticket_blocks}}"
-    full_html = (telegram_utils._render_response_text("aduan_saya", default, ctx) or "").strip()
+    full_html = (helper._render_response_text("aduan_saya", default, ctx) or "").strip()
     full_raw = (f"📋 TICKET LIST\n{sep}\n" + blocks_raw).strip() + "\n"
 
     # Telegram message limit is ~4096 chars. Keep safe margin.
@@ -305,10 +305,10 @@ def aduan_saya_response(message):
 
     # Keep preview short to avoid breaking any HTML in configured templates.
     ids = [str((r.get("name") or "")).strip() for r in (rows or []) if str((r.get("name") or "")).strip()]
-    shown = "\n".join([telegram_utils._escape_html(x) for x in ids[:10]]).strip()
+    shown = "\n".join([helper._escape_html(x) for x in ids[:10]]).strip()
     shown = shown + ("\n..." if len(ids) > 10 else "")
     preview_default = "📋 TICKET LIST terlalu panjang untuk ditampilkan di chat.\n\n{shown}\n\n📎 Detail lengkap dikirim sebagai file .txt"
-    preview = telegram_utils._render_response_text(
+    preview = helper._render_response_text(
         "aduan_saya_overflow",
         preview_default,
         {"shown": shown, "ticket_count": str(len(ids))},

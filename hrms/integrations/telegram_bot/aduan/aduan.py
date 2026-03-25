@@ -1,5 +1,5 @@
 import frappe
-from hrms.integrations.telegram_bot import utils as telegram_utils
+from hrms.integrations.telegram_bot.utils import helper
 import html
 from typing import Dict, Optional, Tuple
 import re
@@ -36,7 +36,7 @@ def _parse_aduan_fields(payload: str) -> Tuple[Dict[str, str], str]:
             continue
 
         key = m.group(1).strip().lower()
-        value = telegram_utils._clean_field_value(m.group(2))
+        value = helper._clean_field_value(m.group(2))
 
         if key in ("issue type", "issues"):
             # User input matches mapping label (e.g. "Menu"); database expects key (e.g. "APPS/MENU").
@@ -78,7 +78,7 @@ def _insert_with_owner(doc, owner_user: str):
             if frappe.db.exists("User", owner_user):
                 frappe.set_user(owner_user)
             else:
-                telegram_utils._logger().warning(
+                helper._logger().warning(
                     f"Owner user not found: {owner_user}. Falling back to {previous_user}."
                 )
 
@@ -89,7 +89,7 @@ def _insert_with_owner(doc, owner_user: str):
 
 
 def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
-    settings = telegram_utils._conf_default_subtask_settings(message)
+    settings = helper._conf_default_subtask_settings(message)
 
     maintask = settings["maintask"]
     tasks = settings["tasks"]
@@ -100,13 +100,13 @@ def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
     if not subtask_name:
         raise frappe.ValidationError("Subject is required")
 
-    priority = telegram_utils._normalize_priority(fields.get("priority"))
-    chat_id = telegram_utils._coerce_int(getattr(getattr(message, "chat", None), "id", None))
-    thread_id = telegram_utils._coerce_int(getattr(message, "message_thread_id", None))
+    priority = helper._normalize_priority(fields.get("priority"))
+    chat_id = helper._coerce_int(getattr(getattr(message, "chat", None), "id", None))
+    thread_id = helper._coerce_int(getattr(message, "message_thread_id", None))
  
-    mapping_row = telegram_utils._maintask_mapping_row_for_message(chat_id, thread_id)
+    mapping_row = helper._maintask_mapping_row_for_message(chat_id, thread_id)
 
-    description = telegram_utils._build_description(fields, "", message)
+    description = helper._build_description(fields, "", message)
 
     doc = frappe.get_doc(
         {
@@ -115,8 +115,8 @@ def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
             "tasks": tasks,
             "subtask_name": subtask_name,
             "description": description,
-            "requestor": telegram_utils._telegram_user_label(message),
-            "created_by": telegram_utils._telegram_user_label(message),
+            "requestor": helper._telegram_user_label(message),
+            "created_by": helper._telegram_user_label(message),
             "priority": priority,
             "status": "Open",
             "pic_subtask": pic_subtask,
@@ -131,19 +131,19 @@ def _create_subtask_from_aduan(fields: Dict[str, str], message) -> str:
 
     # Child tables
     if fields.get("type"):
-        type_name = telegram_utils._resolve_subtask_type(fields["type"])
+        type_name = helper._resolve_subtask_type(fields["type"])
         doc.append("type", {"subtask_type": type_name})
 
     if fields.get("issue_type"):
         if mapping_row:
-            issue_name, issue_label, pics = telegram_utils._resolve_issue_type_from_maintask_mapping(
+            issue_name, issue_label, pics = helper._resolve_issue_type_from_maintask_mapping(
                 fields.get("issue_type") or "",
                 mapping_row,
                 maintask,
                 settings.get("maintask_name") or "",
             )
         else:
-            issue_name, issue_label = telegram_utils._resolve_issue_type(
+            issue_name, issue_label = helper._resolve_issue_type(
                 fields["issue_type"], maintask, settings["maintask_name"]
             )
         doc.append("issues_type", {"issue": issue_name})
@@ -164,34 +164,34 @@ def aduan_success_response(command_token: str, fields: Dict[str, str], message) 
     - {cmd}
     """
 
-    cmd = telegram_utils.normalize_command_token(command_token, default="/aduan")
+    cmd = helper.normalize_command_token(command_token, default="/aduan")
     subtask_id = _create_subtask_from_aduan(fields, message)
     base = (
         frappe.conf.get("telegram_aduan_site") or "hris.ebdesk.com/app/subtask/"
     ).strip()
     subtask_url = (base + subtask_id) if base else subtask_id
-    subtask_link = telegram_utils._format_hyperlink(subtask_id, subtask_url) if base else subtask_id
+    subtask_link = helper._format_hyperlink(subtask_id, subtask_url) if base else subtask_id
 
     pic_issue = "@justrenatta"
     if fields.get("issue_type"):
-        pics = telegram_utils._pics_for_issue_user_input(fields["issue_type"])
+        pics = helper._pics_for_issue_user_input(fields["issue_type"])
         if pics:
             pic_issue = ", ".join(pics)
 
     context = {
-        "cmd": telegram_utils._escape_html(cmd),
-        "subtask_id": telegram_utils._escape_html(subtask_id),
-        "subtask_url": telegram_utils._escape_html(subtask_url),
+        "cmd": helper._escape_html(cmd),
+        "subtask_id": helper._escape_html(subtask_id),
+        "subtask_url": helper._escape_html(subtask_url),
         "subtask_link": subtask_link,
-        "pic_issue": telegram_utils._escape_html(pic_issue or ""),
+        "pic_issue": helper._escape_html(pic_issue or ""),
     }
     default = "✅ Aduan dicatat dengan nomor: {subtask_url}\ndan dalam proses pengecekan, dibantu oleh tim kami:\n{pic_issue}\nSilakan tunggu update lebih lanjut dari tim kami"
 
-    template = telegram_utils._render_response_text("aduan", default, context)
-    # template = telegram_utils.response_template_for_command(cmd)
+    template = helper._render_response_text("aduan", default, context)
+    # template = helper.response_template_for_command(cmd)
     if template:
         return template.strip()
-        # return telegram_utils._render_template(template, context).strip()
+        # return helper._render_template(template, context).strip()
 
     return (
         f"✅ Aduan telah dicatat dengan nomor {subtask_url} dan dalam proses pengecekan, "

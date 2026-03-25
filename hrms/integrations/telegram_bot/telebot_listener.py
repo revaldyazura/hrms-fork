@@ -6,7 +6,8 @@ from typing import Optional, Dict, Any
 import frappe
 
 from hrms.integrations.telegram_bot.aduan import telegram_aduan_bot
-from hrms.integrations.telegram_bot import utils as telegram_utils
+from hrms.integrations.telegram_bot.employee import telegram_employee_bot
+from hrms.integrations.telegram_bot.utils import helper
 
 try:
     import telebot  # pyTelegramBotAPI
@@ -120,9 +121,7 @@ def _configure_bot_commands(bot):
             return
 
         private_commands = [
-            types.BotCommand("start", "Show help"),
-            types.BotCommand("link", "Link this private chat"),
-            types.BotCommand("unlink", "Unlink this private chat"),
+            types.BotCommand("start", "Show help")
         ]
 
         # Also expose aduan commands in private chats (keep existing commands intact).
@@ -143,6 +142,19 @@ def _configure_bot_commands(bot):
                 seen.add(c.command)
                 merged.append(c)
             private_commands = merged
+
+        # Also expose employee commands in private chats.
+        private_employee_commands = [
+            types.BotCommand(cmd.lstrip("/"), desc)
+            for cmd, desc in (telegram_employee_bot.employee_menu_commands() or [])
+            if cmd
+        ]
+        if private_employee_commands:
+            seen = {c.command for c in private_commands}
+            for c in private_employee_commands:
+                if c.command not in seen:
+                    seen.add(c.command)
+                    private_commands.append(c)
 
         # By default, do NOT show any commands in group chats.
         # We'll enable /aduan only for the configured group chat_id scope.
@@ -189,19 +201,19 @@ def _configure_bot_commands(bot):
                 ids = []
                 for rule in raw_rules:
                     if isinstance(rule, dict):
-                        cid = telegram_utils._coerce_int(rule.get("chat_id"))
+                        cid = helper._coerce_int(rule.get("chat_id"))
                         if cid is not None:
                             ids.append(cid)
                 if ids:
                     return sorted(list(set(ids)))
 
-            ids = telegram_utils._coerce_int_list(
+            ids = helper._coerce_int_list(
                 frappe.conf.get("telegram_aduan_chat_ids")
             )
             if ids:
                 return sorted(list(set(ids)))
 
-            legacy = telegram_utils._coerce_int(
+            legacy = helper._coerce_int(
                 frappe.conf.get("telegram_aduan_chat_id")
             )
             return [legacy] if legacy is not None else []
@@ -287,10 +299,56 @@ def _register_handlers(bot):
         username = message.from_user.username
         print(f"Username telegram: {username} chat_id: {chat_id}")
         default = f"Welcome {username} to the HRIS Telegram Bot!"
+
+        # Reuse the already-configured private command menu.
+        # We fetch it from Telegram (so it stays consistent with `_configure_bot_commands`).
+        commands_text = ""
+        try:
+            from telebot import types
+
+            cmds = bot.get_my_commands(scope=types.BotCommandScopeAllPrivateChats())
+            lines: list[str] = []
+            for c in (cmds or []):
+                cmd = helper.normalize_command_token(
+                    getattr(c, "command", "") or "",
+                    default="/start",
+                )
+                desc = (getattr(c, "description", "") or "").strip()
+                lines.append(f"{cmd} - {desc}".strip(" -"))
+            commands_text = "\n".join([l for l in lines if l.strip()])
+        except Exception:
+            commands_text = ""
+
+        if not (commands_text or "").strip():
+            # Fallback: build from local menu definitions.
+            # Keep this minimal and rely on helper normalization + de-dup.
+            items: list[tuple[str, str]] = [("/start", "Show help")]
+
+            try:
+                items.extend(telegram_aduan_bot.aduan_menu_commands(is_private=True) or [])
+            except Exception:
+                pass
+            try:
+                items.extend(telegram_employee_bot.employee_menu_commands() or [])
+            except Exception:
+                pass
+
+            seen: set[str] = set()
+            lines2: list[str] = []
+            for raw_cmd, raw_desc in items:
+                cmd2 = helper.normalize_command_token(raw_cmd, default="/start")
+                if cmd2 in seen:
+                    continue
+                seen.add(cmd2)
+                desc2 = ("" if raw_desc in (None, "") else str(raw_desc)).strip()
+                lines2.append(f"{cmd2} - {desc2}".strip(" -"))
+            commands_text = "\n".join([l for l in lines2 if l.strip()])
+
         context = {
             "username": username,
+            "commands": commands_text,
         }
-        template = telegram_utils._render_response_text(
+        template = helper._render_response_text(
             "start",  # command_token may be None or not match a menu, so we use the base command as key for config lookup with a sensible default template.
             default,
             context,
@@ -305,6 +363,9 @@ def _register_handlers(bot):
             response_text
         )
 
+
+    # Register employee handlers (private chat only)
+    telegram_employee_bot.register_handlers(bot)
     # Register group/topic handler(s) in a separate module
     telegram_aduan_bot.register_private_handlers(bot)
     telegram_aduan_bot.register_handlers(bot)

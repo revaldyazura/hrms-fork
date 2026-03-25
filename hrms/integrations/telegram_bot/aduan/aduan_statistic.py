@@ -6,7 +6,7 @@ from typing import Optional
 
 import frappe
 
-from hrms.integrations.telegram_bot import utils as telegram_utils
+from hrms.integrations.telegram_bot.utils import helper
 
 
 DEFAULT_STATISTIC_COMMAND = "/aduan_statistic"
@@ -19,7 +19,7 @@ def is_statistic_command(command_token: str) -> bool:
 	'aduan_statistic', 'aduan_statistic_staging') as the statistic flow.
 	"""
 
-	name = telegram_utils.command_for_menu(command_token)
+	name = helper.command_for_menu(command_token)
 	return bool(name) and "statistic" in name
 
 
@@ -145,8 +145,9 @@ def _open_issue_counts_by_type(maintask_id: str) -> list[tuple[str, int]]:
 			label = "Not Set"
 			agg[label] += int(r.get("cnt") or 0)
 			continue
-		label = telegram_utils.issue_label_from_key(key) or key
+		label = helper.issue_label_from_key(key) or key
 		agg[label] += int(r.get("cnt") or 0)
+
 	# stable-ish ordering: count desc then label asc
 	out = sorted(agg.items(), key=lambda x: (-x[1], x[0].lower()))
 	return [(k, int(v)) for k, v in out]
@@ -157,7 +158,7 @@ def aduan_statistic_response(payload: str, command_token: Optional[str] = None) 
 
 	maintask_id = _parse_maintask_id(payload)
 
-	telegram_utils.ensure_db_connection()
+	helper.ensure_db_connection()
 	try:
 		frappe.db.rollback()
 	except Exception:
@@ -185,12 +186,12 @@ def aduan_statistic_response(payload: str, command_token: Optional[str] = None) 
 		open_issues_lines.append("- (tidak ada)")
 	else:
 		for issue_label, cnt in open_issues:
-			open_issues_lines.append(f"- {telegram_utils._escape_html(issue_label)} : {int(cnt)}")
+			open_issues_lines.append(f"- {helper._escape_html(issue_label)} : {int(cnt)}")
 
 	context = {
-		"now": telegram_utils._escape_html(_format_id_date(now)),
-		"maintask_id": telegram_utils._escape_html(maintask_id),
-		"maintask_title": telegram_utils._escape_html(maintask_title),
+		"now": helper._escape_html(_format_id_date(now)),
+		"maintask_id": helper._escape_html(maintask_id),
+		"maintask_title": helper._escape_html(maintask_title),
 		"open_count": _c("Open"),
 		"in_progress_count": _c("In Progress"),
 		"pause_count": _c("Pause"),
@@ -219,5 +220,5 @@ def aduan_statistic_response(payload: str, command_token: Optional[str] = None) 
 		"{open_issues_by_type}"
 	)
 
-	return telegram_utils._render_response_text("aduan_statistic", default, context).strip()
+	return helper._render_response_text("aduan_statistic", default, context).strip()
 
