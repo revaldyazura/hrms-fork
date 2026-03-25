@@ -9,6 +9,12 @@ frappe.listview_settings['Evaluation'] = {
 		}
 	},
 
+	onload: function (list_view) {
+		list_view.page.add_inner_button(__("Bulk Evaluation"), function () {
+			frappe.set_route('evaluate-subtasks');
+		});
+	},
+
 	refresh(listview) {
 		let workspace = 'Task Management';
 
