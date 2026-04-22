@@ -13,10 +13,12 @@ class SubTask(Document):
 	def validate(self):
 		print(f"validate subtask {self.name} owner {self.owner}")
 		self._set_derived_fields()
-		self._handle_status_timestamps()	
+		self._handle_status()	
 		ensure_employee_in_maintask_child_table(self)
 	
 	def before_insert(self):
+		print(f"before insert subtask with status {self.status}")
+		self._reset_for_new_subtask()
 		tasks = frappe.get_doc("Tasks", self.tasks)
 		if tasks.status not in ("Open", "In Progress"):
 			frappe.throw(_("Cannot create SubTask because the parent Task '{0}' is not Open or In Progress.").format(tasks.task_name))
@@ -38,11 +40,10 @@ class SubTask(Document):
 			ref_doc = frappe.get_doc(reference.reference_doctype, reference.reference_document)
 			self.owner = ref_doc.owner
 			self.created_by = frappe.db.get_value("Employee", {"user_id": ref_doc.owner}, "employee_name")
-			if self.status != "Open":
-				self.status = "Open"
-				self._reset_for_new_subtask()
+			self._reset_for_new_subtask()
 
 	def _reset_for_new_subtask(self):
+		self.status = "Open"
 		self.subtask_open_date = get_datetime(self.creation)
 		self.submission_text = None
 		self.attachment = None
@@ -53,11 +54,11 @@ class SubTask(Document):
 		self.subtask_pause_date = None
 		self.subtask_close_date = None
 	 	
-	def _handle_status_timestamps(self):
+	def _handle_status(self):
 		prev = self.get_doc_before_save()
 		if not prev:
-			if self.status == "Open":
-				self._reset_for_new_subtask()
+			# if self.status == "Open":
+			self._reset_for_new_subtask()
 			return
 
 		if prev.status == self.status:
