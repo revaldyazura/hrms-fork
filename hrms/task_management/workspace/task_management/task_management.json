@@ -15,7 +15,7 @@
  "label": "Task Management",
  "link_type": "DocType",
  "links": [],
- "modified": "2025-09-19 14:59:40.859676",
+ "modified": "2026-04-22 16:47:46.919862",
  "modified_by": "Administrator",
  "module": "Task Management",
  "name": "Task Management",
@@ -37,7 +37,7 @@
   {
    "document_type": "SubTask",
    "label": "SubTask",
-   "quick_list_filter": "[]"
+   "quick_list_filter": "{\"owner\":[\"=\",frappe.session.user]}"
   },
   {
    "document_type": "Evaluation",
