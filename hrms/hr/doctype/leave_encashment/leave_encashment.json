@@ -258,7 +258,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2025-02-21 13:11:01.939992",
+ "modified": "2026-04-20 11:16:06.213732",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Leave Encashment",
@@ -323,6 +323,8 @@
    "write": 1
   }
  ],
+ "read_only": 1,
+ "row_format": "Dynamic",
  "search_fields": "employee,employee_name",
  "sort_field": "creation",
  "sort_order": "DESC",

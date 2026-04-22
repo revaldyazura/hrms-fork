@@ -114,7 +114,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-27 13:06:45.747065",
+ "modified": "2026-04-20 11:16:07.879629",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Compensatory Leave Request",
@@ -172,6 +172,8 @@
    "write": 1
   }
  ],
+ "read_only": 1,
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [],

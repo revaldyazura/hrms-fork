@@ -1,0 +1,89 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-20 14:07:18.051772",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "data_section",
+  "type",
+  "holiday_data",
+  "dates_section",
+  "collective_leave_dates",
+  "employee_section",
+  "table_boed",
+  "add_all_employee"
+ ],
+ "fields": [
+  {
+   "fieldname": "type",
+   "fieldtype": "Link",
+   "label": "Type",
+   "options": "Leave Category"
+  },
+  {
+   "fieldname": "holiday_data",
+   "fieldtype": "Link",
+   "label": "Holiday Data",
+   "options": "Holiday List"
+  },
+  {
+   "fieldname": "data_section",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "employee_section",
+   "fieldtype": "Section Break",
+   "label": "Employee"
+  },
+  {
+   "fieldname": "table_boed",
+   "fieldtype": "Table",
+   "label": "Selected Employee",
+   "options": "Colective Leave Employee"
+  },
+  {
+   "fieldname": "add_all_employee",
+   "fieldtype": "Button",
+   "label": "Add All Employee"
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "collective_leave_dates",
+   "fieldtype": "Table",
+   "label": "Collective Leave Dates",
+   "options": "Collective Leave Dates"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-20 14:31:38.510108",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "Collective Leave",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,180 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:type",
+ "creation": "2026-04-15 16:16:28.837707",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "data_section",
+  "type",
+  "quota",
+  "is_group",
+  "column_break_bpam",
+  "is_need_location",
+  "is_sick_leave",
+  "is_maternity_leave",
+  "is_unpaid_leave",
+  "is_religious_leave",
+  "section_break_vunx",
+  "parent_leave_category",
+  "tab_2_tab",
+  "section_break_2ewk",
+  "old_parent",
+  "column_break_mhch",
+  "lft",
+  "rgt"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_2ewk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "lft",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Left",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "rgt",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Right",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_group",
+   "fieldtype": "Check",
+   "label": "Is Group"
+  },
+  {
+   "fieldname": "old_parent",
+   "fieldtype": "Link",
+   "label": "Old Parent",
+   "options": "Leave Category",
+   "permlevel": 2
+  },
+  {
+   "fieldname": "parent_leave_category",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Parent Leave Category",
+   "options": "Leave Category"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Data",
+   "label": "Type",
+   "unique": 1
+  },
+  {
+   "fieldname": "tab_2_tab",
+   "fieldtype": "Tab Break",
+   "label": "Others"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_need_location",
+   "fieldtype": "Check",
+   "label": "Is Need Location"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_sick_leave",
+   "fieldtype": "Check",
+   "label": "Is Sick Leave"
+  },
+  {
+   "fieldname": "column_break_mhch",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_maternity_leave",
+   "fieldtype": "Check",
+   "label": "Is Maternity Leave"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_unpaid_leave",
+   "fieldtype": "Check",
+   "label": "Is Unpaid Leave"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_religious_leave",
+   "fieldtype": "Check",
+   "label": "Is Religious Leave"
+  },
+  {
+   "fieldname": "column_break_bpam",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_vunx",
+   "fieldtype": "Section Break",
+   "label": "Parent"
+  },
+  {
+   "fieldname": "data_section",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "quota",
+   "fieldtype": "Int",
+   "label": "Quota"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_tree": 1,
+ "links": [],
+ "modified": "2026-04-20 11:05:47.460333",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "Leave Category",
+ "naming_rule": "By fieldname",
+ "nsm_parent_field": "parent_leave_category",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Employee"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "type"
+}

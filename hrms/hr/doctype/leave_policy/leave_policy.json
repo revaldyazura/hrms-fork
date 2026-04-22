@@ -45,7 +45,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2024-03-27 13:10:01.602911",
+ "modified": "2026-04-20 11:16:05.334838",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Leave Policy",
@@ -98,6 +98,8 @@
    "write": 1
   }
  ],
+ "read_only": 1,
+ "row_format": "Dynamic",
  "search_fields": "title",
  "sort_field": "creation",
  "sort_order": "DESC",

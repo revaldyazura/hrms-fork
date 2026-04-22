@@ -141,6 +141,7 @@ permission_query_conditions = {
     "Tasks": "hrms.hr.doctype.tasks.tasks.permission_query_conditions",
     "MainTask": "hrms.hr.doctype.maintask.maintask.permission_query_conditions",
     "Evaluation": "hrms.hr.doctype.evaluation.evaluation.permission_query_conditions",
+    "Leave Request": "hrms.hr.doctype.leave_request.leave_request.permission_query_conditions",
 }
 #
 has_permission = {

@@ -1,0 +1,328 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "LR-.YYYY.MM.-.#####",
+ "creation": "2026-04-01 11:15:04.161676",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_zh8w",
+  "employee",
+  "employee_name",
+  "column_break_rrwt",
+  "leave_category",
+  "sub_leave_category",
+  "dates_and_status_section",
+  "leave_dates",
+  "from_date",
+  "to_date",
+  "column_break_pfor",
+  "final_status",
+  "posting_date",
+  "total_leave_days",
+  "remaining_leave_balance",
+  "reason_section",
+  "supporting_documents",
+  "description",
+  "replacements_tab",
+  "replacement_data_section",
+  "employees_replacement",
+  "replacements_final_decision",
+  "manager_tab",
+  "manager_data_section",
+  "manager_decision",
+  "manager_reason",
+  "hr_tab",
+  "hr_data_section",
+  "hr_decision",
+  "hr_reason",
+  "other_tab",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_zh8w",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Leave Request",
+   "permlevel": 3,
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "link_filters": "[[\"Employee\",\"status\",\"=\",\"Active\"]]",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "column_break_rrwt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "other_tab",
+   "fieldtype": "Tab Break",
+   "label": "Other"
+  },
+  {
+   "fieldname": "dates_and_status_section",
+   "fieldtype": "Section Break",
+   "label": "Dates and Status"
+  },
+  {
+   "fieldname": "leave_dates",
+   "fieldtype": "Table",
+   "label": "Leave Dates",
+   "options": "Leave Dates"
+  },
+  {
+   "fieldname": "column_break_pfor",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "total_leave_days",
+   "fieldtype": "Int",
+   "label": "Total Leave Days",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "remaining_leave_balance",
+   "fieldtype": "Int",
+   "label": "Remaining Leave Balance",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "reason_section",
+   "fieldtype": "Section Break",
+   "label": "Reason"
+  },
+  {
+   "fieldname": "supporting_documents",
+   "fieldtype": "Table",
+   "label": "Supporting Documents",
+   "options": "Leave Files Reason"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description"
+  },
+  {
+   "fieldname": "replacements_tab",
+   "fieldtype": "Tab Break",
+   "label": "Replacements"
+  },
+  {
+   "fieldname": "employees_replacement",
+   "fieldtype": "Table",
+   "label": "Employees Replacement",
+   "options": "Employee Replacement",
+   "reqd": 1
+  },
+  {
+   "fieldname": "replacements_final_decision",
+   "fieldtype": "Select",
+   "label": "Replacements Final Decision",
+   "options": "Pending\nApproved\nRejected",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "replacement_data_section",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "manager_tab",
+   "fieldtype": "Tab Break",
+   "label": "Manager"
+  },
+  {
+   "fieldname": "manager_data_section",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "manager_decision",
+   "fieldtype": "Select",
+   "label": "Manager Decision",
+   "options": "Pending\nApproved\nRejected",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "hr_tab",
+   "fieldtype": "Tab Break",
+   "label": "HR"
+  },
+  {
+   "fieldname": "manager_reason",
+   "fieldtype": "Text Editor",
+   "label": "Reason",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "hr_data_section",
+   "fieldtype": "Section Break",
+   "label": "Data"
+  },
+  {
+   "fieldname": "hr_reason",
+   "fieldtype": "Text Editor",
+   "label": "Reason",
+   "permlevel": 2
+  },
+  {
+   "fieldname": "final_status",
+   "fieldtype": "Select",
+   "label": "Final Status",
+   "options": "Pending\nApproved\nRejected\nCancelled",
+   "permlevel": 3
+  },
+  {
+   "fieldname": "hr_decision",
+   "fieldtype": "Select",
+   "label": "HR Decision",
+   "options": "Pending\nApproved\nRejected\nCancelled",
+   "permlevel": 2
+  },
+  {
+   "fieldname": "leave_category",
+   "fieldtype": "Link",
+   "label": "Leave Category",
+   "options": "Leave Category"
+  },
+  {
+   "fieldname": "sub_leave_category",
+   "fieldtype": "Link",
+   "label": "Sub Leave Category",
+   "options": "Leave Category"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-04-15 17:19:43.629495",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "Leave Request",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "permlevel": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "employee_name",
+ "track_changes": 1,
+ "track_views": 1
+}
