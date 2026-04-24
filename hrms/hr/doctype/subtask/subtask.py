@@ -67,6 +67,14 @@ class SubTask(Document):
 		now = now_datetime()
 		from_parent = bool(self.flags.get('from_parent_propagation'))
 
+		if from_parent and prev.status in ("Open", "Cancel"):
+			self.subtask_start_date = now
+			self.last_in_progress_timestamp = now
+			if self.status == "Done":
+				self.subtask_done_date = now
+			self.total_time = 0
+			return
+		
 		if self.status == "Open":
 			self._reset_for_new_subtask()
 
@@ -76,13 +84,6 @@ class SubTask(Document):
 
 		elif self.status in ("Pause", "Done", "Resolved"):
 			if not self.last_in_progress_timestamp:
-				if from_parent and prev.status in ("Open", "Cancel", None):
-					self.subtask_start_date = now
-					self.last_in_progress_timestamp = now
-					if self.status == "Done":
-						self.subtask_done_date = now
-					self.total_time = 0
-					return
 				if prev.status == "Close":
 					return
 				if prev.status == 'Resolved':
