@@ -1,7 +1,7 @@
 {
  "app": "hrms",
  "charts": [],
- "content": "[{\"id\":\"RVRjn2rp2g\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Task Management</span>\",\"col\":12}},{\"id\":\"PLpz9WiJnm\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Kamus Kompetensi\",\"col\":4}},{\"id\":\"xkvky0swHs\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"SubTask Types\",\"col\":4}},{\"id\":\"6fTDLtGOOx\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Tutorial\",\"col\":4}},{\"id\":\"qXi_xp-SNG\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Standard Operational Procedure\",\"col\":4}}]",
+ "content": "[{\"id\":\"PLpz9WiJnm\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Kamus Kompetensi\",\"col\":4}},{\"id\":\"xkvky0swHs\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"SubTask Types\",\"col\":4}},{\"id\":\"6fTDLtGOOx\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Tutorial\",\"col\":4}},{\"id\":\"qXi_xp-SNG\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Standard Operational Procedure\",\"col\":4}},{\"id\":\"3cOAW0nBkh\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"Regulations\",\"col\":4}}]",
  "creation": "2025-07-22 13:33:28.608822",
  "custom_blocks": [],
  "docstatus": 0,
@@ -15,13 +15,13 @@
  "label": "Knowledge",
  "link_type": "DocType",
  "links": [],
- "modified": "2026-02-20 14:08:11.282204",
+ "modified": "2026-04-24 10:40:32.384415",
  "modified_by": "Administrator",
  "module": "Task Management",
  "name": "Knowledge",
  "number_cards": [],
  "owner": "Administrator",
- "parent_page": "Task Management",
+ "parent_page": "",
  "public": 1,
  "quick_lists": [
   {
@@ -32,6 +32,11 @@
   {
    "document_type": "SOP",
    "label": "Standard Operational Procedure",
+   "quick_list_filter": "[]"
+  },
+  {
+   "document_type": "Company Regulations",
+   "label": "Regulations",
    "quick_list_filter": "[]"
   },
   {
@@ -46,7 +51,7 @@
   }
  ],
  "roles": [],
- "sequence_id": 22.0,
+ "sequence_id": 11.0,
  "shortcuts": [],
  "title": "Knowledge",
  "type": "Workspace"
