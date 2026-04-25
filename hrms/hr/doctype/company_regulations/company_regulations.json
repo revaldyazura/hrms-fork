@@ -8,6 +8,7 @@
  "field_order": [
   "data_section",
   "file",
+  "show_file",
   "regulation_name"
  ],
  "fields": [
@@ -26,12 +27,17 @@
    "fieldname": "data_section",
    "fieldtype": "Section Break",
    "label": "Data"
+  },
+  {
+   "fieldname": "show_file",
+   "fieldtype": "Button",
+   "label": "Show File"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-24 16:07:35.580476",
+ "modified": "2026-04-24 18:05:05.972330",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Company Regulations",
