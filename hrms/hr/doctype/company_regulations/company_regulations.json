@@ -37,13 +37,14 @@
   {
    "fieldname": "category",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "Category"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-04 19:09:16.150790",
+ "modified": "2026-05-04 19:25:43.534509",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Company Regulations",
