@@ -9,7 +9,8 @@
   "data_section",
   "file",
   "show_file",
-  "regulation_name"
+  "regulation_name",
+  "category"
  ],
  "fields": [
   {
@@ -32,12 +33,17 @@
    "fieldname": "show_file",
    "fieldtype": "Button",
    "label": "Show File"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "label": "Category"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-24 18:05:05.972330",
+ "modified": "2026-05-04 19:09:16.150790",
  "modified_by": "Administrator",
  "module": "HR",
  "name": "Company Regulations",
